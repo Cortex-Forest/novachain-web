@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#030309">
+    <meta name="description" content="Nova Web3 钱包：量子安全签名 + 端到端加密聊天。私钥与聊天密钥只保存在浏览器。">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <title>Nova Web3 钱包 · 加密聊天</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-deep: #030309;
+            --bg-panel: rgba(13, 16, 36, 0.55);
+            --border: rgba(140, 210, 255, 0.14);
+            --border-strong: rgba(0, 240, 255, 0.4);
+            --accent: #00f0ff;
+            --accent2: #b44dff;
+            --accent3: #ff2ea6;
+            --text: #eef2ff;
+            --dim: #8b93b8;
+            --danger: #ff4d6a;
+            --radius: 18px;
+            --font-display: 'Orbitron', 'Segoe UI', system-ui, sans-serif;
+            --font-body: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background-color: #030309;
+            background-image: radial-gradient(1400px 900px at 50% -12%, #0b0f26, var(--bg-deep) 62%);
+            color: var(--text);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        ::selection { background: rgba(0,240,255,.3); color: #fff; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #05060f; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(0,240,255,.45), rgba(180,77,255,.45)); border-radius: 999px; border: 2px solid #05060f; }
+
+        #bg-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+        #bg-aurora::after { content:''; position: absolute; inset: 0; background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(3,3,9,.9)); }
+        .orb { position: absolute; border-radius: 50%; filter: blur(110px); will-change: transform; opacity: .55; }
+        .orb-a { width: 62vmax; height: 62vmax; left: -20vmax; top: -24vmax; background: radial-gradient(circle, rgba(0,240,255,.42), transparent 60%); animation: driftA 26s ease-in-out infinite alternate; }
+        .orb-b { width: 56vmax; height: 56vmax; right: -22vmax; top: 4vmax; background: radial-gradient(circle, rgba(180,77,255,.38), transparent 60%); animation: driftB 32s ease-in-out infinite alternate; }
+        .orb-c { width: 50vmax; height: 50vmax; left: 26vw; bottom: -28vmax; background: radial-gradient(circle, rgba(255,46,166,.2), transparent 62%); animation: driftC 40s ease-in-out infinite alternate; }
+        @keyframes driftA { to { transform: translate(9vmax, 7vmax) scale(1.12); } }
+        @keyframes driftB { to { transform: translate(-8vmax, 10vmax) scale(1.16); } }
+        @keyframes driftC { to { transform: translate(6vmax, -9vmax) scale(1.1); } }
+
+        #bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .55;
+            background-image: linear-gradient(rgba(120,200,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(120,200,255,.05) 1px, transparent 1px);
+            background-size: 56px 56px;
+            -webkit-mask-image: radial-gradient(ellipse 95% 75% at 50% 28%, #000 25%, transparent 76%);
+            mask-image: radial-gradient(ellipse 95% 75% at 50% 28%, #000 25%, transparent 76%);
+            animation: gridPan 70s linear infinite; }
+        @keyframes gridPan { to { background-position: 56px 56px; } }
+
+        #spotlight { position: fixed; left: 0; top: 0; width: 620px; height: 620px; z-index: 2; pointer-events: none; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,240,255,.09), rgba(180,77,255,.045) 45%, transparent 70%);
+            mix-blend-mode: screen; will-change: transform; }
+
+        .hud-corner { position: fixed; width: 44px; height: 44px; z-index: 2; pointer-events: none; opacity: .55; }
+        .hud-tl { top: 16px; left: 16px; border-top: 2px solid rgba(0,240,255,.55); border-left: 2px solid rgba(0,240,255,.55); border-top-left-radius: 12px; }
+        .hud-tr { top: 16px; right: 16px; border-top: 2px solid rgba(0,240,255,.55); border-right: 2px solid rgba(0,240,255,.55); border-top-right-radius: 12px; }
+        .hud-bl { bottom: 16px; left: 16px; border-bottom: 2px solid rgba(180,77,255,.55); border-left: 2px solid rgba(180,77,255,.55); border-bottom-left-radius: 12px; }
+        .hud-br { bottom: 16px; right: 16px; border-bottom: 2px solid rgba(180,77,255,.55); border-right: 2px solid rgba(180,77,255,.55); border-bottom-right-radius: 12px; }
+
+        .app-container { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 1rem 1.25rem 3.5rem; }
+        .header { text-align: center; padding: 2.1rem 0 1.3rem; }
+        .kicker { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .44em; text-transform: uppercase; color: var(--accent); opacity: .9; margin-bottom: .9rem; padding-left: .44em; text-shadow: 0 0 18px rgba(0,240,255,.65); animation: fadeDown .8s .15s both; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-12px); } }
+        .logo { display: inline-block; font-family: var(--font-display); font-size: clamp(2.4rem, 7vw, 3.6rem); font-weight: 900; letter-spacing: .08em; line-height: 1.1;
+            background: linear-gradient(110deg, #7df9ff, var(--accent) 28%, var(--accent2) 66%, #ff9bf0);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+            filter: drop-shadow(0 0 28px rgba(0,240,255,.35)); animation: logoIn 1s .05s cubic-bezier(.22,1,.36,1) both; }
+        @keyframes logoIn { from { opacity: 0; transform: translateY(26px) scale(.94); filter: blur(12px); } }
+        .tagline { color: var(--dim); font-size: .95rem; margin-top: .7rem; min-height: 1.4em; letter-spacing: .05em; animation: fadeDown .9s .35s both; }
+        .hero-badges { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: center; margin-top: 1.1rem; }
+        .chip { font-size: .73rem; font-weight: 600; letter-spacing: .05em; padding: .34rem .95rem; border-radius: 999px; color: #cfe9ff; background: rgba(0,240,255,.07); border: 1px solid rgba(0,240,255,.28); box-shadow: inset 0 0 18px rgba(0,240,255,.1); animation: chipIn .6s cubic-bezier(.22,1,.36,1) both; }
+        @keyframes chipIn { from { opacity: 0; transform: scale(.8); } }
+
+        .mode-banner { margin: 0 auto 1.5rem; max-width: 720px; padding: .68rem 1.1rem; border-radius: 999px; text-align: center; font-size: .84rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: .55rem; border: 1px solid var(--border); background: rgba(13,16,36,.5); backdrop-filter: blur(16px); animation: fadeDown .8s .45s both; }
+        .mode-banner::before { content:''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 12px currentColor; animation: corePulse 1.6s ease-in-out infinite; }
+        @keyframes corePulse { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.22); opacity: 1; } }
+        .mode-banner.node { color: #92f2c3; border-color: rgba(94,242,176,.4); background: rgba(94,242,176,.08); }
+        .mode-banner.demo { color: #ffd166; border-color: rgba(255,209,102,.4); background: rgba(255,209,102,.07); }
+
+        .nav-tabs { position: relative; display: flex; justify-content: center; gap: .15rem; background: rgba(13,16,36,.55); border: 1px solid var(--border); border-radius: 999px; padding: .35rem; margin-bottom: 1.6rem; backdrop-filter: blur(20px) saturate(150%); box-shadow: 0 12px 44px rgba(0,0,0,.4); flex-wrap: wrap; animation: fadeDown .8s .5s both; }
+        .nav-indicator { position: absolute; top: .35rem; bottom: .35rem; left: 0; width: 0; z-index: 0; border-radius: 999px; background: linear-gradient(120deg, rgba(0,240,255,.95), rgba(180,77,255,.95)); box-shadow: 0 0 26px rgba(0,240,255,.55), inset 0 1px 0 rgba(255,255,255,.45); transition: left .4s cubic-bezier(.22,1,.36,1), width .4s cubic-bezier(.22,1,.36,1); }
+        .nav-tab { position: relative; z-index: 1; padding: .72rem 1.15rem; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: .85rem; color: var(--dim); transition: color .3s, text-shadow .3s; white-space: nowrap; border: none; background: transparent; width: auto; margin: 0; }
+        .nav-tab:hover { color: var(--text); text-shadow: 0 0 14px rgba(0,240,255,.55); transform: none; box-shadow: none; filter: none; }
+        .nav-tab.active { color: #041018; font-weight: 800; }
+
+        .panel { display: none; position: relative; overflow: hidden; background-color: rgba(13,16,36,.55); background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.6rem; backdrop-filter: blur(20px) saturate(150%); margin-bottom: 1.6rem; box-shadow: 0 18px 60px rgba(0,0,0,.42); }
+        .panel::before { content:''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,240,255,.75), rgba(180,77,255,.75), transparent); pointer-events: none; }
+        .panel::after { content:''; position: absolute; width: 240px; height: 240px; right: -100px; top: -120px; border-radius: 50%; background: radial-gradient(circle, rgba(0,240,255,.13), transparent 65%); pointer-events: none; }
+        .panel.active { display: block; animation: panelIn .55s cubic-bezier(.22,1,.36,1) both; }
+        @keyframes panelIn { from { opacity: 0; transform: translateY(18px) scale(.985); } }
+        .panel h2 { font-size: 1.02rem; margin-bottom: 1rem; color: var(--accent); display: flex; align-items: center; gap: .5rem; letter-spacing: .04em; text-shadow: 0 0 18px rgba(0,240,255,.35); }
+        .panel h2::after { content:''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(0,240,255,.4), transparent); margin-left: .4rem; }
+
+        input, textarea, select { background: rgba(6,8,20,.68); border: 1px solid var(--border); border-radius: 12px; padding: .8rem .95rem; color: var(--text); font-size: .9rem; width: 100%; margin-bottom: .7rem; font-family: inherit; transition: border-color .25s, box-shadow .25s, background .25s; outline: none; }
+        input:focus, textarea:focus, select:focus { border-color: var(--border-strong); box-shadow: 0 0 0 3px rgba(0,240,255,.12), 0 0 26px rgba(0,240,255,.16); background: rgba(8,12,28,.9); }
+        input::placeholder, textarea::placeholder { color: #5a6289; }
+        button { position: relative; overflow: hidden; background: linear-gradient(120deg, var(--accent), var(--accent2)); color: #041018; font-weight: 700; border: none; border-radius: 12px; padding: .8rem; width: 100%; margin-bottom: .7rem; font-family: inherit; font-size: .92rem; cursor: pointer; letter-spacing: .03em; transition: transform .25s, box-shadow .3s, filter .3s; box-shadow: 0 8px 30px rgba(0,240,255,.2), inset 0 1px 0 rgba(255,255,255,.35); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(0,240,255,.36), inset 0 1px 0 rgba(255,255,255,.42); filter: brightness(1.08); }
+        button:active { transform: scale(.97); }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .btn-sm { width: auto; padding: .5rem 1.1rem; font-size: .8rem; }
+        .btn-ghost { width: auto; background: rgba(6,8,20,.68); border: 1px solid var(--border); color: var(--text); padding: .5rem .95rem; font-size: .78rem; box-shadow: none; }
+        .btn-ghost:hover { border-color: var(--border-strong); box-shadow: 0 0 18px rgba(0,240,255,.15); filter: none; }
+        .btn-danger { background: linear-gradient(120deg, #ff4d6a, #b44dff); }
+        .row { display: flex; gap: .55rem; align-items: flex-start; }
+        .row input { flex: 1; }
+        .row .btn-sm, .row .btn-ghost { margin-bottom: .7rem; }
+
+        .address-box { word-break: break-all; font-family: var(--font-mono); background: rgba(3,5,14,.8); padding: .8rem .9rem; border-radius: 12px; font-size: .79rem; margin-bottom: .5rem; border: 1px solid var(--border); color: #a9e6ff; letter-spacing: .02em; box-shadow: inset 0 0 26px rgba(0,240,255,.05); cursor: pointer; }
+        .address-box:hover { border-color: var(--border-strong); }
+        .bal { font-size: 2rem; font-weight: 700; font-family: var(--font-display); background: linear-gradient(120deg, #7df9ff, var(--accent2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(0,240,255,.4)); }
+        .response { background: rgba(4,6,16,.82); border: 1px solid var(--border); border-radius: 12px; padding: .85rem; font-family: var(--font-mono); white-space: pre-wrap; word-break: break-all; font-size: .78rem; max-height: 220px; overflow-y: auto; margin-top: .4rem; color: var(--accent); box-shadow: inset 0 0 32px rgba(0,240,255,.05); }
+        .warning { color: var(--danger); font-size: .8rem; margin-bottom: .7rem; background: rgba(255,77,106,.08); border: 1px solid rgba(255,77,106,.28); border-radius: 10px; padding: .55rem .8rem; line-height: 1.6; }
+        .tag { display: inline-block; padding: .18rem .62rem; border-radius: 999px; font-size: .67rem; font-weight: 700; letter-spacing: .08em; background: rgba(0,240,255,.14); color: var(--accent); border: 1px solid rgba(0,240,255,.35); box-shadow: 0 0 12px rgba(0,240,255,.2); }
+        .kv { margin: .9rem 0; }
+        .kv .label { font-size: .78rem; color: var(--dim); margin-bottom: .25rem; }
+        .footnote { font-size: .74rem; color: var(--dim); line-height: 1.7; margin-top: .6rem; }
+        .footnote a { color: var(--accent); text-decoration: none; }
+        .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); transition-delay: var(--d, 0s); }
+        .reveal.in { opacity: 1; transform: none; }
+
+        /* ---- 加密聊天 ---- */
+        .chat-hint { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .8rem; color: var(--dim); background: rgba(0,240,255,.05); border: 1px solid var(--border); border-radius: 12px; padding: .6rem .9rem; margin-bottom: 1rem; }
+        .chat-status { margin-left: auto; font-family: var(--font-mono); font-size: .72rem; color: #7df9ff; }
+        .chat-status.off { color: var(--danger); }
+        .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; min-height: 480px; }
+        .contacts-pane { background: rgba(6,8,20,.5); border: 1px solid var(--border); border-radius: 14px; padding: .9rem; display: flex; flex-direction: column; gap: .55rem; }
+        .contacts-pane h3 { font-size: .78rem; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+        .contact-add { display: flex; gap: .45rem; }
+        .contact-add input { margin-bottom: 0; font-size: .78rem; padding: .55rem .7rem; }
+        .contact-add .btn-sm { margin-bottom: 0; padding: .55rem .8rem; }
+        .contact-list { display: flex; flex-direction: column; gap: .35rem; overflow-y: auto; max-height: 380px; flex: 1; }
+        .contact-item { padding: .55rem .7rem; border-radius: 11px; cursor: pointer; border: 1px solid transparent; font-family: var(--font-mono); font-size: .72rem; color: var(--dim); word-break: break-all; transition: all .25s; position: relative; }
+        .contact-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+        .contact-item.active { border-color: rgba(0,240,255,.35); background: rgba(0,240,255,.08); color: var(--text); }
+        .contact-item .badge { position: absolute; right: .5rem; top: .4rem; width: 9px; height: 9px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 10px var(--accent3); display: none; }
+        .contact-item.has-new .badge { display: block; }
+        .contact-item .x { position: absolute; right: .45rem; bottom: .3rem; font-size: .6rem; color: var(--dim); }
+        .contact-item .x:hover { color: var(--danger); }
+        .contact-empty { font-size: .76rem; color: var(--dim); text-align: center; padding: 1.4rem 0; line-height: 1.8; }
+        .thread-pane { display: flex; flex-direction: column; background: rgba(6,8,20,.5); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; min-width: 0; }
+        .thread-header { display: flex; align-items: center; gap: .6rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border); }
+        .thread-header .who { font-weight: 700; font-size: .86rem; word-break: break-all; }
+        .thread-header .who .tag { margin-left: .45rem; }
+        .thread-header .meta { font-family: var(--font-mono); font-size: .66rem; color: var(--dim); margin-left: auto; text-align: right; }
+        .thread-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .6rem; min-height: 340px; max-height: 460px; }
+        .msg-row { display: flex; flex-direction: column; }
+        .msg-row.out { align-items: flex-end; }
+        .msg-row.in { align-items: flex-start; }
+        .msg-bubble { max-width: 82%; padding: .6rem .85rem; border-radius: 15px; background: rgba(255,255,255,.05); border: 1px solid var(--border); font-size: .86rem; white-space: pre-wrap; word-break: break-word; line-height: 1.55; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+        .msg-row.out .msg-bubble { background: linear-gradient(135deg, rgba(0,240,255,.16), rgba(180,77,255,.14)); border-color: rgba(0,240,255,.32); }
+        .msg-row.in .msg-bubble.err { border-color: rgba(255,77,106,.4); color: #ffb3c1; }
+        .msg-meta { font-size: .62rem; color: var(--dim); margin-top: .25rem; font-family: var(--font-mono); }
+        .thread-empty { margin: auto; text-align: center; color: var(--dim); font-size: .82rem; line-height: 2; }
+        .thread-empty .big { font-size: 2rem; display: block; margin-bottom: .4rem; }
+        .chat-input-row { display: flex; gap: .6rem; padding: .85rem 1rem; border-top: 1px solid var(--border); }
+        .chat-input-row input { margin-bottom: 0; }
+        .chat-input-row .btn-sm { margin-bottom: 0; padding: .6rem 1.15rem; white-space: nowrap; }
+        .toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); background: rgba(10,14,32,.95); border: 1px solid var(--border-strong); color: var(--text); padding: .7rem 1.2rem; border-radius: 999px; font-size: .82rem; z-index: 99; opacity: 0; transition: all .35s; pointer-events: none; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        @media (max-width: 820px) {
+            .chat-layout { grid-template-columns: 1fr; }
+            .contact-list { max-height: 180px; flex-direction: row; overflow-x: auto; }
+            .contact-item { flex: 0 0 auto; max-width: 240px; }
+            .nav-indicator { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="bg-aurora">
+        <div class="orb orb-a"></div><div class="orb orb-b"></div><div class="orb orb-c"></div>
+    </div>
+    <div id="bg-grid"></div>
+    <div id="spotlight"></div>
+    <div class="hud-corner hud-tl"></div><div class="hud-corner hud-tr"></div>
+    <div class="hud-corner hud-bl"></div><div class="hud-corner hud-br"></div>
+
+    <div class="app-container">
+        <header class="header">
+            <div class="kicker">NOVA CHAIN · WEB3 WALLET</div>
+            <h1 class="logo">NOVA 钱包</h1>
+            <p class="tagline">量子安全签名钱包 · 端到端加密聊天</p>
+            <div class="hero-badges">
+                <span class="chip">🔐 私钥本地生成</span>
+                <span class="chip">🗝 X25519 ECDH</span>
+                <span class="chip">🔒 AES-256-GCM</span>
+                <span class="chip">💬 节点只见密文</span>
+            </div>
+        </header>
+
+        <div id="runtimeModeBanner" class="mode-banner demo">正在检测运行模式…</div>
+
+        <nav class="nav-tabs" id="navTabs">
+            <span class="nav-indicator"></span>
+            <button class="nav-tab active" data-panel="wallet">🔐 钱包</button>
+            <button class="nav-tab" data-panel="chat">💬 加密聊天</button>
+            <button class="nav-tab" data-panel="security">🛡 安全</button>
+        </nav>
+
+        <!-- ========== 钱包面板 ========== -->
+        <section class="panel active" id="panel-wallet">
+            <h2 class="reveal in" style="--d:0s">🔐 Web3 钱包</h2>
+            <div class="warning reveal in" style="--d:.05s">⚠️ 私钥与聊天密钥只存在于你的浏览器本地存储，请务必离线备份私钥</div>
+            <div class="row reveal in" style="--d:.1s">
+                <input type="text" id="rpcUrl" placeholder="节点RPC地址" value="http://127.0.0.1:8080">
+                <button class="btn-sm magnetic" onclick="checkNode()">连接</button>
+            </div>
+            <div id="nodeStatus" class="response reveal in" style="--d:.15s; max-height:30px; margin-bottom:1rem;"></div>
+
+            <div class="kv reveal in" style="--d:.2s">
+                <div class="label">账户（多账户：新账户互不影响，便于演示双人加密聊天）</div>
+                <div class="row">
+                    <select id="accountSelect"></select>
+                    <button class="btn-sm" onclick="createWallet()">➕ 新建账户</button>
+                </div>
+                <div class="row">
+                    <input type="text" id="importKey" placeholder="粘贴私钥 (64位hex) 导入为账户">
+                    <button class="btn-sm" onclick="importWallet()">📥 导入</button>
+                </div>
+                <button class="btn-ghost btn-sm" onclick="exportKey()">📤 导出当前私钥</button>
+            </div>
+
+            <div class="kv reveal in" style="--d:.25s">
+                <div class="label">我的地址 <span class="tag">签名算法 Ed25519 / Dilithium5</span></div>
+                <div class="address-box" id="myAddress" title="点击复制" onclick="copyText(this.textContent)">—</div>
+                <div class="label">余额</div>
+                <div class="bal" id="myBalance">0</div> <span style="color:var(--dim)">NOVA</span>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:1.1rem 0;">
+            <h2 class="reveal in" style="--d:.3s">💸 转账</h2>
+            <input type="text" id="toAddr" placeholder="接收方地址" class="reveal in" style="--d:.35s">
+            <input type="number" id="amount" placeholder="金额 (NOVA)" step="any" class="reveal in" style="--d:.4s">
+            <input type="text" id="memo" placeholder="备注（可选）" class="reveal in" style="--d:.45s">
+            <button class="reveal in" style="--d:.5s" onclick="sendTx()">✍️ 签名并发送</button>
+            <div class="response reveal in" id="txResult" style="--d:.55s"></div>
+        </section>
+
+        <!-- ========== 加密聊天面板 ========== -->
+        <section class="panel" id="panel-chat">
+            <h2>💬 端到端加密聊天</h2>
+            <div class="chat-hint">
+                <span>🔒 每条消息使用 <strong>X25519 ECDH + HKDF-SHA256 + AES-256-GCM</strong> 加密，节点只转发密文。</span>
+                <span class="chat-status off" id="chatKeyStatus">聊天密钥未发布</span>
+            </div>
+            <div class="row" style="margin-bottom:1rem;">
+                <input type="text" id="contactAddr" placeholder="添加联系人地址 (0x...)">
+                <button class="btn-sm" onclick="addContact()">➕ 添加</button>
+            </div>
+            <div class="chat-layout">
+                <div class="contacts-pane">
+                    <h3>联系人</h3>
+                    <div class="contact-list" id="contactList">
+                        <div class="contact-empty">暂无联系人<br>上方输入对方地址添加</div>
+                    </div>
+                </div>
+                <div class="thread-pane">
+                    <div class="thread-header">
+                        <div class="who" id="threadWho">选择联系人开始加密会话</div>
+                        <div class="meta" id="threadMeta"></div>
+                    </div>
+                    <div class="thread-body" id="threadBody">
+                        <div class="thread-empty">
+                            <span class="big">🔐</span>
+                            消息在浏览器内加密，节点无法读取内容<br>
+                            对方需打开钱包并连接节点后才能收到
+                        </div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chatInput" placeholder="输入消息… (Enter 发送)" onkeydown="if(event.key==='Enter')sendChat()">
+                        <button class="btn-sm" onclick="sendChat()">发送 ➤</button>
+                    </div>
+                </div>
+            </div>
+            <div class="footnote" style="margin-top:1rem;">
+                💡 演示模式：未连接节点时，消息会通过浏览器本地存储模拟中继，可开两个窗口用不同账户互发；连接节点后即为真实跨设备中继。
+                <button class="btn-ghost btn-sm" style="margin:.6rem 0 0;" onclick="clearHistory()">🗑 清除聊天记录与联系人</button>
+            </div>
+        </section>
+
+        <!-- ========== 安全面板 ========== -->
+        <section class="panel" id="panel-security">
+            <h2>🛡 安全模型</h2>
+            <div class="kv">
+                <div class="label">1 · 密钥只属于你</div>
+                <div class="footnote">钱包私钥（Ed25519/Dilithium5 种子）在浏览器内生成，仅保存在 <code>localStorage</code>。聊天密钥由同一种子经 HKDF 派生 X25519 密钥对，任何一端私钥泄露都会影响该账户。</div>
+            </div>
+            <div class="kv">
+                <div class="label">2 · 端到端加密</div>
+                <div class="footnote">发送方用 <code>ECDH(我的X25519私钥, 对方X25519公钥)</code> 派生共享密钥，再经 HKDF 生成 AES-256-GCM 消息密钥。节点只存储 <code>{发送方, 接收方, 密文, nonce, 时间戳}</code>，无法解密内容。</div>
+            </div>
+            <div class="kv">
+                <div class="label">3 · 身份认证</div>
+                <div class="footnote">每条消息与聊天公钥注册请求都使用钱包签名密钥签名，节点校验签名归属后才入库，防止冒名发送。对方公钥可在收到第一条消息后确认。</div>
+            </div>
+            <div class="kv">
+                <div class="label">4 · 已知边界</div>
+                <div class="footnote">当前使用静态 ECDH（无前向保密），生产环境建议升级 Double Ratchet；节点可见元数据（谁在何时给谁发消息）；本地聊天记录以明文存在浏览器存储中，请勿在共享设备上使用；节点中继为单节点信箱，多节点部署需增加 P2P 同步。</div>
+            </div>
+            <div class="kv">
+                <div class="label">5 · 交易安全</div>
+                <div class="footnote">转账签名与节点校验规则保持一致：金额规范化 8 位小数去尾零，时间戳 ±5 分钟窗口，发送方余额需覆盖金额 + 固定手续费。</div>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast" id="toast"></div>
+<script>
+    'use strict';
+    // ============================================================
+    // 基础工具
+    // ============================================================
+    function hexToBytes(hex) {
+        const clean = (hex || '').replace(/^0x/, '');
+        if (!clean) return new Uint8Array();
+        return new Uint8Array(clean.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+    }
+    function bytesToHex(bytes) {
+        return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function utf8ToBytes(str) { return new TextEncoder().encode(str); }
+    function concatBytes(a, b) {
+        const out = new Uint8Array(a.length + b.length);
+        out.set(a, 0); out.set(b, a.length);
+        return out;
+    }
+    function randomBytes(n) {
+        const out = new Uint8Array(n);
+        if (window.crypto && window.crypto.getRandomValues) crypto.getRandomValues(out);
+        else for (let i = 0; i < n; i++) out[i] = Math.floor(Math.random() * 256);
+        return out;
+    }
+    function webcryptoAvailable() { return !!(window.crypto && window.crypto.subtle); }
+    function deriveAddress(pubHex) { return '0x' + sha3_512(hexToBytes(pubHex)).substring(0, 40); }
+
+    // ============================================================
+    // Ed25519 (RFC 8032) 纯 JS 实现，与后端 core/crypto.py 回退实现一致
+    // ============================================================
+    const ED_P = (1n << 255n) - 19n;
+    const ED_L = (1n << 252n) + 27742317777372353535851937790883648493n;
+    const ED_D = (-121665n * modPow(121666n, ED_P - 2n, ED_P)) % ED_P;
+    const ED_BX = 15112221349535400772501151409588531511454012693041857206046113283949847762202n;
+    const ED_BY = 46316835694926478169428394003475163141307993866256225615783033603165251855960n;
+    const ED_B = [ED_BX, ED_BY, 1n, (ED_BX * ED_BY) % ED_P];
+
+    function modPow(base, exp, mod) {
+        let b = base % mod;
+        if (b < 0n) b += mod;
+        let r = 1n;
+        while (exp > 0n) {
+            if (exp & 1n) r = (r * b) % mod;
+            b = (b * b) % mod;
+            exp >>= 1n;
+        }
+        return r;
+    }
+    function modP(n) { n %= ED_P; return n < 0n ? n + ED_P : n; }
+    function leBytesToBigInt(bytes) {
+        let n = 0n;
+        for (let i = bytes.length - 1; i >= 0; i--) n = (n << 8n) | BigInt(bytes[i]);
+        return n;
+    }
+    function bigIntToLeBytes(n, len) {
+        const out = new Uint8Array(len);
+        for (let i = 0; i < len; i++) { out[i] = Number(n & 0xffn); n >>= 8n; }
+        return out;
+    }
+    function edwardsAdd(p, q) {
+        const x1 = p[0], y1 = p[1], z1 = p[2], t1 = p[3];
+        const x2 = q[0], y2 = q[1], z2 = q[2], t2 = q[3];
+        const a = (y1 - x1) * (y2 - x2) % ED_P;
+        const b = (y1 + x1) * (y2 + x2) % ED_P;
+        const c = (2n * ED_D * t1 * t2) % ED_P;
+        const d = (2n * z1 * z2) % ED_P;
+        const e = b - a;
+        const f = d - c;
+        const g = d + c;
+        const h = b + a;
+        return [modP(e * f), modP(g * h), modP(f * g), modP(e * h)];
+    }
+    function edwardsScalarMult(p, e) {
+        let q = [0n, 1n, 1n, 0n];
+        while (e > 0n) {
+            if (e & 1n) q = edwardsAdd(q, p);
+            p = edwardsAdd(p, p);
+            e >>= 1n;
+        }
+        return q;
+    }
+    function edwardsEncode(p) {
+        const zInv = modPow(p[2], ED_P - 2n, ED_P);
+        const xr = modP(p[0] * zInv);
+        const yr = modP(p[1] * zInv);
+        const bits = yr | ((xr & 1n) << 255n);
+        return bigIntToLeBytes(bits, 32);
+    }
+    function edwardsClamp(a) {
+        a &= (1n << 255n) - 1n - 7n;
+        a |= 1n << 254n;
+        return a;
+    }
+    async function sha512(bytes) {
+        const buf = await crypto.subtle.digest('SHA-512', bytes);
+        return new Uint8Array(buf);
+    }
+    async function ed25519PublicKey(seedBytes) {
+        const h = await sha512(seedBytes);
+        const a = edwardsClamp(leBytesToBigInt(h.slice(0, 32)));
+        return edwardsEncode(edwardsScalarMult(ED_B, a));
+    }
+    async function ed25519Sign(seedBytes, msgBytes) {
+        const h = await sha512(seedBytes);
+        const a = edwardsClamp(leBytesToBigInt(h.slice(0, 32)));
+        const prefix = h.slice(32);
+        const r = leBytesToBigInt(await sha512(concatBytes(prefix, msgBytes))) % ED_L;
+        const pubBytes = await ed25519PublicKey(seedBytes);
+        const rBytes = edwardsEncode(edwardsScalarMult(ED_B, r));
+        const k = leBytesToBigInt(await sha512(concatBytes(concatBytes(rBytes, pubBytes), msgBytes))) % ED_L;
+        const s = (r + k * a) % ED_L;
+        return concatBytes(rBytes, bigIntToLeBytes(s, 32));
+    }
+    async function getPubFromPriv(priv) {
+        return bytesToHex(await ed25519PublicKey(hexToBytes(priv)));
+    }
+    async function getAddrFromPriv(priv) {
+        return deriveAddress(await getPubFromPriv(priv));
+    }
+    async function sign(privHex, msg) {
+        const sigBytes = await ed25519Sign(hexToBytes(privHex), utf8ToBytes(msg));
+        return bytesToHex(sigBytes);
+    }
+
+    // ============================================================
+    // X25519 (RFC 7748) 纯 JS 实现
+    // ============================================================
+    const X_P = (1n << 255n) - 19n;
+    function xDecodeScalar(k) {
+        const a = k.slice();
+        a[0] &= 248; a[31] &= 127; a[31] |= 64;
+        return leBytesToBigInt(a);
+    }
+    function xDecodeU(u) {
+        const val = leBytesToBigInt(u);
+        return val < X_P ? val : 0n;
+    }
+    function x25519(k, u) {
+        const x1 = xDecodeU(u);
+        const scalar = xDecodeScalar(k);
+        let x2 = 1n, z2 = 0n, x3 = x1, z3 = 1n, swap = 0n;
+        for (let t = 254; t >= 0; t--) {
+            const kt = (scalar >> BigInt(t)) & 1n;
+            swap ^= kt;
+            if (swap) {
+                let tmp = x2; x2 = x3; x3 = tmp;
+                tmp = z2; z2 = z3; z3 = tmp;
+            }
+            swap = kt;
+            const A = (x2 + z2) % X_P;
+            const AA = (A * A) % X_P;
+            const B = (x2 - z2 + X_P) % X_P;
+            const BB = (B * B) % X_P;
+            const E = (AA - BB + X_P) % X_P;
+            const C = (x3 + z3) % X_P;
+            const D = (x3 - z3 + X_P) % X_P;
+            const DA = (D * A) % X_P;
+            const CB = (C * B) % X_P;
+            const daCB = (DA + CB) % X_P;
+            const daCB2 = (DA - CB + X_P) % X_P;
+            x3 = (daCB * daCB) % X_P;
+            z3 = (x1 * ((daCB2 * daCB2) % X_P)) % X_P;
+            z2 = (E * ((AA + 121665n * E) % X_P)) % X_P;
+            x2 = (AA * BB) % X_P;
+        }
+        if (swap) {
+            let tmp = x2; x2 = x3; x3 = tmp;
+            tmp = z2; z2 = z3; z3 = tmp;
+        }
+        return bigIntToLeBytes((x2 * modPow(z2, X_P - 2n, X_P)) % X_P, 32);
+    }
+    function x25519BasePoint(k) {
+        const u = new Uint8Array(32); u[0] = 9;
+        return x25519(k, u);
+    }
+
+    // ============================================================
+    // HKDF-SHA256 + AES-256-GCM（WebCrypto）
+    // ============================================================
+    async function hkdfSha256(ikm, salt, info, len) {
+        const key = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+        const bits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, key, len * 8);
+        return new Uint8Array(bits);
+    }
+    async function aesKeyFromShared(shared, nonce) {
+        const raw = await hkdfSha256(shared, nonce, utf8ToBytes('nova-chat-aes'), 32);
+        return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    }
+    async function chatEncrypt(shared, nonce, aad, text) {
+        const key = await aesKeyFromShared(shared, nonce);
+        const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, additionalData: aad }, key, utf8ToBytes(text));
+        return bytesToHex(new Uint8Array(ct));
+    }
+    async function chatDecrypt(shared, nonce, aad, ctHex) {
+        const key = await aesKeyFromShared(shared, nonce);
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce, additionalData: aad }, key, hexToBytes(ctHex));
+        return new TextDecoder().decode(pt);
+    }
+
+    // ============================================================
+    // 账户（多账户；兼容 nova.html 的 nova_priv）
+    // ============================================================
+    const LS_KEYS = 'nova_keys';
+    const LS_ACTIVE = 'nova_active';
+    function getKeys() {
+        try { const k = JSON.parse(localStorage.getItem(LS_KEYS) || '[]'); return Array.isArray(k) ? k : []; }
+        catch (e) { return []; }
+    }
+    function setKeys(keys) { localStorage.setItem(LS_KEYS, JSON.stringify(keys)); }
+    function activeIdx() {
+        const keys = getKeys();
+        const i = parseInt(localStorage.getItem(LS_ACTIVE) || '0', 10);
+        return keys.length ? Math.min(Math.max(i, 0), keys.length - 1) : 0;
+    }
+    function setActiveIdx(i) { localStorage.setItem(LS_ACTIVE, String(i)); }
+    function currentPriv() {
+        const keys = getKeys();
+        if (keys.length) return keys[activeIdx()] || '';
+        return localStorage.getItem('nova_priv') || '';
+    }
+    function initKeys() {
+        const keys = getKeys();
+        if (keys.length === 0) {
+            const legacy = localStorage.getItem('nova_priv');
+            if (legacy && /^[0-9a-fA-F]{64}$/.test(legacy)) setKeys([legacy]);
+        }
+    }
+    function addAccount(privHex) {
+        const keys = getKeys();
+        keys.push(privHex);
+        setKeys(keys);
+        setActiveIdx(keys.length - 1);
+        localStorage.setItem('nova_priv', privHex);
+    }
+    function switchAccount(i) {
+        const keys = getKeys();
+        if (!keys[i]) return;
+        setActiveIdx(i);
+        localStorage.setItem('nova_priv', keys[i]);
+        chatKeyCache = null;
+        myAddrCache = '';
+        updateUI();
+        refreshChat();
+    }
+
+    // ============================================================
+    // API（节点不可用时自动进入演示模式）
+    // ============================================================
+    function getRpc() { return document.getElementById('rpcUrl').value.trim().replace(/\/+$/, ''); }
+
+    function demoApi(path, method, body) {
+        const demoInbox = JSON.parse(localStorage.getItem('nova_demo_inbox') || '{}');
+        const demoPubs = JSON.parse(localStorage.getItem('nova_demo_pubkeys') || '{}');
+        if (method === 'GET' && path.startsWith('/api/chat/pubkey/')) {
+            const addr = decodeURIComponent(path.split('/').pop());
+            return { addr, chat_pub: demoPubs[addr] || null, demoMode: true };
+        }
+        if (method === 'POST' && path === '/api/chat/pubkey') {
+            demoPubs[body.addr] = body.chat_pub;
+            localStorage.setItem('nova_demo_pubkeys', JSON.stringify(demoPubs));
+            return { status: '已发布（演示）', demoMode: true };
+        }
+        if (method === 'POST' && path === '/api/chat/send') {
+            const id = body.id || ('demo-' + Date.now().toString(16) + Math.random().toString(16).slice(2, 8));
+            const msg = { id, sender: body.sender, recipient: body.recipient, chat_pub: body.chat_pub,
+                          nonce: body.nonce, ciphertext: body.ciphertext, ts: body.ts };
+            demoInbox[body.recipient] = [...(demoInbox[body.recipient] || []).filter(m => m.id !== id), msg];
+            localStorage.setItem('nova_demo_inbox', JSON.stringify(demoInbox));
+            return { id, status: 'queued', demoMode: true };
+        }
+        if (method === 'GET' && path.startsWith('/api/chat/inbox/')) {
+            const addr = decodeURIComponent(path.split('/').pop());
+            return { addr, messages: demoInbox[addr] || [], demoMode: true };
+        }
+        if (method === 'POST' && path === '/api/chat/ack') {
+            const list = (demoInbox[body.addr] || []).filter(m => !(body.ids || []).includes(m.id));
+            const removed = (demoInbox[body.addr] || []).length - list.length;
+            demoInbox[body.addr] = list;
+            localStorage.setItem('nova_demo_inbox', JSON.stringify(demoInbox));
+            return { removed, demoMode: true };
+        }
+        if (method === 'GET' && path.startsWith('/api/balance/')) {
+            return { balance: 0, demoMode: true };
+        }
+        if (method === 'GET' && path === '/api/status') {
+            return { node: 'demo.novachain.local', peers: 3, dag: 128, quantum_safe: true,
+                     algorithm: 'Ed25519', demoMode: true };
+        }
+        return { status: '演示模式', message: '当前为静态演示页面', demoMode: true, error: 'demo' };
+    }
+
+    async function api(path, method = 'GET', body = null) {
+        const opts = { method, headers: body ? { 'Content-Type': 'application/json' } : {} };
+        if (body) opts.body = JSON.stringify(body);
+        try {
+            const r = await fetch(getRpc() + path, opts);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const text = await r.text();
+            return text ? JSON.parse(text) : {};
+        } catch (e) {
+            const demo = demoApi(path, method, body);
+            demo.error = demo.error || e.message;
+            return demo;
+        }
+    }
+
+    // ============================================================
+    // 钱包 UI
+    // ============================================================
+    let myAddrCache = '';
+    let chatKeyCache = null;
+
+    function toast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+    function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => toast('已复制'));
+        } else {
+            toast(text.length > 30 ? text.slice(0, 30) + '…' : text);
+        }
+    }
+    function setRuntimeMode(mode, message) {
+        const banner = document.getElementById('runtimeModeBanner');
+        if (banner) {
+            banner.className = 'mode-banner ' + mode;
+            banner.innerHTML = '<strong>' + (mode === 'node' ? '节点模式' : '演示模式') + '</strong> · ' + message;
+        }
+    }
+
+    async function checkNode() {
+        const d = await api('/api/status');
+        const statusEl = document.getElementById('nodeStatus');
+        if (d.error) {
+            statusEl.textContent = '连接失败：请先启动节点，例如 python nova_node.py --p2p 9000 --rpc 8080';
+            setRuntimeMode('demo', '连接失败，当前以演示模式展示。');
+            return;
+        }
+        if (d.demoMode) {
+            statusEl.textContent = '演示模式：未连接真实节点，聊天走浏览器本地模拟中继。';
+            setRuntimeMode('demo', '未检测到节点，已自动切换为演示体验。');
+            return;
+        }
+        statusEl.textContent = '✅ 在线: ' + (d.node || '') + ' | 节点数: ' + (d.peers || 0) + ' | 签名: ' + (d.algorithm || 'Ed25519');
+        setRuntimeMode('node', '已检测到可用节点，正在使用真实 RPC。');
+    }
+
+    async function renderAccountSelect() {
+        const sel = document.getElementById('accountSelect');
+        const keys = getKeys();
+        sel.innerHTML = '';
+        for (let i = 0; i < keys.length; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            let label = '账户 ' + (i + 1);
+            try {
+                label += ' · ' + (await getAddrFromPriv(keys[i])).slice(0, 12) + '…';
+            } catch (e) { /* 忽略 */ }
+            opt.textContent = label;
+            sel.appendChild(opt);
+        }
+        sel.value = String(activeIdx());
+        sel.onchange = () => switchAccount(parseInt(sel.value, 10));
+    }
+
+    async function updateUI() {
+        const priv = currentPriv();
+        const addrEl = document.getElementById('myAddress');
+        if (!priv) {
+            addrEl.textContent = '—';
+            document.getElementById('myBalance').textContent = '0';
+            myAddrCache = '';
+            return;
+        }
+        const addr = await getAddrFromPriv(priv);
+        myAddrCache = addr;
+        addrEl.textContent = addr;
+        await renderAccountSelect();
+        fetchBalance();
+    }
+
+    async function createWallet() {
+        if (!webcryptoAvailable()) return alert('当前环境不支持 WebCrypto（需要 HTTPS 或 localhost）');
+        const priv = bytesToHex(randomBytes(32));
+        addAccount(priv);
+        await updateUI();
+        await registerPubkey();
+        toast('✨ 新账户已创建，请导出私钥离线备份');
+        refreshChat();
+    }
+
+    async function importWallet() {
+        const raw = document.getElementById('importKey').value.trim().replace(/^0x/, '');
+        if (!raw) return alert('请输入私钥');
+        if (!/^[0-9a-fA-F]{64}$/.test(raw)) return alert('无效私钥（应为 64 位十六进制）');
+        const keys = getKeys();
+        if (keys.some(k => k.toLowerCase() === raw.toLowerCase())) {
+            const i = keys.findIndex(k => k.toLowerCase() === raw.toLowerCase());
+            switchAccount(i);
+            return toast('该私钥已在账户 ' + (i + 1) + ' 中，已切换');
+        }
+        addAccount(raw.toLowerCase());
+        await updateUI();
+        await registerPubkey();
+        toast('📥 导入成功');
+        refreshChat();
+    }
+
+    function exportKey() {
+        const priv = currentPriv();
+        if (!priv) return alert('没有钱包账户');
+        prompt('复制私钥（绝不要分享！）', priv);
+    }
+
+    async function fetchBalance() {
+        const priv = currentPriv();
+        if (!priv) return;
+        const d = await api('/api/balance/' + await getAddrFromPriv(priv));
+        document.getElementById('myBalance').textContent = d.balance ?? '?';
+    }
+
+    async function sendTx() {
+        const priv = currentPriv();
+        if (!priv) return alert('请先创建或选择账户');
+        if (!webcryptoAvailable()) return alert('当前环境不支持 WebCrypto，无法签名');
+        const sender = await getAddrFromPriv(priv);
+        const to = document.getElementById('toAddr').value.trim();
+        const amt = parseFloat(document.getElementById('amount').value);
+        const memo = document.getElementById('memo').value;
+        if (!to || isNaN(amt) || amt <= 0) return alert('填写正确地址和金额');
+        if (!/^0x[0-9a-fA-F]{40}$/.test(to)) return alert('接收方地址格式无效');
+
+        const pub = await getPubFromPriv(priv);
+        const ts = Math.floor(Date.now() / 1000);
+        const amtStr = amt.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+        const sig = await sign(priv, sender + to + amtStr + ts + '[]' + memo + pub);
+
+        const res = await api('/api/send', 'POST', {
+            sender, receiver: to, amount: amt,
+            timestamp: ts, parents: [], data: memo,
+            sender_public_key: pub, signature: sig
+        });
+        document.getElementById('txResult').textContent = JSON.stringify(res, null, 2);
+        if (res.demoMode) { toast('演示模式：交易未真实发送'); return; }
+        if (!res.error) { fetchBalance(); toast('✅ 交易已广播 ' + (res.txid || '').slice(0, 16) + '…'); }
+    }
+
+    // ============================================================
+    // 加密聊天
+    // ============================================================
+    async function getMyChatKey() {
+        const priv = currentPriv();
+        if (!priv) return null;
+        if (chatKeyCache && chatKeyCache.seed === priv) return chatKeyCache;
+        const seedBytes = hexToBytes(priv);
+        const privScalar = await hkdfSha256(seedBytes, utf8ToBytes('nova-chat'), utf8ToBytes('x25519'), 32);
+        const pub = x25519BasePoint(privScalar);
+        chatKeyCache = { seed: priv, priv: privScalar, pub };
+        return chatKeyCache;
+    }
+    function chatSignatureData(sender, recipient, chatPub, nonce, ciphertext, ts) {
+        return sender + recipient + chatPub + nonce + ciphertext + String(Math.floor(ts));
+    }
+
+    async function registerPubkey() {
+        const priv = currentPriv();
+        if (!priv) return false;
+        try {
+            const myKey = await getMyChatKey();
+            const me = await getAddrFromPriv(priv);
+            const chat_pub = bytesToHex(myKey.pub);
+            const signature = await sign(priv, me + chat_pub);
+            const res = await api('/api/chat/pubkey', 'POST', {
+                addr: me, chat_pub,
+                sender_public_key: await getPubFromPriv(priv),
+                signature
+            });
+            return !res.error || res.demoMode;
+        } catch (e) { return false; }
+    }
+
+    async function updateChatStatus() {
+        const el = document.getElementById('chatKeyStatus');
+        const priv = currentPriv();
+        if (!priv) {
+            el.textContent = '无账户';
+            el.classList.add('off');
+            return;
+        }
+        const myKey = await getMyChatKey();
+        const ok = await registerPubkey();
+        if (ok) {
+            el.textContent = '🔑 聊天密钥已发布 ' + bytesToHex(myKey.pub).slice(0, 12) + '…';
+            el.classList.remove('off');
+        } else {
+            el.textContent = '聊天密钥未发布（节点离线）';
+            el.classList.add('off');
+        }
+    }
+
+    // ---- 联系人 ----
+    function contactsKey() { return 'nova_chat_contacts_' + (myAddrCache || ''); }
+    function getContacts() {
+        try { const c = JSON.parse(localStorage.getItem(contactsKey()) || '[]'); return Array.isArray(c) ? c : []; }
+        catch (e) { return []; }
+    }
+    function setContacts(list) { localStorage.setItem(contactsKey(), JSON.stringify(list)); }
+    function addContact() {
+        const addr = document.getElementById('contactAddr').value.trim();
+        if (!addr) return toast('请输入联系人地址');
+        if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) return toast('地址格式无效');
+        if (addr.toLowerCase() === myAddrCache.toLowerCase()) return toast('不能添加自己');
+        const list = getContacts();
+        if (list.some(a => a.toLowerCase() === addr.toLowerCase())) return toast('联系人已存在');
+        list.push(addr.toLowerCase());
+        setContacts(list);
+        document.getElementById('contactAddr').value = '';
+        renderContacts();
+        selectContact(addr.toLowerCase());
+    }
+    function removeContact(addr) {
+        if (!confirm('删除联系人 ' + addr.slice(0, 16) + '… ？（会话记录保留）')) return;
+        setContacts(getContacts().filter(a => a !== addr));
+        if (selectedContact === addr) { selectedContact = null; renderThread(); }
+        renderContacts();
+    }
+    function renderContacts() {
+        const listEl = document.getElementById('contactList');
+        const contacts = getContacts();
+        if (!contacts.length) {
+            listEl.innerHTML = '<div class="contact-empty">暂无联系人<br>上方输入对方地址添加</div>';
+            return;
+        }
+        const unread = JSON.parse(localStorage.getItem('nova_chat_unread') || '{}');
+        listEl.innerHTML = '';
+        contacts.forEach(addr => {
+            const div = document.createElement('div');
+            div.className = 'contact-item' + (selectedContact === addr ? ' active' : '') +
+                (unread[threadKey(addr)] ? ' has-new' : '');
+            div.innerHTML = '<span class="badge"></span>' + addr.slice(0, 14) + '…' + '<span class="x" title="删除">✕</span>';
+            div.onclick = (e) => {
+                if (e.target.classList.contains('x')) { removeContact(addr); e.stopPropagation(); return; }
+                selectContact(addr);
+            };
+            listEl.appendChild(div);
+        });
+    }
+
+    // ---- 会话 ----
+    let selectedContact = null;
+    function threadKey(peer) { return (myAddrCache || '') + '|' + peer; }
+    function getThreads() {
+        try { return JSON.parse(localStorage.getItem('nova_chat_threads') || '{}'); }
+        catch (e) { return {}; }
+    }
+    function setThreads(t) { localStorage.setItem('nova_chat_threads', JSON.stringify(t)); }
+    function getThread(peer) { return getThreads()[threadKey(peer)] || []; }
+    function appendThread(peer, msg) {
+        const t = getThreads();
+        const k = threadKey(peer);
+        t[k] = [...(t[k] || []), msg];
+        setThreads(t);
+        if (msg.dir === 'in' && selectedContact !== peer) {
+            const unread = JSON.parse(localStorage.getItem('nova_chat_unread') || '{}');
+            unread[k] = (unread[k] || 0) + 1;
+            localStorage.setItem('nova_chat_unread', JSON.stringify(unread));
+        }
+    }
+    function threadHas(peer, mid) {
+        return (getThread(peer) || []).some(m => m.id === mid);
+    }
+
+    function fmtTime(ts) {
+        try { return new Date(ts * 1000).toLocaleString('zh-CN', { hour12: false }); }
+        catch (e) { return String(ts); }
+    }
+
+    function selectContact(addr) {
+        selectedContact = addr;
+        const unread = JSON.parse(localStorage.getItem('nova_chat_unread') || '{}');
+        delete unread[threadKey(addr)];
+        localStorage.setItem('nova_chat_unread', JSON.stringify(unread));
+        renderContacts();
+        renderThread();
+    }
+
+    function renderThread() {
+        const who = document.getElementById('threadWho');
+        const meta = document.getElementById('threadMeta');
+        const body = document.getElementById('threadBody');
+        if (!selectedContact) {
+            who.textContent = '选择联系人开始加密会话';
+            meta.textContent = '';
+            body.innerHTML = '<div class="thread-empty"><span class="big">🔐</span>消息在浏览器内加密，节点无法读取内容<br>对方需打开钱包并连接节点后才能收到</div>';
+            return;
+        }
+        const peerPubCache = JSON.parse(localStorage.getItem('nova_chat_peer_pubs') || '{}');
+        who.innerHTML = selectedContact.slice(0, 20) + '… <span class="tag">E2E</span>';
+        meta.textContent = peerPubCache[selectedContact]
+            ? '对方密钥 ' + peerPubCache[selectedContact].slice(0, 12) + '…'
+            : '等待对方密钥';
+        const msgs = getThread(selectedContact);
+        if (!msgs.length) {
+            body.innerHTML = '<div class="thread-empty"><span class="big">💬</span>还没有消息<br>发一条加密消息开始对话</div>';
+            return;
+        }
+        body.innerHTML = '';
+        msgs.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'msg-row ' + m.dir;
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble' + (m.err ? ' err' : '');
+            bubble.textContent = m.text;
+            const metaEl = document.createElement('div');
+            metaEl.className = 'msg-meta';
+            metaEl.textContent = (m.dir === 'out' ? '我 · ' : (m.senderShort || '对方') + ' · ') + fmtTime(m.ts);
+            row.appendChild(bubble);
+            row.appendChild(metaEl);
+            body.appendChild(row);
+        });
+        body.scrollTop = body.scrollHeight;
+    }
+
+    async function fetchPeerPub(peer) {
+        const cache = JSON.parse(localStorage.getItem('nova_chat_peer_pubs') || '{}');
+        if (cache[peer]) return cache[peer];
+        const d = await api('/api/chat/pubkey/' + peer);
+        if (d.chat_pub && /^[0-9a-fA-F]{64}$/.test(d.chat_pub)) {
+            cache[peer] = d.chat_pub;
+            localStorage.setItem('nova_chat_peer_pubs', JSON.stringify(cache));
+            return d.chat_pub;
+        }
+        return null;
+    }
+
+    async function sendChat() {
+        const priv = currentPriv();
+        if (!priv) return toast('请先在钱包面板创建/选择账户');
+        const peer = selectedContact;
+        if (!peer) return toast('请先添加并选择联系人');
+        const text = document.getElementById('chatInput').value.trim();
+        if (!text) return;
+        if (!webcryptoAvailable()) return alert('当前环境不支持 WebCrypto，无法加密');
+        const me = await getAddrFromPriv(priv);
+        const myKey = await getMyChatKey();
+        const peerPubHex = await fetchPeerPub(peer);
+        if (!peerPubHex) {
+            toast('🔒 对方尚未发布聊天密钥，请对方打开钱包（连接节点）后再试');
+            return;
+        }
+        const shared = x25519(myKey.priv, hexToBytes(peerPubHex));
+        const nonce = randomBytes(12);
+        const aad = utf8ToBytes(me + '->' + peer);
+        const ciphertext = await chatEncrypt(shared, nonce, aad, text);
+        const ts = Math.floor(Date.now() / 1000);
+        const payload = {
+            sender: me, recipient: peer,
+            chat_pub: bytesToHex(myKey.pub),
+            nonce: bytesToHex(nonce), ciphertext, ts
+        };
+        payload.sender_public_key = await getPubFromPriv(priv);
+        payload.signature = await sign(priv, chatSignatureData(me, peer, payload.chat_pub, payload.nonce, ciphertext, ts));
+
+        const res = await api('/api/chat/send', 'POST', payload);
+        if (res.error && !res.demoMode) {
+            toast('发送失败: ' + res.error);
+            return;
+        }
+        appendThread(peer, { dir: 'out', text, ts, id: res.id || ('local-' + Date.now()) });
+        document.getElementById('chatInput').value = '';
+        renderThread();
+        if (res.demoMode) toast('📨 已发送（演示模式本地中继）');
+        else toast('📨 已加密发送');
+        registerPubkey();
+    }
+
+    async function pollInbox() {
+        const priv = currentPriv();
+        if (!priv) return;
+        const me = await getAddrFromPriv(priv);
+        if (myAddrCache !== me) myAddrCache = me;
+        const myKey = await getMyChatKey();
+        const d = await api('/api/chat/inbox/' + me);
+        const msgs = d.messages || [];
+        if (!msgs.length) return;
+        const acked = [];
+        const peerCache = JSON.parse(localStorage.getItem('nova_chat_peer_pubs') || '{}');
+        for (const m of msgs) {
+            const peer = m.sender;
+            if (threadHas(peer, m.id)) { acked.push(m.id); continue; }
+            try {
+                const shared = x25519(myKey.priv, hexToBytes(m.chat_pub));
+                const aad = utf8ToBytes(peer + '->' + me);
+                const text = await chatDecrypt(shared, hexToBytes(m.nonce), aad, m.ciphertext);
+                appendThread(peer, { dir: 'in', text, ts: m.ts, id: m.id });
+                if (/^[0-9a-fA-F]{64}$/.test(m.chat_pub)) peerCache[peer] = m.chat_pub;
+            } catch (e) {
+                appendThread(peer, { dir: 'in', text: '🔒 [无法解密] 会话密钥不匹配或消息损坏', ts: m.ts, id: m.id, err: true });
+            }
+            acked.push(m.id);
+        }
+        localStorage.setItem('nova_chat_peer_pubs', JSON.stringify(peerCache));
+        if (acked.length) await api('/api/chat/ack', 'POST', { addr: me, ids: acked });
+        renderContacts();
+        renderThread();
+    }
+
+    function clearHistory() {
+        if (!confirm('清除全部联系人、会话与演示消息？（不影响钱包账户）')) return;
+        const prefix = (myAddrCache || '') + '|';
+        const threads = getThreads();
+        Object.keys(threads).forEach(k => { if (k.startsWith(prefix)) delete threads[k]; });
+        setThreads(threads);
+        setContacts([]);
+        localStorage.removeItem('nova_chat_peer_pubs');
+        localStorage.removeItem('nova_demo_inbox');
+        localStorage.removeItem('nova_demo_pubkeys');
+        localStorage.removeItem('nova_chat_unread');
+        selectedContact = null;
+        renderContacts();
+        renderThread();
+        toast('🗑 已清除');
+    }
+
+    async function refreshChat() {
+        await registerPubkey();
+        updateChatStatus();
+        renderContacts();
+        if (!selectedContact && getContacts().length) selectContact(getContacts()[0]);
+        renderThread();
+    }
+
+    // ============================================================
+    // 导航与初始化
+    // ============================================================
+    function bindNav() {
+        const tabs = document.querySelectorAll('.nav-tab');
+        const ind = document.querySelector('.nav-indicator');
+        function move(tab) {
+            ind.style.width = tab.offsetWidth + 'px';
+            ind.style.left = tab.offsetLeft + 'px';
+        }
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+                move(tab);
+            });
+        });
+        const active = document.querySelector('.nav-tab.active');
+        if (active) setTimeout(() => move(active), 60);
+    }
+
+    function bindReveal() {
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+        }, { threshold: .1 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+
+    async function init() {
+        initKeys();
+        bindNav();
+        bindReveal();
+        await checkNode();
+        await updateUI();
+        if (currentPriv()) {
+            await refreshChat();
+            setInterval(pollInbox, 5000);
+            pollInbox();
+        }
+        document.getElementById('rpcUrl').addEventListener('change', () => { checkNode(); refreshChat(); });
+    }
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

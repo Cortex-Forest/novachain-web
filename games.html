@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 游戏舱：量子骰子与星轨冲刺，链上积分与排行榜。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 游戏舱 · 量子骰子与星轨冲刺</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Games</span>
+      <h1>🎮 游戏舱</h1>
+      <p class="sub">用 NOVA 下注的量子骰子、考验反应力的星轨冲刺。得分写入链上排行榜，胜者收益即时入账。</p>
+    </section>
+
+    <div class="section-title">🎲 量子骰子</div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="mb">规则</h3>
+        <p class="dim">三枚骰子，点数之和结算：<br>· 17–18（量子爆发）→ 3 倍返还<br>· 14–16（星轨齐鸣）→ 2 倍返还<br>· 其余 → 输掉下注额</p>
+        <div class="field mt"><label>下注金额（NOVA）</label>
+          <select id="diceAmount">
+            <option value="1">1 NOVA</option>
+            <option value="5">5 NOVA</option>
+            <option value="10">10 NOVA</option>
+            <option value="20">20 NOVA</option>
+          </select>
+        </div>
+        <button class="btn primary block" onclick="rollDice()" id="diceBtn">🎲 掷骰</button>
+        <div class="row mt center" id="diceResult" style="justify-content:center; gap:18px; font-size:2.4rem; font-family:var(--mono); min-height:56px;">· · ·</div>
+        <p class="center" id="diceMsg" style="min-height:22px;"></p>
+      </div>
+      <div class="card">
+        <h3 class="mb">本局记录</h3>
+        <div id="diceHistory"><div class="empty">还没有投掷记录。</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">🚀 星轨冲刺</div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="mb">玩法</h3>
+        <p class="dim">用方向键 / WASD 或屏幕按钮操控飞船：<br>· 收集 <span class="ok">✦ 星能</span> +10 分<br>· 躲避 <span class="err">☄ 陨石</span>，碰到即坠毁<br>· 存活每 1 秒 +1 分，坠毁后得分上链</p>
+        <div class="stage-wrap mt" style="min-height:300px;">
+          <canvas id="orbitCanvas"></canvas>
+          <div class="stage-overlay" style="min-height:300px; justify-content:space-between;">
+            <div class="row">
+              <span class="pill on" id="orbitState">未开始</span>
+              <span class="pill">得分 <b id="orbitScore" style="color:var(--accent);">0</b></span>
+            </div>
+            <div class="row">
+              <button class="btn primary small" onclick="startOrbit()" id="orbitStart">▶ 开始</button>
+              <button class="btn small" onclick="moveOrbit('left')">◀</button>
+              <button class="btn small" onclick="moveOrbit('up')">▲</button>
+              <button class="btn small" onclick="moveOrbit('down')">▼</button>
+              <button class="btn small" onclick="moveOrbit('right')">▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="mb">🏆 链上排行榜</h3>
+        <div id="orbitLeader"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+
+    /* ============ 量子骰子 ============ */
+    var diceBusy = false;
+    function rollDice() {
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) rollDice(); }); return; }
+      if (diceBusy) return;
+      var amount = parseFloat(document.getElementById('diceAmount').value);
+      diceBusy = true;
+      var btn = document.getElementById('diceBtn');
+      btn.disabled = true;
+      N.novaPay({ amount: amount, memo: '量子骰子下注', app: 'games' }).then(function (r) {
+        if (!r.ok) { N.toast(r.error, 'err'); btn.disabled = false; diceBusy = false; return; }
+        var frames = 0;
+        var iv = setInterval(function () {
+          var d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+          document.getElementById('diceResult').textContent = d.join(' · ');
+          frames++;
+          if (frames >= 12) {
+            clearInterval(iv);
+            settleDice(amount);
+          }
+        }, 90);
+      });
+    }
+    function settleDice(amount) {
+      var d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+      var sum = d[0] + d[1] + d[2];
+      document.getElementById('diceResult').textContent = d.join(' · ');
+      var mult = 0, msg;
+      if (sum >= 17) { mult = 3; msg = '⚡ 量子爆发！' + amount + ' → ' + N.fmt(amount * 3) + ' NOVA'; }
+      else if (sum >= 14) { mult = 2; msg = '✨ 星轨齐鸣！' + amount + ' → ' + N.fmt(amount * 2) + ' NOVA'; }
+      else { mult = 0; msg = '🌌 星际尘埃，下次再战'; }
+      document.getElementById('diceMsg').textContent = '点数和 ' + sum + ' · ' + msg;
+      var payout = amount * mult;
+      if (payout > 0) {
+        N.novaCredit({ amount: payout, memo: '量子骰子赢 ' + sum + ' 点', app: 'games' }).then(function (cr) {
+          if (cr.ok) N.toast('🎉 赢 ' + N.fmt(payout) + ' NOVA 已入账');
+        });
+      }
+      var hist = N.lsGet('nova_games_dice', []);
+      hist.unshift({ d: d, sum: sum, bet: amount, payout: payout, ts: Date.now() });
+      N.lsSet('nova_games_dice', hist.slice(0, 12));
+      renderDiceHistory();
+      var btn = document.getElementById('diceBtn');
+      btn.disabled = false;
+      diceBusy = false;
+    }
+    function renderDiceHistory() {
+      var hist = N.lsGet('nova_games_dice', []);
+      var el = document.getElementById('diceHistory');
+      if (!hist.length) { el.innerHTML = '<div class="empty">还没有投掷记录。</div>'; return; }
+      el.innerHTML = hist.map(function (h) {
+        return '<div class="list-row"><div class="rank">' + h.sum + '</div><div class="grow"><div class="t">' + h.d.join(' ') + '</div>' +
+          '<div class="d">下注 ' + N.fmt(h.bet) + ' → ' + (h.payout > 0 ? '<span class="ok">+' + N.fmt(h.payout) + '</span>' : '<span class="err">-0</span>') + '</div></div></div>';
+      }).join('');
+    }
+
+    /* ============ 星轨冲刺 ============ */
+    var orbit = {
+      running: false, raf: null, score: 0, startedAt: 0,
+      ship: { x: 0.5, y: 0.85 }, stars: [], comets: [], keys: {}
+    };
+    var orbitCtx = null, OW = 0, OH = 0;
+    function orbitResize() {
+      var c = document.getElementById('orbitCanvas');
+      var r = c.getBoundingClientRect();
+      if (r.width > 0) { OW = r.width; OH = r.height; c.width = OW; c.height = OH; }
+    }
+    function startOrbit() {
+      var c = document.getElementById('orbitCanvas');
+      orbitCtx = c.getContext('2d');
+      orbitResize();
+      orbit.running = true;
+      orbit.score = 0;
+      orbit.startedAt = Date.now();
+      orbit.ship = { x: 0.5, y: 0.85 };
+      orbit.stars = []; orbit.comets = [];
+      document.getElementById('orbitState').textContent = '飞行中';
+      document.getElementById('orbitStart').textContent = '⏹ 结束';
+      orbit.raf = requestAnimationFrame(orbitFrame);
+    }
+    function stopOrbit(won) {
+      if (!orbit.running) return;
+      orbit.running = false;
+      cancelAnimationFrame(orbit.raf);
+      document.getElementById('orbitState').textContent = won ? '已坠毁' : '已结束';
+      document.getElementById('orbitStart').textContent = '▶ 再来一局';
+      N.addScore('orbit', orbit.score);
+      renderLeader();
+      N.toast('得分 ' + orbit.score + ' 已写入链上排行榜', 'info');
+    }
+    function moveOrbit(dir) {
+      var step = 0.06;
+      if (dir === 'left') orbit.ship.x = Math.max(0.03, orbit.ship.x - step);
+      if (dir === 'right') orbit.ship.x = Math.min(0.97, orbit.ship.x + step);
+      if (dir === 'up') orbit.ship.y = Math.max(0.06, orbit.ship.y - step);
+      if (dir === 'down') orbit.ship.y = Math.min(0.94, orbit.ship.y + step);
+    }
+    document.addEventListener('keydown', function (e) {
+      var k = e.key.toLowerCase();
+      if (k === 'arrowleft' || k === 'a') moveOrbit('left');
+      if (k === 'arrowright' || k === 'd') moveOrbit('right');
+      if (k === 'arrowup' || k === 'w') moveOrbit('up');
+      if (k === 'arrowdown' || k === 's') moveOrbit('down');
+      if (k === ' ' && orbit.running) { e.preventDefault(); stopOrbit(true); }
+    });
+    function orbitFrame() {
+      if (!orbit.running) return;
+      if (OW === 0) { orbitResize(); if (OW === 0) { orbit.raf = requestAnimationFrame(orbitFrame); return; } }
+      var ctx = orbitCtx;
+      ctx.clearRect(0, 0, OW, OH);
+      ctx.fillStyle = 'rgba(0,240,255,0.05)';
+      ctx.fillRect(0, OH * 0.86, OW, 2);
+      // 生成
+      if (Math.random() < 0.02) {
+        orbit.stars.push({ x: Math.random(), y: -0.05, v: 0.004 + Math.random() * 0.008, r: 5 });
+      }
+      if (Math.random() < 0.012) {
+        orbit.comets.push({ x: Math.random(), y: -0.05, v: 0.005 + Math.random() * 0.01, r: 9 });
+      }
+      // 更新
+      orbit.stars.forEach(function (st) { st.y += st.v; });
+      orbit.comets.forEach(function (cm) { cm.y += cm.v; });
+      var ship = orbit.ship;
+      var sx = ship.x * OW, sy = ship.y * OH;
+      // 碰撞
+      orbit.stars = orbit.stars.filter(function (st) {
+        var dx = st.x * OW - sx, dy = st.y * OH - sy;
+        var hit = dx * dx + dy * dy < (st.r + 14) * (st.r + 14);
+        if (hit) { orbit.score += 10; }
+        return !hit && st.y < 1.05;
+      });
+      var hitComet = orbit.comets.some(function (cm) {
+        var dx = cm.x * OW - sx, dy = cm.y * OH - sy;
+        return dx * dx + dy * dy < (cm.r + 13) * (cm.r + 13);
+      });
+      orbit.comets = orbit.comets.filter(function (cm) { return cm.y < 1.05; });
+      if (hitComet) { stopOrbit(true); return; }
+      // 存活计分
+      orbit.score += 1;
+      document.getElementById('orbitScore').textContent = orbit.score;
+      // 绘制
+      ctx.fillStyle = '#f6ffd1';
+      orbit.stars.forEach(function (st) {
+        ctx.beginPath(); ctx.arc(st.x * OW, st.y * OH, st.r, 0, 6.283); ctx.fill();
+      });
+      ctx.fillStyle = '#ff5c7a';
+      ctx.shadowColor = '#ff5c7a'; ctx.shadowBlur = 12;
+      orbit.comets.forEach(function (cm) {
+        ctx.beginPath(); ctx.arc(cm.x * OW, cm.y * OH, cm.r, 0, 6.283); ctx.fill();
+      });
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy + 14);
+      ctx.lineTo(sx - 10, sy - 12);
+      ctx.lineTo(sx, sy - 6);
+      ctx.lineTo(sx + 10, sy - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      orbit.raf = requestAnimationFrame(orbitFrame);
+    }
+    function renderLeader() {
+      var rows = N.topScores('orbit');
+      var el = document.getElementById('orbitLeader');
+      if (!rows.length) { el.innerHTML = '<div class="empty">连接钱包并玩一局，你的成绩就会出现在这里。</div>'; return; }
+      el.innerHTML = rows.slice(0, 10).map(function (r, i) {
+        return '<div class="list-row"><div class="rank">#' + (i + 1) + '</div><div class="grow"><div class="t">' + N.esc(r.name) + '</div>' +
+          '<div class="d">' + N.esc(N.shortAddr(r.addr)) + ' · ' + N.timeAgo(r.ts) + '</div></div>' +
+          '<div class="price">' + N.fmt(r.score) + ' 分</div></div>';
+      }).join('');
+    }
+
+    N.init({
+      active: 'games',
+      onReady: function () {
+        renderDiceHistory();
+        renderLeader();
+      }
+    });
+  </script>
+</body>
+</html>

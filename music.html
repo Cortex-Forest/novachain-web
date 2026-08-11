@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 音乐馆：生成式播放器、链上发行单曲与限量收藏唱片。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 音乐馆 · 链上发行</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Music</span>
+      <h1>🎧 音乐馆</h1>
+      <p class="sub">生成式量子合成器即时试听，单曲一键上链发行，限量唱片以 NFT 形式永久收藏。播放器完全在浏览器内合成，无需外部音频文件。</p>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" onclick="playTrack(0)">▶ 播放精选</button>
+        <button class="btn" onclick="mintCurrent()">⛓️ 上链发行当前曲目</button>
+      </div>
+    </section>
+
+    <section class="player-bar" id="playerBar">
+      <button class="btn small" id="playPauseBtn" onclick="togglePlay()">⏸ 暂停</button>
+      <button class="btn small" onclick="nextTrack()">下一首</button>
+      <div class="eq" id="eqBar"><span></span><span></span><span></span><span></span></div>
+      <div class="now-playing">
+        <div class="np-title" id="npTitle">未播放</div>
+        <div class="np-artist" id="npArtist">—</div>
+      </div>
+      <span class="dim" id="npPos" style="font-family:var(--mono); font-size:0.8rem;"></span>
+    </section>
+
+    <div class="section-head">
+      <div class="section-title">💿 精选曲目</div>
+      <div class="row">
+        <span class="tag live">生成式音频</span>
+        <span class="tag nft">可上链发行</span>
+      </div>
+    </div>
+    <div class="grid grid-3" id="trackGrid"></div>
+
+    <div class="section-title">🎙️ 入驻音乐人</div>
+    <div class="grid grid-3">
+      <div class="card"><div class="avatar" style="font-size:26px;">🎛️</div><h3 class="mt">Nova 音乐实验室</h3><p class="dim">链上音乐发行与演出，代表作品《星轨回声》。</p></div>
+      <div class="card"><div class="avatar" style="font-size:26px;">🌠</div><h3 class="mt">星野电台</h3><p class="dim">24 小时生成式环境音，适合创作与冥想。</p></div>
+      <div class="card"><div class="avatar" style="font-size:26px;">🪐</div><h3 class="mt">量子节拍器</h3><p class="dim">用随机种子生成永不重复的电子节拍。</p></div>
+    </div>
+
+    <div class="section-title">💾 我发行的唱片</div>
+    <div id="myReleases" class="grid grid-3"></div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var ARTISTS = [
+      { name: 'Nova 音乐实验室', addr: '0x' + 'a1'.repeat(20) },
+      { name: '星野电台', addr: '0x' + 'aa'.repeat(20) },
+      { name: '量子节拍器', addr: '0x' + 'ab'.repeat(20) },
+      { name: '夜航乐队', addr: '0x' + 'ac'.repeat(20) },
+      { name: '极光女声', addr: '0x' + 'ad'.repeat(20) },
+      { name: '引力波合唱团', addr: '0x' + 'ae'.repeat(20) }
+    ];
+    var TRACKS = [
+      { id: 't1', title: '星轨回声', artist: 'Nova 音乐实验室', scale: [0, 2, 4, 7, 9, 12], base: 220, bpm: 92, art: '🌌' },
+      { id: 't2', title: '量子夜航', artist: '夜航乐队', scale: [0, 3, 5, 7, 10], base: 174, bpm: 104, art: '🚀' },
+      { id: 't3', title: '极光脉冲', artist: '量子节拍器', scale: [0, 2, 3, 7, 8], base: 261, bpm: 128, art: '⚡' },
+      { id: 't4', title: '星野摇篮曲', artist: '星野电台', scale: [0, 4, 7, 12], base: 196, bpm: 60, art: '🌠' },
+      { id: 't5', title: '极光之吻', artist: '极光女声', scale: [0, 2, 5, 9, 11], base: 233, bpm: 84, art: '✨' },
+      { id: 't6', title: '引力波共鸣', artist: '引力波合唱团', scale: [0, 3, 6, 9, 12], base: 147, bpm: 72, art: '🌊' }
+    ];
+
+    var playing = { idx: 0, on: false };
+    var audio = { ctx: null, master: null, nodes: [], timer: null, bass: null, startedAt: 0 };
+
+    function ensureAudio() {
+      if (!audio.ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        audio.ctx = new AC();
+        audio.master = audio.ctx.createGain();
+        audio.master.gain.value = 0.16;
+        audio.master.connect(audio.ctx.destination);
+      }
+      if (audio.ctx.state === 'suspended') audio.ctx.resume();
+    }
+    function stopAudio() {
+      audio.nodes.forEach(function (n) { try { n.stop(); } catch (e) {} });
+      audio.nodes = [];
+      if (audio.bass) { try { audio.bass.stop(); } catch (e) {} audio.bass = null; }
+      if (audio.timer) { clearInterval(audio.timer); audio.timer = null; }
+    }
+    function startBass(freq) {
+      ensureAudio();
+      var osc = audio.ctx.createOscillator();
+      var g = audio.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.value = 0.12;
+      osc.connect(g); g.connect(audio.master);
+      osc.start();
+      audio.bass = osc;
+    }
+    function playTrack(i) {
+      var track = TRACKS[i];
+      if (!track) return;
+      playing.idx = i;
+      stopAudio();
+      ensureAudio();
+      startBass(track.base / 2);
+      var step = 0;
+      var scale = track.scale;
+      var interval = Math.max(140, Math.round(60000 / track.bpm / 2));
+      audio.timer = setInterval(function () {
+        var osc = audio.ctx.createOscillator();
+        var g = audio.ctx.createGain();
+        var octave = Math.floor(step / scale.length) % 3;
+        var note = scale[step % scale.length] + 12 * octave;
+        var freq = track.base * Math.pow(2, note / 12);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        var now = audio.ctx.currentTime;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.5, now + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + interval / 1000 * 1.6);
+        osc.connect(g); g.connect(audio.master);
+        osc.start(); osc.stop(now + interval / 1000 * 2);
+        audio.nodes.push(osc);
+        step++;
+      }, interval);
+      playing.on = true;
+      playing.startedAt = Date.now();
+      updatePlayerUI();
+      N.toast('正在播放《' + track.title + '》', 'info');
+    }
+    function togglePlay() {
+      if (!playing.on) { playTrack(playing.idx); return; }
+      stopAudio();
+      playing.on = false;
+      updatePlayerUI();
+    }
+    function nextTrack() { playTrack((playing.idx + 1) % TRACKS.length); }
+
+    function updatePlayerUI() {
+      var t = TRACKS[playing.idx];
+      document.getElementById('playPauseBtn').textContent = playing.on ? '⏸ 暂停' : '▶ 播放';
+      document.getElementById('npTitle').textContent = t.title;
+      document.getElementById('npArtist').textContent = t.artist + ' · ' + t.bpm + ' BPM';
+      var eq = document.getElementById('eqBar');
+      eq.classList.toggle('paused', !playing.on);
+    }
+
+    var likesStore = function () { return N.lsGet('nova_music_likes', {}); };
+    function likeTrack(id) {
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) likeTrack(id); }); return; }
+      var store = likesStore();
+      var item = store[id] || { count: 0, users: [] };
+      var idx = item.users.indexOf(s.addr);
+      if (idx >= 0) { item.users.splice(idx, 1); item.count = Math.max(0, item.count - 1); }
+      else { item.users.push(s.addr); item.count += 1; }
+      store[id] = item;
+      N.lsSet('nova_music_likes', store);
+      renderTracks();
+      N.toast(idx >= 0 ? '已取消喜欢' : '已收藏到喜欢列表', 'info');
+    }
+
+    function renderTracks() {
+      var likes = likesStore();
+      var html = TRACKS.map(function (t, i) {
+        var lk = likes[t.id] || { count: 0 };
+        return '<div class="card media-card">' +
+          '<div class="cover" style="background:linear-gradient(140deg, hsla(' + (190 + i * 28) + ',85%,45%,0.25), hsla(' + (270 + i * 15) + ',80%,50%,0.28));">' +
+            '<span>' + t.art + '</span>' +
+            '<span class="play" onclick="playTrack(' + i + ')">▶</span>' +
+          '</div>' +
+          '<h3>' + N.esc(t.title) + '</h3>' +
+          '<div class="by">' + N.esc(t.artist) + '</div>' +
+          '<div class="row-info"><span>' + t.bpm + ' BPM</span><span class="tag">♥ ' + lk.count + '</span></div>' +
+          '<div class="actions">' +
+            '<button class="btn small" onclick="playTrack(' + i + ')">播放</button>' +
+            '<button class="btn small" onclick="likeTrack(\'' + t.id + '\')">♥ 喜欢</button>' +
+            '<button class="btn small" onclick="tipTrack(' + i + ')">打赏 1</button>' +
+            '<button class="btn small primary" onclick="mintTrack(' + i + ')">⛓️ 发行</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      document.getElementById('trackGrid').innerHTML = html;
+    }
+
+    function artistAddr(t) {
+      var a = ARTISTS.filter(function (x) { return x.name === t.artist; })[0];
+      return a ? a.addr : N.TREASURY;
+    }
+
+    function tipTrack(i) {
+      var t = TRACKS[i];
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.novaPay({ to: artistAddr(t), amount: 1, memo: '打赏《' + t.title + '》', app: 'music' }).then(function (r) {
+          if (!r.ok) { N.toast(r.error, 'err'); return; }
+          N.toast('已打赏 1 NOVA 给 ' + t.artist + '，交易 ' + r.txid.slice(0, 12) + '…');
+        });
+      });
+    }
+
+    function mintTrack(i) {
+      var t = TRACKS[i];
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.confirmDlg({
+          title: '上链发行单曲',
+          body: '<p>将《' + N.esc(t.title) + '》铸造为限量唱片 NFT（价格 5 NOVA，收益归音乐人）。</p>',
+          okLabel: '确认发行'
+        }).then(function (yes) {
+          if (!yes) return;
+          N.nftMint({ name: t.title + ' · 限量唱片', desc: 'Nova 音乐馆链上发行单曲唱片，曲风 ' + t.bpm + ' BPM。', art: t.art, price: 5, app: 'music' }).then(function (r) {
+            if (!r.ok) { N.toast(r.error, 'err'); return; }
+            N.toast('已发行唱片 ' + r.token.name + '，前往 NFT 收藏品查看');
+            renderReleases();
+          });
+        });
+      });
+    }
+
+    function mintCurrent() { mintTrack(playing.idx); }
+
+    function renderReleases() {
+      var mine = N.myNfts().filter(function (x) { return x.app === 'music'; });
+      var el = document.getElementById('myReleases');
+      if (!mine.length) {
+        el.innerHTML = '<div class="empty" style="grid-column:1/-1;">还没有发行记录。点击曲目卡片上的「⛓️ 发行」即可上链。</div>';
+        return;
+      }
+      el.innerHTML = mine.map(function (t) {
+        return '<div class="card media-card">' +
+          '<div class="cover"><span>' + N.esc(t.art) + '</span></div>' +
+          '<h3>' + N.esc(t.name) + '</h3>' +
+          '<div class="by">编号 ' + N.esc(t.id.slice(-8)) + ' · 价格 ' + N.fmt(t.price) + ' NOVA</div>' +
+          '<div class="row-info"><span class="ok">已上链</span><span class="mono dim">' + N.esc(t.txid.slice(0, 12)) + '…</span></div>' +
+          '<div class="actions"><a class="btn small" href="./nft.html">前往收藏品</a></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    N.init({
+      active: 'music',
+      onReady: function () {
+        renderTracks();
+        renderReleases();
+        updatePlayerUI();
+      }
+    });
+  </script>
+</body>
+</html>

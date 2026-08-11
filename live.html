@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 直播联盟：实时互动直播间，弹幕、礼物打赏与一键开播。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 直播联盟 · 星际直播间</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Live</span>
+      <h1>📡 直播联盟</h1>
+      <p class="sub">实时弹幕互动、礼物打赏直接到主播，随时随地一键开播。直播画面由浏览器实时渲染。</p>
+      <div class="row" style="margin-top:10px;">
+        <a class="btn primary" href="#broadcast">🎙️ 我要开播</a>
+      </div>
+    </section>
+
+    <div id="liveRoomView" style="display:none;"></div>
+
+    <div class="section-head">
+      <div class="section-title">🟢 在线直播间</div>
+      <div class="row"><span class="tag live">LIVE</span><span class="tag">礼物打赏</span></div>
+    </div>
+    <div class="grid grid-4" id="roomGrid"></div>
+
+    <div class="section-title" id="broadcast">🎙️ 一键开播</div>
+    <div class="card">
+      <div class="field"><label>直播间标题</label><input id="bcTitle" placeholder="例如：深夜电台 · 量子钢琴"></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>分区</label>
+          <select id="bcCat">
+            <option>音乐</option><option>游戏</option><option>聊天</option><option>知识</option><option>虚拟演出</option>
+          </select>
+        </div>
+        <button class="btn primary" style="align-self:flex-end;" onclick="startBroadcast()">🔴 开始直播</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var HOSTS = [
+      { name: 'Nova 直播联盟', addr: '0x' + 'e5'.repeat(20) },
+      { name: '夜航乐队', addr: '0x' + 'ea'.repeat(20) },
+      { name: '星野电台', addr: '0x' + 'eb'.repeat(20) },
+      { name: '量子游戏工坊', addr: '0x' + 'ec'.repeat(20) }
+    ];
+    var ROOMS = [
+      { id: 'r1', title: '量子夜航 · 深夜电台', host: '夜航乐队', hostAddr: HOSTS[1].addr, cat: '音乐', viewers: 2341, art: '🌌', hue: 210 },
+      { id: 'r2', title: '星野白噪音 · 一起自习', host: '星野电台', hostAddr: HOSTS[2].addr, cat: '知识', viewers: 1286, art: '🌠', hue: 175 },
+      { id: 'r3', title: '星灵契约 · 新版本开荒', host: '量子游戏工坊', hostAddr: HOSTS[3].addr, cat: '游戏', viewers: 980, art: '🎮', hue: 265 },
+      { id: 'r4', title: '联盟公告 · 创作者问答', host: 'Nova 直播联盟', hostAddr: HOSTS[0].addr, cat: '聊天', viewers: 542, art: '📡', hue: 330 }
+    ];
+    var BOT_MSGS = [
+      '主播今晚唱什么？', '来了来了 👋', '这个画面好科幻', '礼物刷起来！', '前排围观 🚀',
+      '想问下链上发行怎么操作', '音乐太好听了', '主播能抽个幸运观众吗', '刚进直播间，发生了什么', '星轨冲刺我能玩到 1000 分'
+    ];
+    var GIFTS = [
+      { label: '💡 电波', amount: 1 }, { label: '🌟 星尘', amount: 5 },
+      { label: '🚀 跃迁', amount: 20 }, { label: '🪐 星系', amount: 66 }
+    ];
+    var current = null; // {room, visual, chatTimer, botTimer, viewers}
+
+    function allRooms() {
+      return ROOMS.concat(N.rooms().map(function (r) { return r; }));
+    }
+    function findRoom(id) {
+      return allRooms().filter(function (r) { return r.id === id; })[0];
+    }
+    function chatKey(id) { return 'nova_live_chat_' + id; }
+    function roomChat(id) {
+      var c = N.lsGet(chatKey(id), null);
+      if (!c) {
+        c = [
+          { who: 'system', text: '欢迎来到直播间！礼物打赏直接支持主播 💚' },
+          { who: '星尘旅人', text: '今天人好多呀' },
+          { who: '轨道观察员', text: '主播加油！' }
+        ];
+        N.lsSet(chatKey(id), c);
+      }
+      return c;
+    }
+    function addChat(id, who, text) {
+      var c = roomChat(id);
+      c.push({ who: who, text: text, ts: Date.now() });
+      if (c.length > 60) c.shift();
+      N.lsSet(chatKey(id), c);
+      renderChat(id);
+    }
+
+    function renderRooms() {
+      var el = document.getElementById('roomGrid');
+      el.innerHTML = allRooms().map(function (r) {
+        return '<div class="card media-card">' +
+          '<div class="cover" style="background:linear-gradient(140deg, hsla(' + r.hue + ',85%,40%,0.25), hsla(' + (r.hue + 80) + ',80%,45%,0.3));">' +
+            '<span>' + r.art + '</span><span class="play" onclick="enterRoom(\'' + r.id + '\')">▶</span>' +
+          '</div>' +
+          '<div class="row"><h3 style="flex:1;">' + N.esc(r.title) + '</h3><span class="tag live">LIVE</span></div>' +
+          '<div class="by">' + N.esc(r.host) + ' · ' + r.cat + '</div>' +
+          '<div class="row-info"><span>👁 ' + N.fmt(r.viewers) + '</span><button class="btn small primary" onclick="enterRoom(\'' + r.id + '\')">进入</button></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function enterRoom(id) {
+      var room = findRoom(id);
+      if (!room) return;
+      exitRoom();
+      current = { room: room, viewers: room.viewers, t: 0 };
+      var view = document.getElementById('liveRoomView');
+      view.style.display = '';
+      view.innerHTML =
+        '<div class="section-title">🔴 ' + N.esc(room.title) + '</div>' +
+        '<div class="grid grid-2">' +
+          '<div>' +
+            '<div class="stage-wrap" style="min-height:420px;">' +
+              '<canvas id="liveCanvas"></canvas>' +
+              '<div class="stage-overlay" style="min-height:420px; justify-content:space-between;">' +
+                '<div class="row"><span class="pill on">LIVE</span><span class="pill">👁 <b id="liveViewers">' + N.fmt(current.viewers) + '</b></span></div>' +
+                '<div class="stage-info"><div class="np-title">' + N.esc(room.title) + '</div><div class="np-artist dim">' + N.esc(room.host) + ' · ' + room.cat + '</div></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="gift-row" style="justify-content:flex-start;">' +
+              GIFTS.map(function (g, i) { return '<button class="gift-btn" onclick="sendGift(' + i + ')">' + g.label + ' ' + g.amount + '</button>'; }).join('') +
+            '</div>' +
+          '</div>' +
+          '<div class="chat-panel">' +
+            '<div class="chat-head"><span>💬 弹幕</span><button class="btn small" onclick="exitRoom()">退出</button></div>' +
+            '<div class="chat-body" id="chatBody"></div>' +
+            '<div class="chat-input"><input id="chatInput" placeholder="说点什么…" onkeydown="if(event.key===13)sendChat()"><button class="btn small primary" onclick="sendChat()">发送</button></div>' +
+          '</div>' +
+        '</div>';
+      var canvas = document.getElementById('liveCanvas');
+      current.visual = N.startVisual(canvas, 'particles');
+      renderChat(id);
+      current.botTimer = setInterval(function () {
+        var who = ['星尘旅人', '轨道观察员', '光年漫游者', '极光收藏家', '新晋听众'][Math.floor(Math.random() * 5)];
+        var msg = BOT_MSGS[Math.floor(Math.random() * BOT_MSGS.length)];
+        addChat(id, who, msg);
+      }, 9000);
+      current.viewerTimer = setInterval(function () {
+        current.viewers += Math.floor(Math.random() * 7) - 2;
+        current.viewers = Math.max(1, current.viewers);
+        var el = document.getElementById('liveViewers');
+        if (el) el.textContent = N.fmt(current.viewers);
+      }, 2500);
+      document.getElementById('liveRoomView').scrollIntoView({ behavior: 'smooth' });
+    }
+    function renderChat(id) {
+      var body = document.getElementById('chatBody');
+      if (!body) return;
+      var msgs = roomChat(id);
+      body.innerHTML = msgs.map(function (m) {
+        if (m.who === 'system') return '<div class="chat-msg"><span class="who system">系统</span>' + N.esc(m.text) + '</div>';
+        return '<div class="chat-msg"><span class="who">' + N.esc(m.who) + '</span>' + N.esc(m.text) + '</div>';
+      }).join('');
+      body.scrollTop = body.scrollHeight;
+    }
+    function sendChat() {
+      var id = current.room.id;
+      var input = document.getElementById('chatInput');
+      var text = input.value.trim();
+      var s = N.getState();
+      if (!text) return;
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) sendChat(); }); return; }
+      addChat(id, N.displayName(s.addr), text);
+      input.value = '';
+    }
+    function sendGift(i) {
+      var g = GIFTS[i];
+      var room = current.room;
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.novaPay({ to: room.hostAddr || N.TREASURY, amount: g.amount, memo: g.label + '打赏 · ' + room.title, app: 'live' }).then(function (r) {
+          if (!r.ok) { N.toast(r.error, 'err'); return; }
+          addChat(room.id, '系统', N.displayName(N.getState().addr) + ' 送出 ' + g.label + ' ×1（' + N.fmt(g.amount) + ' NOVA）🚀');
+          N.toast('礼物已送出，交易 ' + r.txid.slice(0, 12) + '…');
+        });
+      });
+    }
+    function exitRoom() {
+      if (!current) return;
+      if (current.visual) current.visual.stop();
+      if (current.botTimer) clearInterval(current.botTimer);
+      if (current.viewerTimer) clearInterval(current.viewerTimer);
+      current = null;
+      document.getElementById('liveRoomView').style.display = 'none';
+      renderRooms();
+    }
+
+    function startBroadcast() {
+      var title = document.getElementById('bcTitle').value.trim();
+      var cat = document.getElementById('bcCat').value;
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) startBroadcast(); }); return; }
+      if (!title) { N.toast('请填写直播间标题', 'err'); return; }
+      var rooms = N.rooms();
+      var room = {
+        id: 'br-' + Date.now().toString(36), title: title,
+        host: N.displayName(s.addr), hostAddr: s.addr, cat: cat,
+        viewers: 1, art: '🎙️', hue: Math.floor(Math.random() * 360), mine: true, ts: Date.now()
+      };
+      rooms.unshift(room);
+      N.saveRooms(rooms);
+      N.addPost('正在直播《' + title + '》🔴', 'live');
+      document.getElementById('bcTitle').value = '';
+      renderRooms();
+      enterRoom(room.id);
+      N.toast('已开播！');
+    }
+
+    setInterval(function () {
+      if (!document.hidden) renderRooms();
+    }, 60000);
+
+    N.init({ active: 'live', onReady: renderRooms });
+  </script>
+</body>
+</html>

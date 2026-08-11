@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova NFT 收藏品：数字艺术市场、铸造、买卖与转让。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 收藏品 · NFT 市场</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Collectibles</span>
+      <h1>🖼️ NFT 收藏品</h1>
+      <p class="sub">数字艺术、唱片、演出门票与创作印记都在这里流转。铸造、买卖、转让，每一笔都有链上记录。</p>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" onclick="showTab('market')">🛒 逛市场</button>
+        <button class="btn" onclick="showTab('mint')">⛏️ 去铸造</button>
+        <button class="btn" onclick="showTab('mine')">💾 我的收藏</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="sMarket">0</div><div class="label">市场在售</div></div>
+        <div class="stat"><div class="num" id="sMine">0</div><div class="label">我的收藏</div></div>
+        <div class="stat"><div class="num" id="sMinted">0</div><div class="label">链上藏品</div></div>
+        <div class="stat"><div class="num" id="sTx">0</div><div class="label">交易笔数</div></div>
+      </div>
+    </section>
+
+    <div class="tabs" style="margin-top:26px;">
+      <button class="tab-btn active" data-tab="market" onclick="showTab('market')">🛒 市场</button>
+      <button class="tab-btn" data-tab="mine" onclick="showTab('mine')">💾 我的收藏</button>
+      <button class="tab-btn" data-tab="mint" onclick="showTab('mint')">⛏️ 铸造</button>
+      <button class="tab-btn" data-tab="tx" onclick="showTab('tx')">🧾 交易记录</button>
+    </div>
+
+    <div id="tab-market" class="tab-panel">
+      <div class="grid grid-4" id="marketGrid"></div>
+    </div>
+
+    <div id="tab-mine" class="tab-panel" style="display:none;">
+      <div class="grid grid-4" id="mineGrid"></div>
+    </div>
+
+    <div id="tab-mint" class="tab-panel" style="display:none;">
+      <div class="card" style="max-width:560px;">
+        <h3 class="mb">铸造新收藏品</h3>
+        <div class="field"><label>名称</label><input id="mName" placeholder="例如：量子极光 #001"></div>
+        <div class="field"><label>描述</label><textarea id="mDesc" rows="3" placeholder="讲讲这件藏品的来历…"></textarea></div>
+        <div class="field"><label>图案</label>
+          <select id="mArt">
+            <option>💠</option><option>💎</option><option>🌌</option><option>🚀</option><option>👾</option><option>🎵</option><option>📜</option><option>🖼️</option><option>🌟</option><option>🪐</option><option>🐬</option><option>⚡</option>
+          </select>
+        </div>
+        <div class="field"><label>售价（NOVA，0 为免费空投）</label><input id="mPrice" type="number" min="0" step="0.1" value="3"></div>
+        <button class="btn primary block" onclick="mintNft()">⛏️ 铸造并上链</button>
+      </div>
+    </div>
+
+    <div id="tab-tx" class="tab-panel" style="display:none;">
+      <div id="txList"></div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var APP_LABEL = { nft: '收藏品', music: '音乐', words: '文字', games: '游戏', video: '视频', live: '直播', stage: '演出', social: '社交' };
+
+    function showTab(name) {
+      ['market', 'mine', 'mint', 'tx'].forEach(function (t) {
+        document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
+      });
+      document.querySelectorAll('.tab-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-tab') === name);
+      });
+      renderAll();
+    }
+
+    function renderStats() {
+      var all = Object.keys(N.nftStore()).length;
+      document.getElementById('sMarket').textContent = N.catalog().length;
+      document.getElementById('sMine').textContent = N.myNfts().length;
+      document.getElementById('sMinted').textContent = all;
+      document.getElementById('sTx').textContent = N.ledger().length;
+    }
+
+    function cardOf(t, mode) {
+      var creator = N.displayName(t.creator);
+      var buy = mode === 'market' ? '<button class="btn small primary" onclick="buyNft(\'' + t.id + '\')">购买 ' + N.fmt(t.price) + '</button>' : '';
+      var mine = mode === 'mine' ? '<button class="btn small" onclick="transferNft(\'' + t.id + '\')">转让</button>' : '';
+      return '<div class="card media-card">' +
+        '<div class="art-tile" onclick="detailNft(\'' + t.id + '\')" style="cursor:pointer;">' + N.esc(t.art) + '</div>' +
+        '<div class="row mt"><h3 style="flex:1;">' + N.esc(t.name) + '</h3><span class="tag nft">' + (APP_LABEL[t.app] || 'NFT') + '</span></div>' +
+        '<div class="by">' + N.esc(creator) + '</div>' +
+        '<div class="row-info"><span class="price">' + N.fmt(t.price) + ' NOVA</span><span class="mono dim">#' + N.esc(t.id.slice(-8)) + '</span></div>' +
+        '<div class="actions">' + buy + mine +
+          '<button class="btn small" onclick="detailNft(\'' + t.id + '\')">详情</button></div>' +
+      '</div>';
+    }
+
+    function renderAll() {
+      renderStats();
+      var market = document.getElementById('marketGrid');
+      var mine = document.getElementById('mineGrid');
+      var cat = N.catalog();
+      market.innerHTML = cat.length
+        ? cat.map(function (t) { return cardOf(t, 'market'); }).join('')
+        : '<div class="empty" style="grid-column:1/-1;">市场空荡荡。去铸造你的第一件收藏品吧！</div>';
+      var my = N.myNfts();
+      mine.innerHTML = my.length
+        ? my.map(function (t) { return cardOf(t, 'mine'); }).join('')
+        : '<div class="empty" style="grid-column:1/-1;">还没有收藏。从市场购买或自己铸造一件吧。</div>';
+      var ledger = N.ledger();
+      var txEl = document.getElementById('txList');
+      txEl.innerHTML = ledger.length ? ledger.slice(0, 15).map(function (t) {
+        var dir = t.credit ? '<span class="ok">+' : '<span class="err">-';
+        var dir2 = t.credit ? '</span>' : '</span>';
+        return '<div class="list-row"><div class="rank">' + (t.credit ? '⬇' : '⬆') + '</div>' +
+          '<div class="grow"><div class="t">' + N.esc(t.memo || (APP_LABEL[t.app] || '交易')) + '</div>' +
+          '<div class="d mono">' + N.esc(t.txid.slice(0, 14)) + '… · ' + N.timeAgo(t.ts) + '</div></div>' +
+          '<div class="price">' + dir + N.fmt(t.amount) + dir2 + ' NOVA</div></div>';
+      }).join('') : '<div class="empty">还没有交易记录。</div>';
+    }
+
+    function detailNft(id) {
+      var t = N.nftById(id);
+      if (!t) return;
+      var isMine = t.owner === N.getState().addr;
+      var actions = [];
+      if (isMine) {
+        actions.push({ label: '转让', cls: 'primary', onClick: function () { N.closeModal(); transferNft(id); } });
+      } else if (t.price > 0) {
+        actions.push({ label: '购买（' + N.fmt(t.price) + ' NOVA）', cls: 'primary', onClick: function () { N.closeModal(); buyNft(id); } });
+      } else {
+        actions.push({ label: '免费领取', cls: 'primary', onClick: function () { N.closeModal(); buyNft(id); } });
+      }
+      actions.push({ label: '关闭', onClick: N.closeModal });
+      N.openModal({
+        title: t.name,
+        body: '<div class="art-tile" style="font-size:84px;">' + N.esc(t.art) + '</div>' +
+          '<div class="row mt"><span class="tag nft">' + (APP_LABEL[t.app] || 'NFT') + '</span><span class="tag">' + (isMine ? '我的收藏' : '在售') + '</span></div>' +
+          '<p class="mt">' + N.esc(t.desc || '') + '</p>' +
+          '<p class="dim mt">创作者：' + N.esc(N.displayName(t.creator)) + '（' + N.esc(N.shortAddr(t.creator)) + '）</p>' +
+          '<p class="dim">编号：<span class="mono">' + N.esc(t.id) + '</span></p>' +
+          '<p class="dim">上链交易：<span class="mono">' + N.esc(t.txid) + '</span></p>',
+        actions: actions
+      });
+    }
+
+    function buyNft(id) {
+      var t = N.nftById(id);
+      if (!t) return;
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.nftBuy(id).then(function (r) {
+          if (!r.ok) { N.toast(r.error, 'err'); return; }
+          N.toast('🎉 已收入「' + r.token.name + '」到你的收藏');
+          renderAll();
+        });
+      });
+    }
+
+    function transferNft(id) {
+      var t = N.nftById(id);
+      if (!t) return;
+      N.openModal({
+        title: '转让 · ' + t.name,
+        body: '<div class="field"><label>接收地址（0x + 40 位 hex）</label><input id="trAddr" class="mono" placeholder="0x…"></div>',
+        actions: [
+          { label: '取消', onClick: N.closeModal },
+          { label: '确认转让', cls: 'primary', onClick: function () {
+              var to = document.getElementById('trAddr').value.trim();
+              N.nftTransfer(id, to).then(function (r) {
+                if (!r.ok) { N.toast(r.error, 'err'); return; }
+                N.closeModal();
+                N.toast('已转让给 ' + N.shortAddr(to));
+                renderAll();
+              });
+            } }
+        ]
+      });
+    }
+
+    function mintNft() {
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) mintNft(); }); return; }
+      var name = document.getElementById('mName').value.trim();
+      var desc = document.getElementById('mDesc').value.trim();
+      var art = document.getElementById('mArt').value;
+      var price = parseFloat(document.getElementById('mPrice').value) || 0;
+      if (!name) { N.toast('请填写名称', 'err'); return; }
+      N.nftMint({ name: name, desc: desc, art: art, price: Math.max(0, price), app: 'nft' }).then(function (r) {
+        if (!r.ok) { N.toast(r.error, 'err'); return; }
+        document.getElementById('mName').value = '';
+        document.getElementById('mDesc').value = '';
+        N.toast('⛏️ 铸造成功：' + r.token.id.slice(-8));
+        showTab('mine');
+      });
+    }
+
+    window.addEventListener('nova-wallet', renderAll);
+
+    N.init({ active: 'nft', onReady: renderAll });
+  </script>
+</body>
+</html>

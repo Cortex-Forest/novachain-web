@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 视频社：创作者频道、短片放映、点赞打赏与上传。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 视频社 · 创作者频道</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Video</span>
+      <h1>🎬 视频社</h1>
+      <p class="sub">创作者频道、短片放映与实时动效播放。播放即支持创作者，点赞、打赏与签名海报上链留档。</p>
+      <div class="row" style="margin-top:10px;">
+        <a class="btn primary" href="#upload">📤 上传作品</a>
+        <button class="btn" onclick="playVideo('v1')">▶ 播放精选</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="vStats">0</div><div class="label">片库总量</div></div>
+        <div class="stat"><div class="num" id="vViews">0</div><div class="label">累计播放</div></div>
+        <div class="stat"><div class="num">6</div><div class="label">创作者频道</div></div>
+        <div class="stat"><div class="num" id="vMy">0</div><div class="label">我的投稿</div></div>
+      </div>
+    </section>
+
+    <div class="section-head">
+      <div class="section-title">🎞️ 放映片库</div>
+      <div class="row">
+        <span class="tag live">动效播放</span>
+        <span class="tag nft">签名海报</span>
+      </div>
+    </div>
+    <div class="grid grid-3" id="videoGrid"></div>
+
+    <div class="section-title" id="upload">📤 上传作品</div>
+    <div class="card">
+      <div class="field"><label>片名</label><input id="vTitle" placeholder="给视频起个名字"></div>
+      <div class="field"><label>频道名</label><input id="vChannel" placeholder="你的创作者频道"></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>时长（分钟）</label><input id="vLen" type="number" min="1" max="120" value="3"></div>
+        <button class="btn primary" style="align-self:flex-end;" onclick="uploadVideo()">🚀 上传</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var CHANNELS = [
+      { name: '光年视频社', addr: '0x' + 'd4'.repeat(20) },
+      { name: '星际邮差', addr: '0x' + 'da'.repeat(20) },
+      { name: '霓虹街拍', addr: '0x' + 'db'.repeat(20) },
+      { name: '深空纪录片组', addr: '0x' + 'dc'.repeat(20) }
+    ];
+    var VIDEOS = [
+      { id: 'v1', title: '星际邮差 · 预告片', channel: '星际邮差', views: 128400, len: '1:30', art: '📮', hue: 195 },
+      { id: 'v2', title: '超新星爆发的 48 小时', channel: '深空纪录片组', views: 86200, len: '4:12', art: '💥', hue: 260 },
+      { id: 'v3', title: '霓虹都市夜航', channel: '霓虹街拍', views: 52300, len: '2:45', art: '🌆', hue: 300 },
+      { id: 'v4', title: '轨道空间站的一天', channel: '光年视频社', views: 44700, len: '5:00', art: '🛰️', hue: 175 },
+      { id: 'v5', title: '量子动画实验 #3', channel: '光年视频社', views: 21800, len: '1:15', art: '🌀', hue: 230 },
+      { id: 'v6', title: '星海厨房：失重拉面', channel: '霓虹街拍', views: 33900, len: '3:20', art: '🍜', hue: 20 }
+    ];
+    var likes = function () { return N.lsGet('nova_video_likes', {}); };
+    var viewCount = function () { return N.lsGet('nova_video_views', 0); };
+
+    function allVideos() {
+      return VIDEOS.concat(N.lsGet('nova_video_videos', []));
+    }
+    function channelAddr(name) {
+      var c = CHANNELS.filter(function (x) { return x.name === name; })[0];
+      return c ? c.addr : N.TREASURY;
+    }
+    function fmtViews(n) { return n >= 10000 ? (n / 10000).toFixed(1) + ' 万' : String(n); }
+
+    function renderGrid() {
+      var lk = likes();
+      var list = allVideos();
+      var el = document.getElementById('videoGrid');
+      document.getElementById('vStats').textContent = list.length;
+      document.getElementById('vViews').textContent = fmtViews(viewCount());
+      document.getElementById('vMy').textContent = N.lsGet('nova_video_videos', []).length;
+      el.innerHTML = list.map(function (v, i) {
+        var mine = v.mine ? '<span class="tag nft">我的投稿</span>' : '';
+        return '<div class="card media-card">' +
+          '<div class="cover" style="background:linear-gradient(140deg, hsla(' + v.hue + ',85%,40%,0.25), hsla(' + (v.hue + 70) + ',80%,45%,0.3));">' +
+            '<span>' + v.art + '</span><span class="play" onclick="playVideo(\'' + v.id + '\')">▶</span>' +
+          '</div>' +
+          '<div class="row"><h3 style="flex:1;">' + N.esc(v.title) + '</h3>' + mine + '</div>' +
+          '<div class="by">' + N.esc(v.channel) + ' · ' + fmtViews(v.views) + ' 次播放 · ' + v.len + '</div>' +
+          '<div class="row-info"><span>♥ ' + ((lk[v.id] || {}).count || 0) + '</span></div>' +
+          '<div class="actions">' +
+            '<button class="btn small primary" onclick="playVideo(\'' + v.id + '\')">播放</button>' +
+            '<button class="btn small" onclick="likeVideo(\'' + v.id + '\')">♥ 点赞</button>' +
+            '<button class="btn small" onclick="tipVideo(\'' + v.id + '\')">打赏 1</button>' +
+            '<button class="btn small" onclick="posterVideo(\'' + v.id + '\')">⛓️ 海报</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function findVideo(id) {
+      return allVideos().filter(function (v) { return v.id === id; })[0];
+    }
+
+    function likeVideo(id) {
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) likeVideo(id); }); return; }
+      var store = likes();
+      var item = store[id] || { count: 0, users: [] };
+      var idx = item.users.indexOf(s.addr);
+      if (idx >= 0) { item.users.splice(idx, 1); item.count = Math.max(0, item.count - 1); }
+      else { item.users.push(s.addr); item.count += 1; }
+      store[id] = item;
+      N.lsSet('nova_video_likes', store);
+      renderGrid();
+      N.toast(idx >= 0 ? '已取消点赞' : '已点赞', 'info');
+    }
+
+    function tipVideo(id) {
+      var v = findVideo(id);
+      if (!v) return;
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.novaPay({ to: v.owner || channelAddr(v.channel), amount: 1, memo: '打赏《' + v.title + '》', app: 'video' }).then(function (r) {
+          if (!r.ok) { N.toast(r.error, 'err'); return; }
+          N.toast('已打赏 1 NOVA，交易 ' + r.txid.slice(0, 12) + '…');
+        });
+      });
+    }
+
+    function posterVideo(id) {
+      var v = findVideo(id);
+      if (!v) return;
+      N.requireWallet().then(function (ok) {
+        if (!ok) return;
+        N.nftMint({ name: '《' + v.title + '》 · 签名海报', desc: v.channel + ' 创作者签名版海报。', art: v.art, price: 4, app: 'video' }).then(function (r) {
+          if (!r.ok) { N.toast(r.error, 'err'); return; }
+          N.toast('签名海报已上链：' + r.token.id.slice(-8));
+        });
+      });
+    }
+
+    var player = null;
+    function playVideo(id) {
+      var v = findVideo(id);
+      if (!v) return;
+      var views = N.lsGet('nova_video_views', 0) + 1;
+      N.lsSet('nova_video_views', views);
+      var count = 0;
+      N.openModal({
+        title: '🎬 ' + v.title,
+        body: '<div class="video-screen"><canvas id="vScreen"></canvas></div>' +
+          '<div class="player-bar">' +
+            '<button class="btn small" onclick="toggleVideo()" id="vPlayBtn">⏸ 暂停</button>' +
+            '<div class="now-playing"><div class="np-title">' + N.esc(v.title) + '</div><div class="np-artist">' + N.esc(v.channel) + ' · ' + v.len + '</div></div>' +
+            '<span class="dim" id="vTimer">00:00</span>' +
+          '</div>' +
+          '<div class="row mt"><span class="tag">播放 ' + fmtViews(views) + '</span><span class="tag">动效实时渲染</span></div>',
+        actions: [
+          { label: '打赏 1 NOVA', cls: 'primary', onClick: function () { tipVideo(id); } },
+          { label: '关闭', onClick: function () { stopVideo(); N.closeModal(); } }
+        ]
+      });
+      var canvas = document.getElementById('vScreen');
+      player = { id: id, visual: N.startVisual(canvas, 'beams'), timer: null, t: 0 };
+      player.timer = setInterval(function () {
+        player.t += 1;
+        var m = Math.floor(player.t / 60), s = player.t % 60;
+        var el = document.getElementById('vTimer');
+        if (el) el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      }, 1000);
+      renderGrid();
+    }
+    function toggleVideo() {
+      if (!player) return;
+      var btn = document.getElementById('vPlayBtn');
+      if (player.visual) {
+        player.visual.stop();
+        player.visual = null;
+        btn.textContent = '▶ 继续';
+      } else {
+        var canvas = document.getElementById('vScreen');
+        player.visual = N.startVisual(canvas, 'beams');
+        btn.textContent = '⏸ 暂停';
+      }
+    }
+    function stopVideo() {
+      if (!player) return;
+      if (player.visual) player.visual.stop();
+      if (player.timer) clearInterval(player.timer);
+      player = null;
+    }
+
+    function uploadVideo() {
+      var title = document.getElementById('vTitle').value.trim();
+      var channel = document.getElementById('vChannel').value.trim();
+      var len = parseInt(document.getElementById('vLen').value) || 3;
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) uploadVideo(); }); return; }
+      if (!title) { N.toast('请填写片名', 'err'); return; }
+      var list = N.lsGet('nova_video_videos', []);
+      list.unshift({
+        id: 'uv-' + Date.now().toString(36), title: title,
+        channel: channel || N.displayName(s.addr), owner: s.addr,
+        views: 0, len: len + ':00', art: '🎥', hue: Math.floor(Math.random() * 360),
+        mine: true, ts: Date.now()
+      });
+      N.lsSet('nova_video_videos', list);
+      N.addPost('发布了新视频《' + title + '》🎬', 'video');
+      document.getElementById('vTitle').value = '';
+      document.getElementById('vChannel').value = '';
+      N.toast('《' + title + '》已上传并写入链上时间戳');
+      renderGrid();
+    }
+
+    N.init({ active: 'video', onReady: renderGrid });
+  </script>
+</body>
+</html>

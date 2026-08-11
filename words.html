@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 文字星球：长篇、诗歌与连载的阅读创作平台，付费解锁与链上确权。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 文字星球 · 阅读与创作</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Words</span>
+      <h1>📖 文字星球</h1>
+      <p class="sub">长篇、诗歌与连载在这里相遇。付费解锁直接支持作者，发布即链上确权，一字一诺。</p>
+      <div class="row" style="margin-top:10px;">
+        <a class="btn primary" href="#write">✍️ 开始创作</a>
+        <button class="btn" onclick="stampDemo()">⛓️ 铸造创作印记</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="stArticles">0</div><div class="label">文章总数</div></div>
+        <div class="stat"><div class="num" id="stUnlocked">0</div><div class="label">我已解锁</div></div>
+        <div class="stat"><div class="num" id="stWords">0</div><div class="label">累计字数</div></div>
+        <div class="stat"><div class="num">8</div><div class="label">驻站作者</div></div>
+      </div>
+    </section>
+
+    <div class="section-head">
+      <div class="section-title">📚 精选文章</div>
+      <div class="row">
+        <span class="tag">免费阅读</span>
+        <span class="tag nft">付费解锁</span>
+      </div>
+    </div>
+    <div id="articleList"></div>
+
+    <div class="section-title" id="write">✍️ 创作你的文字</div>
+    <div class="card">
+      <div class="field"><label>标题</label><input id="wTitle" placeholder="给你的文字一个名字"></div>
+      <div class="field"><label>正文（每行一个段落）</label><textarea id="wBody" rows="6" placeholder="写下你的故事、诗歌或连载章节…"></textarea></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>解锁价格（NOVA，0 为免费）</label><input id="wPrice" type="number" min="0" step="0.1" value="0"></div>
+        <button class="btn primary" style="align-self:flex-end;" onclick="publishArticle()">🚀 发布</button>
+      </div>
+    </div>
+
+    <div class="section-title">🖋️ 我的作品</div>
+    <div id="myWorks"></div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var NL = String.fromCharCode(10);
+
+    var AUTHORS = [
+      { name: '星海文字局', addr: '0x' + 'b2'.repeat(20) },
+      { name: '银河诗人', addr: '0x' + 'ba'.repeat(20) },
+      { name: '宇宙邮差', addr: '0x' + 'bb'.repeat(20) },
+      { name: '霓虹故事家', addr: '0x' + 'bc'.repeat(20) }
+    ];
+
+    var DEMO_ARTICLES = [
+      {
+        id: 'a1', title: '超新星诞生记', author: '星海文字局',
+        words: 420, price: 0,
+        excerpt: '一粒尘埃如何在亿万年间成为照亮整个星系的光？',
+        content: ['在星云的深处，尘埃开始聚集。', '引力像一位耐心的织工，日复一日把碎屑编成摇篮。', '温度攀升，核心点燃，氢聚变为氦，光挣脱束缚。', '于是，一颗超新星诞生了——它用一百亿年的沉默，换来一夜的璀璨。', '我们仰望它，其实也在仰望自己：每个人都是聚变中的星。']
+      },
+      {
+        id: 'a2', title: '写给第一百光年的你', author: '银河诗人',
+        words: 260, price: 1,
+        excerpt: '一封漂流在星海中的信，等一个百年后的回音。',
+        content: ['如果信也能超光速，该多好。', '那样你读到这行字时，我还没有变老。', '可宇宙给了我们距离，也给了我们等待的意义。', '第一百光年外，大概也有一个人，正把思念折成纸船。', '愿我们在某个平行宇宙，不用写信，只相视而笑。']
+      },
+      {
+        id: 'a3', title: '邮差与陨石', author: '宇宙邮差',
+        words: 380, price: 2,
+        excerpt: '星际邮差的最后一单：把一颗陨石送回家。',
+        content: ['邮差在轨道上接到一个奇怪的包裹：重达两吨，地址却只有一个坐标。', '他沿坐标飞去，发现那是一片正在坍缩的星云。', '包裹上贴着一张泛黄的纸条：致我的故乡。', '邮差把陨石推进星云深处，看着它被引力温柔地接住。', '任务单上写着：投递成功，收件人——时间。']
+      },
+      {
+        id: 'a4', title: '霓虹雨夜 · 序章', author: '霓虹故事家',
+        words: 310, price: 0,
+        excerpt: '雨水落在电子屏上，倒映出整座城市的梦。',
+        content: ['雨落在广告牌上，把霓虹洗成流动的颜料。', '少女在屋檐下躲雨，手里的伞还挂着吊牌。', '城市是巨大的电路板，每个人都是焊点。', '她决定今晚不回家，沿着光的河流走下去。', '故事，就从这一夜开始。']
+      }
+    ];
+
+    function allArticles() {
+      return N.lsGet('nova_words_articles', []).concat(DEMO_ARTICLES);
+    }
+    function myArticles() {
+      var s = N.getState();
+      if (!s.addr) return [];
+      return N.lsGet('nova_words_articles', []).filter(function (a) { return a.owner === s.addr; });
+    }
+    function unlockedIds() {
+      var s = N.getState();
+      var u = N.lsGet('nova_words_unlocks', {});
+      return s.addr ? (u[s.addr] || []) : [];
+    }
+    function addUnlock(id) {
+      var s = N.getState();
+      if (!s.addr) return;
+      var u = N.lsGet('nova_words_unlocks', {});
+      u[s.addr] = u[s.addr] || [];
+      if (u[s.addr].indexOf(id) === -1) u[s.addr].push(id);
+      N.lsSet('nova_words_unlocks', u);
+    }
+    function authorOf(name) {
+      var a = AUTHORS.filter(function (x) { return x.name === name; })[0];
+      return a ? a.addr : N.TREASURY;
+    }
+    function wordCount(a) { return (a.content || []).join('').length; }
+
+    function renderList() {
+      var list = allArticles();
+      var unlocked = unlockedIds();
+      var el = document.getElementById('articleList');
+      document.getElementById('stArticles').textContent = list.length;
+      document.getElementById('stUnlocked').textContent = unlocked.length;
+      document.getElementById('stWords').textContent = list.reduce(function (s, a) { return s + wordCount(a); }, 0);
+      el.innerHTML = list.map(function (a) {
+        var isMine = a.owner === N.getState().addr;
+        var isUnlocked = unlocked.indexOf(a.id) >= 0;
+        var status = a.price > 0 && !isUnlocked && !isMine
+          ? '<span class="tag nft">' + N.fmt(a.price) + ' NOVA 解锁</span>'
+          : '<span class="tag live">可阅读</span>';
+        return '<div class="card" style="margin-bottom:14px;">' +
+          '<div class="row">' +
+            '<div style="flex:1;">' +
+              '<h3>' + N.esc(a.title) + '</h3>' +
+              '<div class="by dim">' + N.esc(a.author || N.displayName(a.owner)) + ' · ' + wordCount(a) + ' 字</div>' +
+              '<p class="dim" style="margin-top:6px;">' + N.esc(a.excerpt || '') + '</p>' +
+            '</div>' +
+            '<div class="row" style="flex-shrink:0;">' + status +
+              '<button class="btn small primary" onclick="openArticle(\'' + a.id + '\')">阅读</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      renderMyWorks();
+    }
+
+    function openArticle(id) {
+      var a = allArticles().filter(function (x) { return x.id === id; })[0];
+      if (!a) return;
+      var s = N.getState();
+      var unlocked = unlockedIds();
+      var isMine = a.owner === s.addr;
+      var paid = a.price > 0 && !isMine && unlocked.indexOf(id) < 0;
+      var body;
+      if (paid) {
+        body = '<p><strong>' + N.esc(a.title) + '</strong></p>' +
+          '<p class="dim">' + N.esc(a.excerpt || '') + '</p>' +
+          '<p class="warn">本篇为付费内容，解锁价格 ' + N.fmt(a.price) + ' NOVA，收益直接归作者。</p>';
+      } else {
+        body = '<p><strong>' + N.esc(a.title) + '</strong></p>' +
+          '<p class="dim">' + N.esc((a.author || N.displayName(a.owner))) + ' · ' + wordCount(a) + ' 字</p>' +
+          '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">' +
+          a.content.map(function (p) { return '<p style="margin-bottom:10px;">' + N.esc(p) + '</p>'; }).join('');
+      }
+      var actions = [];
+      if (paid) {
+        actions.push({ label: '解锁阅读（' + N.fmt(a.price) + ' NOVA）', cls: 'primary', onClick: function () { unlockArticle(a); } });
+      } else {
+        actions.push({ label: '打赏作者 1 NOVA', onClick: function () {
+            N.novaPay({ to: a.owner || authorOf(a.author), amount: 1, memo: '打赏《' + a.title + '》', app: 'words' }).then(function (r) {
+              if (!r.ok) { N.toast(r.error, 'err'); return; }
+              N.toast('已打赏，交易 ' + r.txid.slice(0, 12) + '…'); closeRead();
+            });
+          } });
+      }
+      actions.push({ label: '关闭', onClick: closeRead });
+      N.openModal({ title: '阅读 · ' + a.title, body: body, actions: actions });
+    }
+    function closeRead() { N.closeModal(); }
+
+    function unlockArticle(a) {
+      N.novaPay({ to: a.owner || authorOf(a.author), amount: a.price, memo: '解锁《' + a.title + '》', app: 'words' }).then(function (r) {
+        if (!r.ok) { N.toast(r.error, 'err'); return; }
+        addUnlock(a.id);
+        N.toast('已解锁《' + a.title + '》');
+        N.closeModal();
+        openArticle(a.id);
+        renderList();
+      });
+    }
+
+    function publishArticle() {
+      var title = document.getElementById('wTitle').value.trim();
+      var body = document.getElementById('wBody').value.trim();
+      var price = parseFloat(document.getElementById('wPrice').value) || 0;
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) publishArticle(); }); return; }
+      if (!title) { N.toast('请填写标题', 'err'); return; }
+      if (!body) { N.toast('请填写正文', 'err'); return; }
+      var paragraphs = body.split(NL).map(function (x) { return x.trim(); }).filter(Boolean);
+      var list = N.lsGet('nova_words_articles', []);
+      var art = {
+        id: 'w-' + Date.now().toString(36),
+        title: title, owner: s.addr, author: N.displayName(s.addr),
+        words: body.length, price: Math.max(0, price),
+        excerpt: body.slice(0, 40) + (body.length > 40 ? '…' : ''),
+        content: paragraphs, ts: Date.now()
+      };
+      list.unshift(art);
+      N.lsSet('nova_words_articles', list);
+      N.addPost('发布了新作《' + title + '》✍️', 'words');
+      document.getElementById('wTitle').value = '';
+      document.getElementById('wBody').value = '';
+      document.getElementById('wPrice').value = '0';
+      N.toast('已发布《' + title + '》并写入链上时间戳');
+      renderList();
+    }
+
+    function renderMyWorks() {
+      var mine = myArticles();
+      var el = document.getElementById('myWorks');
+      if (!mine.length) { el.innerHTML = '<div class="empty">还没有作品。用上方的编辑器发布你的第一篇文章吧。</div>'; return; }
+      el.innerHTML = mine.map(function (a) {
+        return '<div class="list-row"><div class="rank">✍️</div><div class="grow"><div class="t">' + N.esc(a.title) + '</div><div class="d">' + a.content.length + ' 段 · ' + N.fmt(a.price) + ' NOVA</div></div>' +
+          '<button class="btn small" onclick="stampArticle(\'' + a.id + '\')">⛓️ 确权</button>' +
+          '<button class="btn small" onclick="openArticle(\'' + a.id + '\')">阅读</button></div>';
+      }).join('');
+    }
+
+    function stampArticle(id) {
+      var a = allArticles().filter(function (x) { return x.id === id; })[0];
+      if (!a) return;
+      N.nftMint({ name: '《' + a.title + '》 · 链上版权印记', desc: (a.excerpt || '').slice(0, 80), art: '📜', price: 0, app: 'words' }).then(function (r) {
+        if (!r.ok) { N.toast(r.error, 'err'); return; }
+        N.toast('版权印记已上链：' + r.token.id.slice(-8));
+      });
+    }
+
+    function stampDemo() {
+      var s = N.getState();
+      if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) stampDemo(); }); return; }
+      N.nftMint({ name: '星海集 · 我的创作印记', desc: '为你的创作打上链上时间戳。', art: '🖋️', price: 0, app: 'words' }).then(function (r) {
+        if (!r.ok) { N.toast(r.error, 'err'); return; }
+        N.toast('已铸造创作印记 ' + r.token.id.slice(-8));
+      });
+    }
+
+    N.init({ active: 'words', onReady: renderList });
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 应用中心：音乐、文字、游戏、视频、直播、社交、虚拟演出与 NFT 收藏的链上创作者生态。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 应用中心 · 创作者生态</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Creator Ecosystem</span>
+      <h1>超新星应用中心</h1>
+      <p class="sub">一套钱包，畅游整个创作者宇宙：音乐、文字、游戏、视频、直播、社交、虚拟演出与 NFT 收藏。所有内容都可上链确权，创作者获得直接收益，收藏品永久留档。</p>
+      <div class="row" style="margin-top:10px;">
+        <a class="btn primary" href="./nft.html">🖼️ 逛逛收藏品</a>
+        <a class="btn" href="./live.html">📡 进入直播</a>
+        <a class="btn" href="./stage.html">🎪 虚拟演出</a>
+        <a class="btn" href="./nova.html">🔐 钱包 / 体验页</a>
+      </div>
+    </section>
+
+    <section>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="statApps">8</div><div class="label">生态应用</div></div>
+        <div class="stat"><div class="num" id="statCreators">12</div><div class="label">入驻创作者</div></div>
+        <div class="stat"><div class="num" id="statNft">6</div><div class="label">在售收藏品</div></div>
+        <div class="stat"><div class="num" id="statShows">3</div><div class="label">近期虚拟演出</div></div>
+        <div class="stat"><div class="num" id="statMode">—</div><div class="label">运行模式</div></div>
+      </div>
+    </section>
+
+    <div class="section-title">🛰️ 生态应用</div>
+    <div class="grid grid-4">
+      <a class="card app-card" href="./music.html">
+        <div class="app-icon">🎧</div>
+        <h3>音乐</h3>
+        <p>链上发行单曲、生成式播放器、付费收藏唱片与打榜。</p>
+        <div class="meta"><span class="tag hot">上链发行</span><span class="tag nft">限量收藏</span></div>
+      </a>
+      <a class="card app-card" href="./words.html">
+        <div class="app-icon">📖</div>
+        <h3>文字</h3>
+        <p>长篇、诗歌与连载的阅读创作平台，付费解锁与打赏。</p>
+        <div class="meta"><span class="tag">付费阅读</span><span class="tag nft">链上确权</span></div>
+      </a>
+      <a class="card app-card" href="./games.html">
+        <div class="app-icon">🎮</div>
+        <h3>游戏</h3>
+        <p>量子骰子与星轨冲刺小游戏，链上排行榜与积分。</p>
+        <div class="meta"><span class="tag hot">即时开玩</span><span class="tag">排行榜</span></div>
+      </a>
+      <a class="card app-card" href="./video.html">
+        <div class="app-icon">🎬</div>
+        <h3>视频</h3>
+        <p>创作者频道、短片放映与打赏，播放即支持创作者。</p>
+        <div class="meta"><span class="tag">创作者频道</span><span class="tag nft">签名海报</span></div>
+      </a>
+      <a class="card app-card" href="./live.html">
+        <div class="app-icon">📡</div>
+        <h3>直播</h3>
+        <p>实时互动直播间，弹幕、礼物打赏与主播开播。</p>
+        <div class="meta"><span class="tag live">LIVE</span><span class="tag">礼物打赏</span></div>
+      </a>
+      <a class="card app-card" href="./social.html">
+        <div class="app-icon">💬</div>
+        <h3>社交</h3>
+        <p>创作者动态流：发帖、点赞、评论与链上时间戳。</p>
+        <div class="meta"><span class="tag">动态流</span><span class="tag">链上确权</span></div>
+      </a>
+      <a class="card app-card" href="./stage.html">
+        <div class="app-icon">🎪</div>
+        <h3>虚拟演出</h3>
+        <p>沉浸式虚拟舞台、灯光粒子场与 NFT 电子门票。</p>
+        <div class="meta"><span class="tag live">即将开演</span><span class="tag nft">NFT 门票</span></div>
+      </a>
+      <a class="card app-card" href="./nft.html">
+        <div class="app-icon">🖼️</div>
+        <h3>NFT 收藏品</h3>
+        <p>数字艺术市场、铸造你的收藏品、买卖与转让。</p>
+        <div class="meta"><span class="tag nft">市场</span><span class="tag">铸造 / 转让</span></div>
+      </a>
+    </div>
+
+    <div class="section-title">👤 我的链上资产</div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 class="mb">钱包概览</h3>
+        <p id="hubWallet" class="dim">正在检测钱包…</p>
+        <div class="row mt">
+          <button class="btn primary small" id="hubConnectBtn" onclick="hubConnect()">连接钱包</button>
+          <a class="btn small" href="./wallet.html">打开钱包页</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="mb">资产统计</h3>
+        <div class="row">
+          <div class="stat" style="flex:1;"><div class="num" id="hubBalance">—</div><div class="label">余额 NOVA</div></div>
+          <div class="stat" style="flex:1;"><div class="num" id="hubNftCount">—</div><div class="label">收藏品</div></div>
+          <div class="stat" style="flex:1;"><div class="num" id="hubTxCount">—</div><div class="label">交易记录</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">🗺️ 生态路线</div>
+    <div class="grid grid-3">
+      <div class="card"><span class="tag nft">已上线</span><h3 class="mt">Q3 · 内容创作</h3><p class="dim">音乐、文字、视频、社交与直播完成链上确权、打赏与订阅。</p></div>
+      <div class="card"><span class="tag hot">已上线</span><h3 class="mt">Q3 · 游戏化</h3><p class="dim">小游戏、链上积分与排行榜，为生态注入趣味性。</p></div>
+      <div class="card"><span class="tag live">进行中</span><h3 class="mt">Q4 · 沉浸体验</h3><p class="dim">虚拟演出、NFT 票务与创作者权益向真实节点共识演进。</p></div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+
+    function renderHub() {
+      var s = N.getState();
+      var st = N.getState();
+      document.getElementById('statMode').textContent = st.mode === 'node' ? '节点模式' : '演示模式';
+      var list = N.catalog();
+      document.getElementById('statNft').textContent = list.length;
+      var wallet = document.getElementById('hubWallet');
+      var connectBtn = document.getElementById('hubConnectBtn');
+      if (s.connected) {
+        wallet.innerHTML = '地址：<span class="mono">' + N.esc(s.addr) + '</span><br>模式：' +
+          (s.mode === 'node' ? '节点模式（真实链上交易）' : '演示模式（本地模拟交易）');
+        connectBtn.textContent = '刷新余额';
+        document.getElementById('hubBalance').textContent = N.fmt(s.balance);
+        document.getElementById('hubNftCount').textContent = N.myNfts().length;
+        document.getElementById('hubTxCount').textContent = N.ledger().length;
+      } else {
+        wallet.innerHTML = '尚未连接钱包。连接后可进行支付、收藏、发帖与铸造。';
+        connectBtn.textContent = '连接钱包';
+        document.getElementById('hubBalance').textContent = '—';
+        document.getElementById('hubNftCount').textContent = '—';
+        document.getElementById('hubTxCount').textContent = '—';
+      }
+    }
+
+    function hubConnect() {
+      var s = N.getState();
+      if (s.connected) {
+        N.refreshBalance().then(function () {
+          renderHub();
+          N.toast('余额已刷新：' + N.fmt(N.getState().balance) + ' NOVA');
+        });
+      } else {
+        N.requireWallet().then(function (ok) { if (ok) renderHub(); });
+      }
+    }
+
+    window.addEventListener('nova-wallet', renderHub);
+
+    N.init({
+      active: 'apps',
+      onReady: function () {
+        renderHub();
+      }
+    });
+  </script>
+</body>
+</html>
