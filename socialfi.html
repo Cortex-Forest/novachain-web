@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 链上生态：粉丝代币、收益共享、成就、预测市场、盲盒、策展、社交图谱、声誉、债券与碎片化 NFT 十大 SocialFi 玩法。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 链上生态 · SocialFi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .sf-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .sf-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .sf-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .sf-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .sf-panel { display: none; }
+    .sf-panel.active { display: block; }
+    .sf-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .sf-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .sf-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .sf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sf-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .sf-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .rep-score { font-size: 2.6rem; font-weight: 900; font-family: var(--mono);
+      background: linear-gradient(90deg, #00f0ff, #b44dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    @media (max-width: 760px) { .sf-grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova SocialFi · 链上生态</span>
+      <h1>🌠 链上生态宇宙</h1>
+      <p class="sub">十大 SocialFi 玩法全部跑在 Nova 链上：粉丝代币、收益共享、成就徽章、预测市场、可验证盲盒、内容策展、社交图谱与推荐、声誉系统、创作者债券、碎片化 NFT。内容自动固定到链的存储网络，推荐引擎可一键发布为链的算力任务。</p>
+    </section>
+
+    <div class="card mb" id="repCard">
+      <h3 class="mb">👤 我的链上声誉</h3>
+      <p class="dim">连接钱包后展示实时信誉分（0-100）、权益与个性化推荐。</p>
+    </div>
+
+    <div class="sf-tabs" id="sfTabs">
+      <button class="sf-tab active" data-tab="fan" onclick="switchTab('fan')">🪙 粉丝代币</button>
+      <button class="sf-tab" data-tab="revenue" onclick="switchTab('revenue')">🤝 收益共享</button>
+      <button class="sf-tab" data-tab="ach" onclick="switchTab('ach')">🏅 成就</button>
+      <button class="sf-tab" data-tab="market" onclick="switchTab('market')">📊 预测市场</button>
+      <button class="sf-tab" data-tab="blind" onclick="switchTab('blind')">🎁 盲盒</button>
+      <button class="sf-tab" data-tab="curation" onclick="switchTab('curation')">📚 策展</button>
+      <button class="sf-tab" data-tab="graph" onclick="switchTab('graph')">🕸️ 社交图谱</button>
+      <button class="sf-tab" data-tab="reputation" onclick="switchTab('reputation')">⭐ 声誉明细</button>
+      <button class="sf-tab" data-tab="bond" onclick="switchTab('bond')">🏦 创作者债券</button>
+      <button class="sf-tab" data-tab="fraction" onclick="switchTab('fraction')">🧩 碎片化 NFT</button>
+    </div>
+
+    <!-- 1. 粉丝代币 -->
+    <section class="sf-panel active" id="sf-panel-fan">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">发行粉丝代币</h3>
+          <div class="field"><label>代币符号（大写字母/数字，≤10 位）</label><input id="fanSymbol" placeholder="MUS"></div>
+          <div class="field"><label>代币名称</label><input id="fanName" placeholder="Nova 音乐实验室粉丝币"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>总供应量</label><input id="fanSupply" type="number" value="100000"></div>
+            <div class="field"><label>初始单价（NOVA）</label><input id="fanPrice" type="number" step="0.01" value="0.5"></div>
+          </div>
+          <div class="field"><label>头像 CID（可选，自动固定到链上存储）</label><input id="fanCid" placeholder="0x…64位hex 或 bafy…"></div>
+          <button class="btn primary block" onclick="fanIssue()">🚀 一键发行</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">粉丝代币市场</h3>
+          <p class="dim">固定低手续费支持高频交易；绑定曲线让早期买家随销量升值；持有代币解锁投票权。</p>
+          <div id="fanList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 收益共享 -->
+    <section class="sf-panel" id="sf-panel-revenue">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">开设收益共享</h3>
+          <div class="field"><label>项目名称</label><input id="revName" placeholder="音乐人未来三年版税"></div>
+          <div class="field"><label>说明</label><textarea id="revDesc" rows="2" placeholder="投资喜欢的创作者，合约自动按比例分配版税收入"></textarea></div>
+          <button class="btn primary block" onclick="revCreate()">🤝 开设项目</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">投资「你喜欢的人」</h3>
+          <div id="revList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 成就 -->
+    <section class="sf-panel" id="sf-panel-ach">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">颁发成就徽章</h3>
+          <div class="field"><label>成就标题</label><input id="achTitle" placeholder="连续签到 365 天"></div>
+          <div class="field"><label>说明</label><input id="achDesc" placeholder="灵魂绑定徽章，不可转让"></div>
+          <div class="field"><label>徽章图案</label><input id="achBadge" placeholder="🔥"></div>
+          <button class="btn primary block" onclick="achIssue()">🏅 创建成就</button>
+          <div class="field mt"><label>颁发给地址（0x + 40 位 hex）</label><input id="achTarget" placeholder="0x…"></div>
+          <div class="field"><label>成就 ID</label><input id="achAid" placeholder="ach_…"></div>
+          <button class="btn success block" onclick="achAward()">🎖️ 颁发（灵魂绑定）</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">成就图鉴（不可转让）</h3>
+          <div id="achList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 预测市场 -->
+    <section class="sf-panel" id="sf-panel-market">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">开设预测市场</h3>
+          <div class="field"><label>问题</label><input id="mktQ" placeholder="这部电影票房能破 10 亿吗？"></div>
+          <div class="field"><label>选项（逗号分隔）</label><input id="mktOpts" value="能,不能"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>关闭时间（小时）</label><input id="mktClose" type="number" value="168"></div>
+            <div class="field"><label>预言机地址（默认自己）</label><input id="mktOracle" placeholder="0x…（可留空）"></div>
+          </div>
+          <button class="btn primary block" onclick="mktCreate()">📊 开设市场</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">用钱包表达观点</h3>
+          <div id="mktList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 盲盒 -->
+    <section class="sf-panel" id="sf-panel-blind">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">上架盲盒（commit-reveal 可验证随机）</h3>
+          <div class="field"><label>盲盒名称</label><input id="blindName" placeholder="星际盲盒"></div>
+          <div class="field"><label>单次价格（NOVA）</label><input id="blindPrice" type="number" step="0.1" value="10"></div>
+          <div class="field"><label>档位 JSON（name/weight/reward_type/reward_amount 或 reward_cid）</label>
+            <textarea id="blindTiers" rows="5">[{"name":"传说","weight":1,"reward_type":"nova","reward_amount":50},{"name":"稀有","weight":5,"reward_type":"badge","reward_cid":"0xaabbccdd0000000000000000000000000000000000000000000000000000000001"},{"name":"普通","weight":20,"reward_type":"nova","reward_amount":2}]</textarea>
+          </div>
+          <button class="btn primary block" onclick="blindCreate()">🎁 上架盲盒</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">开盒即验证随机</h3>
+          <div id="blindList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. 策展 -->
+    <section class="sf-panel" id="sf-panel-curation">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">创建策展 NFT（品味即资产）</h3>
+          <div class="field"><label>歌单 / 影单标题</label><input id="curTitle" placeholder="2026 最佳单曲歌单"></div>
+          <div class="field"><label>收录条目（每行一条，或 CID）</label><textarea id="curItems" rows="3" placeholder="星轨回声&#10;量子夜航&#10;超新星原石"></textarea></div>
+          <div class="sf-grid2">
+            <div class="field"><label>售价（NOVA）</label><input id="curPrice" type="number" step="0.1" value="3"></div>
+            <div class="field"><label>封面 CID（可选）</label><input id="curCid" placeholder="0x…"></div>
+          </div>
+          <button class="btn primary block" onclick="curCreate()">📚 创建策展</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">收藏即分润（策展人得 90%）</h3>
+          <div id="curList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. 社交图谱 -->
+    <section class="sf-panel" id="sf-panel-graph">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">发布动态（可携带 CID 上链存储）</h3>
+          <div class="field"><label>内容</label><textarea id="graphContent" rows="2" placeholder="分享你的创作…"></textarea></div>
+          <div class="field"><label>内容 CID（可选，自动固定到链上存储）</label><input id="graphCid" placeholder="0x…"></div>
+          <button class="btn primary block" onclick="graphPost()">🚀 发布</button>
+          <div class="field mt"><label>关注地址</label><input id="graphFollowTarget" placeholder="0x…"></div>
+          <button class="btn success block" onclick="graphFollow()">➕ 关注</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">动态流</h3>
+          <div id="graphList"><p class="dim">加载中…</p></div>
+          <h3 class="mt mb">🌟 我的推荐（链上算力引擎）</h3>
+          <div id="graphRec"><p class="dim">加载中…</p></div>
+          <div class="sf-tools">
+            <input id="recBounty" type="number" step="1" value="5" style="width:110px;" title="算力任务赏金（NOVA）">
+            <button class="btn" onclick="publishRecTask()">⚡ 一键发布推荐算力任务</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. 声誉 -->
+    <section class="sf-panel" id="sf-panel-reputation">
+      <div class="card">
+        <h3 class="mb">⭐ 声誉明细（0-100）</h3>
+        <p class="dim">综合质押、签到、部署合约、推荐、成就、策展、粉丝代币、内容互动等维度实时计算；高分（≥80）享 50% 交易费折扣，并优先参与预售与空投。</p>
+        <div id="repDetail"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 9. 创作者债券 -->
+    <section class="sf-panel" id="sf-panel-bond">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">发行创作者债券（版税担保）</h3>
+          <div class="field"><label>债券名称</label><input id="bondName" placeholder="新专辑未来版税债券"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>目标融资额（NOVA）</label><input id="bondPrincipal" type="number" value="1000"></div>
+            <div class="field"><label>年化利率（0-50%）</label><input id="bondRate" type="number" step="0.01" value="0.08"></div>
+          </div>
+          <div class="field"><label>期限（天）</label><input id="bondTerm" type="number" value="365"></div>
+          <button class="btn primary block" onclick="bondIssue()">🏦 发行债券</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">债券市场</h3>
+          <div id="bondList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. 碎片化 NFT -->
+    <section class="sf-panel" id="sf-panel-fraction">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">拆分 NFT（多人共同持有）</h3>
+          <div class="field"><label>资产名称</label><input id="fracName" placeholder="热门歌曲版权"></div>
+          <div class="field"><label>来源（NFT ID 或 CID）</label><input id="fracRef" placeholder="nova-genesis-01 或 0x…"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>碎片总数</label><input id="fracSupply" type="number" value="10000"></div>
+            <div class="field"><label>每份价格（NOVA）</label><input id="fracPrice" type="number" step="0.001" value="0.01"></div>
+          </div>
+          <button class="btn primary block" onclick="fracSplit()">🧩 拆分</button>
+        </div>
+        <div class="card">
+          <h3 class="mb">碎片市场</h3>
+          <div id="fracList"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="card mt">
+      <h3 class="mb">📜 链上动态（最近事件）</h3>
+      <div id="sfEvents"><p class="dim">加载中…</p></div>
+    </div>
+  </main>
+
+  <script src="./apps-common.js"></script>  <script>
+    var N = NovaApps;
+
+    function amt8(x) { return Math.round(Number(x) * 1e8) / 1e8; }
+    function fmtN(x) { return Number(x || 0).toLocaleString('zh-CN', { maximumFractionDigits: 6 }); }
+    function addrLink(a) { return '<span class="mono">' + N.esc(String(a || '').slice(0, 10)) + '…</span>'; }
+    function pct(a, b) { b = Number(b || 0); return b > 0 ? (Number(a || 0) / b * 100).toFixed(1) + '%' : '—'; }
+    function ownedOf(map, addr) { return map && map[addr] ? map[addr] : 0; }
+
+    async function sfAll() {
+      var s = N.getState();
+      if (s.mode === 'node') {
+        var [fan, rev, ach, mkt, blind, cur, graph, bond, frac, ev] = await Promise.all([
+          N.sfList('fan'), N.sfList('revenue'), N.sfList('achievement'), N.sfList('market'),
+          N.sfList('blindbox'), N.sfList('curation'), N.sfList('graph'), N.sfList('bond'),
+          N.sfList('fraction'), N.sfList('events')]);
+        return { fan_tokens: fan || {}, revenue_shares: rev || {}, achievements: (ach || {}).defs || {},
+                 soulbound: (ach || {}).soulbound || {}, markets: mkt || {}, blindboxes: (blind || {}).boxes || {},
+                 blind_reveals: (blind || {}).reveals || {}, curations: cur || {}, graph_posts: (graph || {}).posts || {},
+                 graph_follows: (graph || {}).follows || {}, bonds: bond || {}, fractions: frac || {},
+                 events: Array.isArray(ev) ? ev : [] };
+      }
+      return N.sfStore();
+    }
+    async function sfRep() {
+      var s = N.getState();
+      if (s.mode === 'node') { var d = await N.api('/api/reputation/' + s.addr); return d || {}; }
+      return N.sfReputation(s.addr);
+    }
+    async function sfRecs() {
+      var s = N.getState();
+      if (s.mode === 'node') { var d = await N.api('/api/graph/recommend/' + s.addr); return d.recommendations || []; }
+      return N.sfRecommend(s.addr);
+    }
+    async function sfTaskSpec() {
+      var s = N.getState();
+      if (s.mode === 'node') { var d = await N.api('/api/graph/recommend/' + s.addr); return d.task_spec || ''; }
+      return 'nova:recommend:' + s.addr + ':demo';
+    }
+
+    function switchTab(name) {
+      var tabs = document.querySelectorAll('.sf-tab');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === name);
+      var panels = document.querySelectorAll('.sf-panel');
+      for (var j = 0; j < panels.length; j++) panels[j].classList.toggle('active', panels[j].id === 'sf-panel-' + name);
+      renderTab(name);
+    }
+    async function run(op, fields, amount, okMsg) {
+      var ok = await N.requireWallet();
+      if (!ok) return;
+      var r = await N.sfAction(op, fields, amount);
+      if (!r.ok) { N.toast(r.error, 'err'); return; }
+      N.toast((okMsg || '操作成功') + (r.id ? ' · ' + String(r.id).slice(0, 14) + '…' : ''));
+      renderAll();
+    }
+
+    async function renderAll() {
+      renderRepCard();
+      var active = document.querySelector('.sf-tab.active');
+      if (active) renderTab(active.getAttribute('data-tab'));
+      renderEvents();
+    }
+
+    async function renderRepCard() {
+      var s = N.getState();
+      var el = document.getElementById('repCard');
+      if (!s.connected) {
+        el.innerHTML = '<h3 class="mb">👤 我的链上声誉</h3><p class="dim">连接钱包后展示实时信誉分（0-100）、权益与个性化推荐。</p>' +
+          '<button class="btn primary small mt" onclick="N.requireWallet().then(function(){renderAll()})">连接钱包</button>';
+        return;
+      }
+      var r = await sfRep();
+      var compHtml = '';
+      Object.keys(r.components || {}).forEach(function (k) {
+        compHtml += '<div class="stat"><div class="num">' + N.fmt(r.components[k]) + '</div><div class="label">' + N.esc(k) + '</div></div>';
+      });
+      var recs = await sfRecs();
+      var recHtml = recs.map(function (x) {
+        return '<div class="sf-sub">→ ' + N.displayName(x.addr) + '（信誉 ' + N.fmt(x.reputation) + '）· ' + N.esc(x.reason) + '</div>';
+      }).join('') || '<div class="sf-sub">多关注、点赞、创作，推荐将自动生成。</div>';
+      el.innerHTML =
+        '<div class="sf-bar">' +
+          '<div><div class="rep-score">' + r.score + '</div>' +
+          '<div class="label" style="color:var(--dim)">' + N.esc(r.tier) + ' 级（' + N.esc(r.grade) + '）· 手续费 ' + (r.fee_multiplier < 1 ? '5 折' : '标准') + '</div></div>' +
+          '<div style="flex:1;min-width:220px"><div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(96px,1fr))">' + compHtml + '</div></div>' +
+        '</div>' +
+        '<div class="mt"><b>🌟 推荐给你的创作者</b><div>' + recHtml + '</div></div>';
+    }
+
+    async function renderEvents() {
+      var s = await sfAll();
+      var list = s.events || [];
+      var el = document.getElementById('sfEvents');
+      el.innerHTML = list.slice(0, 12).map(function (e) {
+        return '<div class="sf-sub">' + (e.ts ? N.timeAgo(e.ts) : '') + ' · ' + N.esc(e.op || '') + ' · ' + N.esc(e.summary || '') + ' · ' + addrLink(e.addr) + '</div>';
+      }).join('') || '<p class="dim">暂无链上动态</p>';
+    }
+
+    /* ============ 粉丝代币 ============ */
+    async function renderFan() {
+      var s = await sfAll();
+      var tokens = s.fan_tokens || {};
+      var keys = Object.keys(tokens).sort(function (a, b) { return (tokens[b].created_at || 0) - (tokens[a].created_at || 0); });
+      var html = keys.map(function (tid) {
+        var t = tokens[tid];
+        var cur = N.sfFanPriceAt(s, tid, 1);
+        var myHold = ownedOf(t.holders, N.getState().addr);
+        var props = Object.keys(t.proposals || {}).map(function (pid) {
+          var p = t.proposals[pid];
+          var voted = (t.voted[pid] || []).indexOf(N.getState().addr) >= 0;
+          var open = Date.now() < p.closes_at && !voted;
+          return '<div class="sf-sub">📋 ' + N.esc(p.title) + '：' + p.votes[0] + ' 支持 / ' + p.votes[1] + ' 反对' +
+            (open ? ' <button class="btn small" onclick="fanVote(\'' + tid + '\',\'' + pid + '\',0)">支持</button> <button class="btn small" onclick="fanVote(\'' + tid + '\',\'' + pid + '\',1)">反对</button>' : (voted ? '（已投票）' : '（已结束）')) + '</div>';
+        }).join('');
+        return '<div class="sf-item"><h4>🪙 ' + N.esc(t.symbol) + ' · ' + N.esc(t.name) + '</h4>' +
+          '<div class="sf-sub">发行价 ' + fmtN(t.price) + ' · 当前价 <span class="price">' + fmtN(cur) + '</span> · 已售 ' + fmtN(t.sold) + ' / ' + fmtN(t.supply) +
+          '<br>创作者 ' + addrLink(t.creator) + ' · 我持有 ' + fmtN(myHold) + ' 份</div>' +
+          '<div class="sf-tools">' +
+            '<button class="btn primary small" onclick="fanBuy(\'' + tid + '\')">买入</button>' +
+            '<button class="btn small" onclick="fanPropose(\'' + tid + '\')">发起提案</button>' +
+          '</div>' + (props ? '<div class="mt">' + props + '</div>' : '') + '</div>';
+      }).join('');
+      document.getElementById('fanList').innerHTML = html || '<p class="dim">还没有粉丝代币，发行第一个吧</p>';
+    }
+    function fanIssue() {
+      var cid = document.getElementById('fanCid').value.trim();
+      run('nova:fan:issue', { symbol: document.getElementById('fanSymbol').value.trim().toUpperCase(),
+        name: document.getElementById('fanName').value.trim(), supply: Number(document.getElementById('fanSupply').value),
+        price: Number(document.getElementById('fanPrice').value), cid: cid }, 0, '已发行粉丝代币');
+    }
+    async function fanBuy(tid) {
+      var qty = prompt('买入数量（当前价自动计算）：', '10');
+      if (!qty) return;
+      var s = await sfAll();
+      var t = s.fan_tokens[tid];
+      if (!t) return;
+      var cost = amt8(Number(t.price) * (1 + t.sold / t.supply) * Number(qty));
+      run('nova:fan:buy', { tid: tid, qty: Number(qty) }, cost, '已买入 ' + qty + ' 份');
+    }
+    function fanPropose(tid) {
+      var title = prompt('提案标题：');
+      if (!title) return;
+      var hours = prompt('投票时长（小时）：', '168');
+      run('nova:fan:propose', { tid: tid, title: title, closes_in: Number(hours || 168) * 3600 }, 0, '已发起提案');
+    }
+    function fanVote(tid, pid, option) {
+      run('nova:fan:vote', { tid: tid, proposal_id: pid, option: option }, 0, '投票完成');
+    }
+
+    /* ============ 收益共享 ============ */
+    async function renderRev() {
+      var s = await sfAll();
+      var revs = s.revenue_shares || {};
+      var keys = Object.keys(revs).sort(function (a, b) { return (revs[b].created_at || 0) - (revs[a].created_at || 0); });
+      var addr = N.getState().addr;
+      var html = keys.map(function (rid) {
+        var r = revs[rid];
+        var invested = r.investors[addr] || 0;
+        var isCreator = r.creator === addr;
+        return '<div class="sf-item"><h4>🤝 ' + N.esc(r.name) + '</h4>' +
+          '<div class="sf-sub">' + N.esc(r.desc || '') + '<br>创作者 ' + addrLink(r.creator) + ' · 已募 ' + fmtN(r.total_invested) +
+          ' NOVA · 分成池 <span class="price">' + fmtN(r.pool) + '</span> NOVA · 我投资 ' + fmtN(invested) +
+          (r.pool > 0 && invested > 0 ? '（可领 ' + fmtN(amt8(r.pool * invested / r.total_invested)) + '）' : '') + '</div>' +
+          '<div class="sf-tools">' +
+            '<button class="btn primary small" onclick="revInvest(\'' + rid + '\')">投资</button>' +
+            (isCreator ? '<button class="btn small" onclick="revRoyalty(\'' + rid + '\')">注入版税</button>' : '') +
+            (invested > 0 ? '<button class="btn success small" onclick="revClaim(\'' + rid + '\')">领取分成</button>' : '') +
+          '</div></div>';
+      }).join('');
+      document.getElementById('revList').innerHTML = html || '<p class="dim">还没有收益共享项目</p>';
+    }
+    function revCreate() {
+      run('nova:rev:create', { name: document.getElementById('revName').value.trim(),
+        desc: document.getElementById('revDesc').value.trim() }, 0, '已开设收益共享');
+    }
+    function revInvest(rid) {
+      var amt = prompt('投资金额（NOVA）：', '10');
+      if (!amt) return;
+      run('nova:rev:invest', { rid: rid, amount: Number(amt) }, Number(amt), '投资成功');
+    }
+    function revRoyalty(rid) {
+      var amt = prompt('注入版税金额（NOVA）：', '5');
+      if (!amt) return;
+      run('nova:rev:royalty', { rid: rid, amount: Number(amt) }, Number(amt), '版税已注入');
+    }
+    function revClaim(rid) { run('nova:rev:claim', { rid: rid }, 0, '已领取分成'); }
+
+    /* ============ 成就 ============ */
+    async function renderAch() {
+      var s = await sfAll();
+      var defs = s.achievements || {};
+      var sb = s.soulbound || {};
+      var addr = N.getState().addr;
+      var html = Object.keys(defs).map(function (aid) {
+        var a = defs[aid];
+        var holders = Object.keys(sb[aid] || {}).length;
+        var mine = !!(sb[aid] || {})[addr];
+        var issuerBtn = a.issuer === addr ? '<button class="btn small" onclick="achAwardTo(\'' + aid + '\')">颁发</button>' : '';
+        return '<div class="sf-item"><h4>' + N.esc(a.badge || '🏅') + ' ' + N.esc(a.title) + (mine ? ' <span class="tag hot">我拥有</span>' : '') + '</h4>' +
+          '<div class="sf-sub">' + N.esc(a.desc || '') + '<br>颁发方 ' + addrLink(a.issuer) + ' · 已颁发 ' + holders + ' 人 · ID <span class="mono">' + N.esc(aid) + '</span></div>' +
+          (issuerBtn ? '<div class="sf-tools">' + issuerBtn + '</div>' : '') + '</div>';
+      }).join('');
+      document.getElementById('achList').innerHTML = html || '<p class="dim">还没有成就徽章</p>';
+    }
+    function achIssue() {
+      run('nova:ach:issue', { title: document.getElementById('achTitle').value.trim(),
+        desc: document.getElementById('achDesc').value.trim(), badge: document.getElementById('achBadge').value.trim() || '🏅' }, 0, '已创建成就');
+    }
+    function achAwardTo(aid) {
+      var target = prompt('颁发给地址（0x + 40 位 hex）：');
+      if (!target) return;
+      run('nova:ach:award', { aid: aid, target: target.trim() }, 0, '已颁发（灵魂绑定）');
+    }
+    function achAward() {
+      var aid = document.getElementById('achAid').value.trim();
+      var target = document.getElementById('achTarget').value.trim();
+      if (!aid || !target) { N.toast('请填写成就 ID 与目标地址', 'err'); return; }
+      run('nova:ach:award', { aid: aid, target: target }, 0, '已颁发（灵魂绑定）');
+    }
+
+    /* ============ 预测市场 ============ */
+    async function renderMarket() {
+      var s = await sfAll();
+      var mks = s.markets || {};
+      var addr = N.getState().addr;
+      var html = Object.keys(mks).map(function (mid) {
+        var m = mks[mid];
+        var total = m.pool.reduce(function (a, b) { return a + Number(b); }, 0);
+        var isOracle = m.oracle === addr;
+        var closed = Date.now() >= m.closes_at;
+        var options = m.options.map(function (o, i) {
+          return '<div class="sf-sub">' + (m.settled && m.outcome === i ? '✅ ' : '') + N.esc(o) + '：<span class="price">' + fmtN(m.pool[i]) + '</span> NOVA（' + pct(m.pool[i], total) + '）' +
+            (!m.settled && !closed ? ' <button class="btn small" onclick="mktBet(\'' + mid + '\',' + i + ')">押注</button>' : '') + '</div>';
+        }).join('');
+        return '<div class="sf-item"><h4>📊 ' + N.esc(m.question) + '</h4>' +
+          '<div class="sf-sub">预言机 ' + addrLink(m.oracle) + ' · ' + (m.settled ? '已结算：' + N.esc(m.options[m.outcome]) : (closed ? '已关闭，待结算' : N.timeAgo(m.closes_at) + '后关闭')) + '</div>' +
+          options +
+          (!m.settled && closed && isOracle ? '<div class="sf-tools">' + m.options.map(function (o, i) {
+            return '<button class="btn primary small" onclick="mktSettle(\'' + mid + '\',' + i + ')">结算：' + N.esc(o) + '</button>';
+          }).join('') + '</div>' : '') + '</div>';
+      }).join('');
+      document.getElementById('mktList').innerHTML = html || '<p class="dim">还没有预测市场</p>';
+    }
+    function mktCreate() {
+      var opts = document.getElementById('mktOpts').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (opts.length < 2) { N.toast('至少两个选项', 'err'); return; }
+      run('nova:market:create', { question: document.getElementById('mktQ').value.trim(), options: opts,
+        closes_in: Number(document.getElementById('mktClose').value || 168) * 3600,
+        oracle: document.getElementById('mktOracle').value.trim() }, 0, '已开设预测市场');
+    }
+    function mktBet(mid, option) {
+      var amt = prompt('押注金额（NOVA）：', '10');
+      if (!amt) return;
+      run('nova:market:bet', { mid: mid, option: option, amount: Number(amt) }, Number(amt), '已押注');
+    }
+    function mktSettle(mid, outcome) { run('nova:market:settle', { mid: mid, outcome: outcome }, 0, '已结算'); }
+
+    /* ============ 盲盒 ============ */
+    async function renderBlind() {
+      var s = await sfAll();
+      var boxes = s.blindboxes || {};
+      var reveals = s.blind_reveals || {};
+      var addr = N.getState().addr;
+      var seeds = lsSfSeeds();
+      var html = Object.keys(boxes).map(function (bid) {
+        var b = boxes[bid];
+        var revealed = !!reveals[bid];
+        var myDraws = (b.draws || {})[addr] || 0;
+        var tiers = b.tiers.map(function (t) {
+          return N.esc(t.name) + '(' + t.weight + ')' + (t.reward_type === 'nova' ? ' +' + fmtN(t.reward_amount) + ' NOVA' : ' 🎁徽章');
+        }).join(' · ');
+        return '<div class="sf-item"><h4>🎁 ' + N.esc(b.name) + '</h4>' +
+          '<div class="sf-sub">价格 <span class="price">' + fmtN(b.price) + '</span> NOVA · 档位：' + tiers + '<br>创作者 ' + addrLink(b.creator) +
+          ' · 我开了 ' + fmtN(myDraws) + ' 次 · ' + (revealed ? '<span class="tag hot">随机种子已揭示</span>' : '<span class="tag">commit 已提交，等待揭示</span>') + '</div>' +
+          '<div class="sf-tools">' +
+            (revealed ? '<button class="btn primary small" onclick="blindOpen(\'' + bid + '\')">开盒</button>' : '') +
+            (!revealed ? '<button class="btn small" onclick="blindReveal(\'' + bid + '\')">揭示种子</button>' : '') +
+            '<button class="btn small" onclick="blindInfo(\'' + bid + '\')">验证信息</button>' +
+          '</div></div>';
+      }).join('');
+      document.getElementById('blindList').innerHTML = html || '<p class="dim">还没有盲盒</p>';
+    }
+    function lsSfSeeds() { return N.lsGet('nova_sf_seeds', {}); }
+    function blindCreate() {
+      var tiers;
+      try { tiers = JSON.parse(document.getElementById('blindTiers').value); }
+      catch (e) { N.toast('档位 JSON 格式错误', 'err'); return; }
+      run('nova:blind:create', { name: document.getElementById('blindName').value.trim(),
+        price: Number(document.getElementById('blindPrice').value), tiers: tiers }, 0, '已上架盲盒（种子保存在浏览器）');
+    }
+    async function blindReveal(bid) {
+      var seeds = lsSfSeeds();
+      var seed = seeds[bid];
+      if (!seed) {
+        var d = await N.api('/api/socialfi/blindbox');
+        if (N.getState().mode === 'demo') {
+          var s = N.sfStore();
+          seed = (s.blindboxes[bid] || {})._seed;
+        } else {
+          seed = prompt('请输入你创建盲盒时保存的种子（64 位 hex）：');
+        }
+        if (!seed) { N.toast('未找到种子，请手动输入', 'err'); return; }
+      }
+      run('nova:blind:reveal', { bid: bid, seed: String(seed) }, 0, '种子已揭示');
+    }
+    async function blindOpen(bid) {
+      var draws = prompt('开盒次数：', '1');
+      if (!draws) return;
+      var s = await sfAll();
+      var b = s.blindboxes[bid];
+      if (!b) return;
+      run('nova:blind:open', { bid: bid, draws: Number(draws) }, amt8(Number(b.price) * Number(draws)), '开盒完成');
+    }
+    function blindInfo(bid) {
+      var s = N.getState().mode === 'demo' ? N.sfStore() : {};
+      var b = s.blindboxes && s.blindboxes[bid];
+      if (!b) { N.toast('节点模式下请查看 /api/socialfi/blindbox', 'info'); return; }
+      N.openModal({ title: '盲盒可验证信息', body: '<p>Commit（种子哈希）：<span class="mono">' + N.esc(b.commit || '') + '</span></p>' +
+        '<p>种子：<span class="mono">' + N.esc(b._seed || '') + '</span></p>' +
+        '<p class="dim">任何人可用 sha3_256(seed) 校验 commit；开盒结果由 sha3_256(seed+地址+次数) 决定，可在链上重现。</p>' });
+    }
+
+    /* ============ 策展 ============ */
+    async function renderCur() {
+      var s = await sfAll();
+      var curs = s.curations || {};
+      var addr = N.getState().addr;
+      var html = Object.keys(curs).map(function (cur) {
+        var c = curs[cur];
+        var owned = (c.owners || []).indexOf(addr) >= 0;
+        var mine = c.curator === addr;
+        return '<div class="sf-item"><h4>📚 ' + N.esc(c.title) + (owned ? ' <span class="tag hot">已收藏</span>' : '') + '</h4>' +
+          '<div class="sf-sub">策展人 ' + addrLink(c.curator) + ' · 售价 <span class="price">' + fmtN(c.price) + '</span> NOVA（策展人得 90%）· 收藏 ' + (c.owners || []).length + ' 人</div>' +
+          '<div class="sf-sub">收录：' + (c.items || []).map(function (it) { return N.esc(it); }).join('、') + '</div>' +
+          (!owned && !mine ? '<div class="sf-tools"><button class="btn primary small" onclick="curBuy(\'' + cur + '\')">收藏</button></div>' : '') + '</div>';
+      }).join('');
+      document.getElementById('curList').innerHTML = html || '<p class="dim">还没有策展</p>';
+    }
+    function curCreate() {
+      var items = document.getElementById('curItems').value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!items.length) { N.toast('请填写收录条目', 'err'); return; }
+      run('nova:curate:create', { title: document.getElementById('curTitle').value.trim(), items: items,
+        price: Number(document.getElementById('curPrice').value), cid: document.getElementById('curCid').value.trim() }, 0, '已创建策展');
+    }
+    async function curBuy(cur) {
+      var s = await sfAll();
+      var c = s.curations[cur];
+      if (!c) return;
+      run('nova:curate:buy', { cur_id: cur }, Number(c.price), '收藏成功');
+    }
+
+    /* ============ 社交图谱 ============ */
+    async function renderGraph() {
+      var s = await sfAll();
+      var posts = s.graph_posts || {};
+      var addr = N.getState().addr;
+      var keys = Object.keys(posts).sort(function (a, b) { return (posts[b].ts || 0) - (posts[a].ts || 0); });
+      var html = keys.map(function (pid) {
+        var p = posts[pid];
+        var liked = (p.likes || []).indexOf(addr) >= 0;
+        return '<div class="sf-item"><div class="sf-sub">' + N.displayName(p.addr) + ' · ' + N.timeAgo(p.ts) + (p.cid ? ' · 📦 CID' : '') + '</div>' +
+          '<div style="margin:6px 0">' + N.esc(p.content) + '</div>' +
+          '<div class="sf-tools"><button class="btn small' + (liked ? ' primary' : '') + '" onclick="graphLike(\'' + pid + '\')">👍 ' + (p.likes || []).length + '</button></div></div>';
+      }).join('');
+      document.getElementById('graphList').innerHTML = html || '<p class="dim">还没有动态</p>';
+
+      var recs = await sfRecs();
+      document.getElementById('graphRec').innerHTML = recs.map(function (x) {
+        return '<div class="sf-sub">→ ' + N.displayName(x.addr) + '（' + N.esc(x.reason) + '，信誉 ' + N.fmt(x.reputation) + '）</div>';
+      }).join('') || '<p class="dim">暂无推荐</p>';
+    }
+    function graphPost() {
+      var cid = document.getElementById('graphCid').value.trim();
+      run('nova:graph:post', { content: document.getElementById('graphContent').value.trim(), cid: cid }, 0, '已发布');
+    }
+    function graphFollow() {
+      var target = document.getElementById('graphFollowTarget').value.trim();
+      if (!target) { N.toast('请输入关注地址', 'err'); return; }
+      run('nova:graph:follow', { target: target }, 0, '关注成功');
+    }
+    function graphLike(pid) { run('nova:graph:like', { pid: pid }, 0, '点赞成功'); }
+    async function publishRecTask() {
+      var ok = await N.requireWallet();
+      if (!ok) return;
+      var spec = await sfTaskSpec();
+      var bounty = Number(document.getElementById('recBounty').value || 5);
+      var r = await N.sfAction('nova:compute:publish', { spec: spec, expires_in: 3600 }, bounty);
+      if (!r.ok) { N.toast(r.error, 'err'); return; }
+      N.toast('已发布推荐算力任务，赏金 ' + bounty + ' NOVA');
+    }
+
+    /* ============ 声誉明细 ============ */
+    async function renderRep() {
+      var s = N.getState();
+      var el = document.getElementById('repDetail');
+      if (!s.connected) { el.innerHTML = '<p class="dim">请先连接钱包。</p>'; return; }
+      var r = await sfRep();
+      var rows = Object.keys(r.components || {}).map(function (k) {
+        return '<div class="sf-bar"><span>' + N.esc(k) + '</span><span class="price">+' + N.fmt(r.components[k]) + '</span></div>';
+      }).join('');
+      el.innerHTML = '<div class="rep-score">' + r.score + ' / 100</div>' +
+        '<div class="sf-sub mt">' + N.esc(r.tier) + ' 级（' + N.esc(r.grade) + '）· 当前手续费倍率 ' + r.fee_multiplier + '（≥80 分享 5 折）</div>' +
+        '<div class="mt">' + rows + '</div>';
+    }
+
+    /* ============ 创作者债券 ============ */
+    async function renderBond() {
+      var s = await sfAll();
+      var bonds = s.bonds || {};
+      var addr = N.getState().addr;
+      var html = Object.keys(bonds).map(function (bid) {
+        var b = bonds[bid];
+        var isCreator = b.creator === addr;
+        var mySold = b.sold[addr] || 0;
+        var matured = Date.now() >= b.matures_at;
+        var status = b.settled ? '<span class="tag">已结算</span>' : (matured ? '<span class="tag hot">已到期</span>' : '<span class="tag live">募集中</span>');
+        return '<div class="sf-item"><h4>🏦 ' + N.esc(b.name) + ' ' + status + '</h4>' +
+          '<div class="sf-sub">发行人 ' + addrLink(b.creator) + ' · 目标 ' + fmtN(b.principal) + ' · 年化 ' + (Number(b.rate) * 100).toFixed(2) + '% · ' + b.term_days + ' 天<br>' +
+          '偿债池 <span class="price">' + fmtN(b.pool) + '</span> · 已募 ' + fmtN(Object.keys(b.sold).reduce(function (a, k) { return a + (b.sold[k] || 0); }, 0)) + ' · 我持有 ' + fmtN(mySold) + '</div>' +
+          '<div class="sf-tools">' +
+            (!isCreator && !b.settled && !matured ? '<button class="btn primary small" onclick="bondBuy(\'' + bid + '\')">认购</button>' : '') +
+            (isCreator && !b.settled ? '<button class="btn small" onclick="bondFund(\'' + bid + '\')">注入偿债池</button>' : '') +
+            (matured && !b.settled && mySold > 0 ? '<button class="btn success small" onclick="bondRedeem(\'' + bid + '\')">赎回本息</button>' : '') +
+          '</div></div>';
+      }).join('');
+      document.getElementById('bondList').innerHTML = html || '<p class="dim">还没有债券</p>';
+    }
+    function bondIssue() {
+      run('nova:bond:issue', { name: document.getElementById('bondName').value.trim(),
+        principal: Number(document.getElementById('bondPrincipal').value),
+        rate: Number(document.getElementById('bondRate').value),
+        term_days: Number(document.getElementById('bondTerm').value) }, 0, '已发行债券');
+    }
+    function bondBuy(bid) {
+      var amt = prompt('认购金额（NOVA）：', '100');
+      if (!amt) return;
+      run('nova:bond:buy', { bid: bid, amount: Number(amt) }, Number(amt), '认购成功');
+    }
+    function bondFund(bid) {
+      var amt = prompt('注入偿债池金额（NOVA）：', '50');
+      if (!amt) return;
+      run('nova:bond:fund', { bid: bid, amount: Number(amt) }, Number(amt), '偿债池已注资');
+    }
+    function bondRedeem(bid) { run('nova:bond:redeem', { bid: bid }, 0, '已赎回'); }
+
+    /* ============ 碎片化 NFT ============ */
+    async function renderFrac() {
+      var s = await sfAll();
+      var fracs = s.fractions || {};
+      var addr = N.getState().addr;
+      var html = Object.keys(fracs).map(function (fid) {
+        var f = fracs[fid];
+        var mine = f.owner === addr;
+        var myFrac = f.fractions[addr] || 0;
+        return '<div class="sf-item"><h4>🧩 ' + N.esc(f.name) + '</h4>' +
+          '<div class="sf-sub">来源 ' + N.esc(f.nft_ref) + ' · 总量 ' + fmtN(f.supply) + ' · 每份 <span class="price">' + fmtN(f.price_per) + '</span> NOVA<br>' +
+          '持有人 ' + addrLink(f.owner) + '（剩 ' + fmtN(f.owner_hold) + ' 份）· 我持有 ' + fmtN(myFrac) + ' 份</div>' +
+          (!mine ? '<div class="sf-tools"><button class="btn primary small" onclick="fracBuy(\'' + fid + '\')">购买碎片</button></div>' : '') + '</div>';
+      }).join('');
+      document.getElementById('fracList').innerHTML = html || '<p class="dim">还没有碎片化 NFT</p>';
+    }
+    function fracSplit() {
+      run('nova:frac:split', { name: document.getElementById('fracName').value.trim(),
+        nft_ref: document.getElementById('fracRef').value.trim(),
+        supply: Number(document.getElementById('fracSupply').value),
+        price_per: Number(document.getElementById('fracPrice').value) }, 0, '已拆分');
+    }
+    async function fracBuy(fid) {
+      var qty = prompt('购买碎片数：', '100');
+      if (!qty) return;
+      var s = await sfAll();
+      var f = s.fractions[fid];
+      if (!f) return;
+      run('nova:frac:buy', { fid: fid, qty: Number(qty) }, amt8(Number(f.price_per) * Number(qty)), '购买成功');
+    }
+
+    /* ============ 渲染分发 ============ */
+    var RENDERERS = {
+      fan: renderFan, revenue: renderRev, ach: renderAch, market: renderMarket, blind: renderBlind,
+      curation: renderCur, graph: renderGraph, reputation: renderRep, bond: renderBond, fraction: renderFrac
+    };
+    function renderTab(name) { if (RENDERERS[name]) RENDERERS[name](); }
+
+    window.addEventListener('nova-wallet', renderAll);
+    N.init({
+      active: 'socialfi',
+      onReady: function () { renderAll(); }
+    });
+  </script>
+</body>
+</html>

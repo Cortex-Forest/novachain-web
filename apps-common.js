@@ -183,7 +183,7 @@
     wallets: 'nova_priv', balances: 'nova_demo_balances', ledger: 'nova_demo_ledger',
     nft: 'nova_nft_store', owned: 'nova_nft_owned', profiles: 'nova_app_profiles',
     feed: 'nova_app_feed', seeded: 'nova_app_seeded', rooms: 'nova_app_rooms',
-    scores: 'nova_app_scores'
+    scores: 'nova_app_scores', socialfi: 'nova_socialfi'
   };
   var state = { mode: 'demo', rpc: null, connected: false, addr: null, priv: null, balance: 0, active: null };
   var TREASURY = '0x' + '0'.repeat(40);
@@ -527,7 +527,7 @@
 
   /* ================= 演示数据（一次性初始化） ================= */
   function seedDemoData() {
-    if (lsGet(LS.seeded, '') === 'v1') return;
+    if (lsGet(LS.seeded, '') === 'v1' || lsGet(LS.seeded, '') === 'v2') return;
     var p = profiles();
     DEMO_CREATORS.forEach(function (c) {
       if (!p[c.addr]) p[c.addr] = { name: c.name, avatar: c.avatar, desc: c.desc, ts: Date.now() };
@@ -740,7 +740,8 @@
     { key: 'live', href: './live.html', icon: '📡', label: '直播' },
     { key: 'social', href: './social.html', icon: '💬', label: '社交' },
     { key: 'stage', href: './stage.html', icon: '🎪', label: '演出' },
-    { key: 'nft', href: './nft.html', icon: '🖼️', label: 'NFT' }
+    { key: 'nft', href: './nft.html', icon: '🖼️', label: 'NFT' },
+    { key: 'socialfi', href: './socialfi.html', icon: '🌠', label: '链上生态' }
   ];
   function updateWalletUI() {
     var chip = document.getElementById('walletChip');
@@ -830,7 +831,527 @@
     });
   }
 
-  /* ================= 初始化 ================= */
+  /* ================= SocialFi：链上生态 10 类玩法（演示 / 节点双模式） ================= */
+  function sfEmpty() {
+    return { fan_tokens: {}, revenue_shares: {}, achievements: {}, soulbound: {},
+             markets: {}, blindboxes: {}, blind_reveals: {}, curations: {},
+             graph_posts: {}, graph_follows: {}, bonds: {}, fractions: {}, events: [] };
+  }
+  function sfStore() { return lsGet(LS.socialfi, sfEmpty()); }
+  function saveSfStore(s) { lsSet(LS.socialfi, s); }
+  function sfEvent(s, op, id, summary) {
+    s.events.unshift({ op: op, id: id, addr: state.addr, ts: Date.now(), summary: summary || id });
+    if (s.events.length > 80) s.events.length = 80;
+  }
+  function sfId(prefix, seedStr) { return prefix + demoHash(String(seedStr) + Date.now() + Math.random()).slice(2, 22); }
+  function demoBal(addr) { var b = lsGet(LS.balances, {}); return b[addr] != null ? b[addr] : 0; }
+  function demoSetBal(addr, amt) { var b = lsGet(LS.balances, {}); b[addr] = round4(amt); lsSet(LS.balances, b); }
+  function demoTransfer(from, to, amt) {
+    var b = lsGet(LS.balances, {});
+    b[from] = round4((b[from] || 0) - amt);
+    b[to] = round4((b[to] || 0) + amt);
+    lsSet(LS.balances, b);
+  }
+  function demoLedger(from, to, amt, memo, app) {
+    var l = lsGet(LS.ledger, []);
+    l.unshift({ txid: demoHash(from + to + amt + memo + Date.now()), from: from, to: to, amount: amt,
+                memo: memo, app: app || 'socialfi', ts: Date.now(), demo: true });
+    lsSet(LS.ledger, l);
+  }
+  async function sfAction(op, fields, amount) {
+    amount = Number(amount || 0);
+    if (!state.connected) return { ok: false, error: '未连接钱包' };
+    if (state.mode === 'demo') return sfDemoAction(op, fields || {}, amount);
+    try {
+      var pub = await getPubFromPriv(state.priv);
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = amount.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      var sig = await signMsg(state.priv, state.addr + state.addr + amtStr + ts + '[]' + data + pub);
+      var res = await api('/api/op', 'POST', {
+        addr: state.addr, amount: amount, data: data, timestamp: ts,
+        sender_public_key: pub, signature: sig
+      });
+      if (res && res.error) return { ok: false, error: res.error };
+      await refreshBalance();
+      return { ok: true, txid: res.txid, id: res.id, summary: res.summary };
+    } catch (e) {
+      return { ok: false, error: String((e && e.message) || e) };
+    }
+  }
+  async function sfList(domain) {
+    if (state.mode === 'node') { var d = await api('/api/socialfi/' + domain); return d || {}; }
+    return sfStore();
+  }
+  function sfFanPriceAt(s, tid, qty) {
+    var t = s.fan_tokens[tid];
+    return round4(Number(t.price) * (1 + t.sold / t.supply) * (qty || 1));
+  }
+  function sfDemoAction(op, fields, amount) {
+    var s = sfStore();
+    var addr = state.addr;
+    if (op === 'nova:fan:issue') {
+      var tid = sfId('fan_', addr + fields.symbol);
+      s.fan_tokens[tid] = { id: tid, creator: addr, symbol: fields.symbol, name: fields.name,
+        supply: Number(fields.supply), sold: 0, price: Number(fields.price), avatar_cid: fields.cid || '',
+        created_at: Date.now(), holders: {}, proposals: {}, voted: {} };
+      sfEvent(s, op, tid, '发行粉丝代币 ' + fields.symbol + ' · ' + fields.name);
+      saveSfStore(s); return { ok: true, id: tid, demo: true };
+    }
+    if (op === 'nova:fan:buy') {
+      var t = s.fan_tokens[fields.tid];
+      if (!t) return { ok: false, error: '代币不存在' };
+      var qty = Number(fields.qty);
+      if (addr === t.creator) return { ok: false, error: '不能购买自己的代币' };
+      if (t.sold + qty > t.supply) return { ok: false, error: '供应量不足' };
+      var cost = sfFanPriceAt(s, fields.tid, qty);
+      if (demoBal(addr) < cost) return { ok: false, error: '余额不足' };
+      t.sold += qty; t.holders[addr] = (t.holders[addr] || 0) + qty;
+      demoTransfer(addr, t.creator, cost);
+      demoLedger(addr, t.creator, cost, '买入 ' + qty + ' 份 ' + t.symbol, 'socialfi');
+      sfEvent(s, op, t.id, '买入 ' + qty + ' 份 ' + t.symbol);
+      saveSfStore(s); refreshBalance(); return { ok: true, id: t.id, cost: cost, demo: true };
+    }
+    if (op === 'nova:fan:propose') {
+      var t2 = s.fan_tokens[fields.tid];
+      if (!t2 || (t2.holders[addr] || 0) < 1) return { ok: false, error: '需持有代币才能提案' };
+      var pid = sfId('fp_', fields.tid + addr + fields.title);
+      t2.proposals[pid] = { id: pid, proposer: addr, title: fields.title,
+        closes_at: Date.now() + Number(fields.closes_in) * 1000, options: ['支持', '反对'], votes: [0, 0] };
+      t2.voted[pid] = [];
+      sfEvent(s, op, pid, '发起提案「' + fields.title + '」');
+      saveSfStore(s); return { ok: true, id: pid, demo: true };
+    }
+    if (op === 'nova:fan:vote') {
+      var t3 = s.fan_tokens[fields.tid];
+      var prop = t3 && t3.proposals[fields.proposal_id];
+      if (!t3 || !prop) return { ok: false, error: '提案不存在' };
+      if ((t3.holders[addr] || 0) < 1) return { ok: false, error: '无投票权' };
+      if ((t3.voted[fields.proposal_id] || []).indexOf(addr) >= 0) return { ok: false, error: '已投票' };
+      if (Date.now() >= prop.closes_at) return { ok: false, error: '提案已结束' };
+      prop.votes[Number(fields.option)] += t3.holders[addr];
+      t3.voted[fields.proposal_id].push(addr);
+      sfEvent(s, op, prop.id, '投票完成');
+      saveSfStore(s); return { ok: true, id: prop.id, demo: true };
+    }
+    if (op === 'nova:rev:create') {
+      var rid = sfId('rev_', addr + fields.name);
+      s.revenue_shares[rid] = { id: rid, creator: addr, name: fields.name, desc: fields.desc || '',
+        investors: {}, total_invested: 0, pool: 0, created_at: Date.now() };
+      sfEvent(s, op, rid, '开设收益共享「' + fields.name + '」');
+      saveSfStore(s); return { ok: true, id: rid, demo: true };
+    }
+    if (op === 'nova:rev:invest') {
+      var r = s.revenue_shares[fields.rid];
+      if (!r) return { ok: false, error: '收益共享不存在' };
+      if (addr === r.creator) return { ok: false, error: '不能投资自己的项目' };
+      var amt = Number(fields.amount);
+      if (demoBal(addr) < amt) return { ok: false, error: '余额不足' };
+      r.investors[addr] = round4((r.investors[addr] || 0) + amt);
+      r.total_invested = round4(r.total_invested + amt);
+      demoTransfer(addr, r.creator, amt);
+      demoLedger(addr, r.creator, amt, '投资「' + r.name + '」', 'socialfi');
+      sfEvent(s, op, r.id, '投资 ' + amt + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: r.id, demo: true };
+    }
+    if (op === 'nova:rev:royalty') {
+      var r2 = s.revenue_shares[fields.rid];
+      if (!r2 || addr !== r2.creator) return { ok: false, error: '仅创作者可注入版税' };
+      var amt2 = Number(fields.amount);
+      if (demoBal(addr) < amt2) return { ok: false, error: '余额不足' };
+      r2.pool = round4(r2.pool + amt2);
+      demoSetBal(addr, demoBal(addr) - amt2);
+      demoLedger(addr, addr, amt2, '注入版税「' + r2.name + '」', 'socialfi');
+      sfEvent(s, op, r2.id, '注入版税收益 ' + amt2 + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: r2.id, demo: true };
+    }
+    if (op === 'nova:rev:claim') {
+      var r3 = s.revenue_shares[fields.rid];
+      if (!r3 || !r3.investors[addr]) return { ok: false, error: '无投资记录' };
+      var total = 0; Object.keys(r3.investors).forEach(function (k) { total += r3.investors[k]; });
+      if (total <= 0 || r3.pool <= 0) return { ok: false, error: '无可领取收益' };
+      var payout = round4(r3.pool * r3.investors[addr] / total);
+      if (payout <= 0) return { ok: false, error: '无可领取收益' };
+      r3.pool = round4(r3.pool - payout);
+      demoSetBal(addr, demoBal(addr) + payout);
+      demoLedger(TREASURY, addr, payout, '领取收益分成「' + r3.name + '」', 'socialfi');
+      sfEvent(s, op, r3.id, '领取收益分成 ' + payout + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: r3.id, payout: payout, demo: true };
+    }
+    if (op === 'nova:ach:issue') {
+      var aid = sfId('ach_', addr + fields.title);
+      s.achievements[aid] = { id: aid, issuer: addr, title: fields.title, desc: fields.desc || '',
+        badge: fields.badge || '🏅', created_at: Date.now() };
+      s.soulbound[aid] = {};
+      sfEvent(s, op, aid, '创建成就「' + fields.title + '」');
+      saveSfStore(s); return { ok: true, id: aid, demo: true };
+    }
+    if (op === 'nova:ach:award') {
+      var a = s.achievements[fields.aid];
+      if (!a) return { ok: false, error: '成就不存在' };
+      s.soulbound[fields.aid][fields.target] = Date.now();
+      sfEvent(s, op, fields.aid, '颁发成就 → ' + String(fields.target).slice(0, 10) + '…');
+      saveSfStore(s); return { ok: true, id: fields.aid, demo: true };
+    }
+    if (op === 'nova:market:create') {
+      var mid = sfId('mkt_', addr + fields.question);
+      s.markets[mid] = { id: mid, creator: addr, oracle: fields.oracle || addr, question: fields.question,
+        options: (fields.options || []).slice(), closes_at: Date.now() + Number(fields.closes_in) * 1000,
+        pool: (fields.options || []).map(function () { return 0; }), bets: {}, settled: false,
+        outcome: null, created_at: Date.now() };
+      sfEvent(s, op, mid, '开设预测市场「' + String(fields.question).slice(0, 24) + '」');
+      saveSfStore(s); return { ok: true, id: mid, demo: true };
+    }
+    if (op === 'nova:market:bet') {
+      var m = s.markets[fields.mid];
+      if (!m || m.settled || Date.now() >= m.closes_at) return { ok: false, error: '市场不可投注' };
+      var amt3 = Number(fields.amount);
+      if (demoBal(addr) < amt3) return { ok: false, error: '余额不足' };
+      m.pool[Number(fields.option)] = round4(m.pool[Number(fields.option)] + amt3);
+      m.bets[addr] = m.bets[addr] || {};
+      m.bets[addr][Number(fields.option)] = round4((m.bets[addr][Number(fields.option)] || 0) + amt3);
+      demoSetBal(addr, demoBal(addr) - amt3);
+      demoLedger(addr, m.creator, amt3, '押注「' + m.question.slice(0, 16) + '」', 'socialfi');
+      sfEvent(s, op, m.id, '押注 ' + amt3 + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: m.id, demo: true };
+    }
+    if (op === 'nova:market:settle') {
+      var m2 = s.markets[fields.mid];
+      if (!m2 || m2.settled) return { ok: false, error: '市场不可结算' };
+      if (addr !== m2.oracle) return { ok: false, error: '仅预言机可结算' };
+      var outcome = Number(fields.outcome);
+      var total2 = m2.pool.reduce(function (a, b) { return a + b; }, 0);
+      var winPool = m2.pool[outcome];
+      m2.settled = true; m2.outcome = outcome;
+      if (winPool > 0 && total2 > 0) {
+        var fee = round4(total2 * 0.02);
+        var b4 = lsGet(LS.balances, {});
+        b4[TREASURY] = round4((b4[TREASURY] || 0) + fee);
+        Object.keys(m2.bets).forEach(function (ba) {
+          var bet = m2.bets[ba][outcome] || 0;
+          if (bet > 0) {
+            var payout2 = round4(bet / winPool * (total2 - fee));
+            b4[ba] = round4((b4[ba] || 0) + payout2);
+            demoLedger(TREASURY, ba, payout2, '预测市场结算「' + m2.question.slice(0, 16) + '」', 'socialfi');
+          }
+        });
+        lsSet(LS.balances, b4);
+      }
+      sfEvent(s, op, m2.id, '结算结果：' + m2.options[outcome]);
+      saveSfStore(s); refreshBalance(); return { ok: true, id: m2.id, demo: true };
+    }
+    return sfDemoAction2(op, fields, amount);
+  }
+  function sfBlindTier(box, seed, addr, nonce) {
+    var rand = parseInt(sha3_256(seed + addr + String(nonce)).slice(0, 16), 16);
+    var totalW = box.tiers.reduce(function (a, t) { return a + Number(t.weight); }, 0);
+    var pos = rand % totalW;
+    for (var i = 0; i < box.tiers.length; i++) {
+      pos -= Number(box.tiers[i].weight);
+      if (pos < 0) return box.tiers[i];
+    }
+    return box.tiers[box.tiers.length - 1];
+  }
+  function sfDemoAction2(op, fields, amount) {
+    var s = sfStore();
+    var addr = state.addr;
+    if (op === 'nova:blind:create') {
+      var seed = bytesToHex(randomBytes(32));
+      var commit = sha3_256(seed);
+      var bid = sfId('box_', addr + fields.name);
+      s.blindboxes[bid] = { id: bid, creator: addr, name: fields.name, price: Number(fields.price),
+        commit: commit, tiers: (fields.tiers || []).slice(), _seed: seed, created_at: Date.now(), draws: {} };
+      sfEvent(s, op, bid, '上架盲盒「' + fields.name + '」');
+      saveSfStore(s); return { ok: true, id: bid, commit: commit, demo: true };
+    }
+    if (op === 'nova:blind:reveal') {
+      var box = s.blindboxes[fields.bid];
+      if (!box) return { ok: false, error: '盲盒不存在' };
+      if (s.blind_reveals[fields.bid]) return { ok: false, error: '已揭示' };
+      if (sha3_256(String(fields.seed || '')) !== box.commit) return { ok: false, error: '种子校验失败' };
+      s.blind_reveals[fields.bid] = String(fields.seed);
+      sfEvent(s, op, box.id, '盲盒种子已揭示（可验证随机）');
+      saveSfStore(s); return { ok: true, id: box.id, demo: true };
+    }
+    if (op === 'nova:blind:open') {
+      var box2 = s.blindboxes[fields.bid];
+      if (!box2 || !s.blind_reveals[fields.bid]) return { ok: false, error: '盲盒未揭示或不存在' };
+      var draws = Number(fields.draws || 1);
+      var cost = round4(Number(box2.price) * draws);
+      if (demoBal(addr) < cost) return { ok: false, error: '余额不足' };
+      var nonce = box2.draws[addr] || 0;
+      demoSetBal(addr, demoBal(addr) - cost);
+      demoSetBal(box2.creator, demoBal(box2.creator) + cost);
+      var won = [];
+      for (var i = 0; i < draws; i++) {
+        var tier = sfBlindTier(box2, s.blind_reveals[fields.bid], addr, nonce + i);
+        if (tier.reward_type === 'nova') {
+          demoSetBal(addr, demoBal(addr) + Number(tier.reward_amount || 0));
+          won.push({ tier: tier.name, type: 'nova', amount: Number(tier.reward_amount || 0) });
+        } else {
+          var aid = sfId('ach_', box2.id + tier.name + addr + (nonce + i));
+          if (!s.achievements[aid]) s.achievements[aid] = { id: aid, issuer: box2.creator,
+            title: '盲盒·' + tier.name, desc: tier.reward_cid || '', badge: '🎁', created_at: Date.now() };
+          s.soulbound[aid] = s.soulbound[aid] || {};
+          s.soulbound[aid][addr] = Date.now();
+          won.push({ tier: tier.name, type: 'badge', aid: aid });
+        }
+      }
+      box2.draws[addr] = nonce + draws;
+      sfEvent(s, op, box2.id, '开盒 ' + draws + ' 次');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: box2.id, won: won, demo: true };
+    }
+    if (op === 'nova:curate:create') {
+      var cur = sfId('cur_', addr + fields.title);
+      s.curations[cur] = { id: cur, curator: addr, title: fields.title, items: (fields.items || []).slice(),
+        price: Number(fields.price), owners: [addr], cover_cid: fields.cid || '', created_at: Date.now() };
+      sfEvent(s, op, cur, '创建策展「' + fields.title + '」');
+      saveSfStore(s); return { ok: true, id: cur, demo: true };
+    }
+    if (op === 'nova:curate:buy') {
+      var c = s.curations[fields.cur_id];
+      if (!c) return { ok: false, error: '策展不存在' };
+      if (addr === c.curator || (c.owners || []).indexOf(addr) >= 0) return { ok: false, error: '已是所有者或创建者' };
+      var price = Number(c.price);
+      if (demoBal(addr) < price) return { ok: false, error: '余额不足' };
+      demoSetBal(addr, demoBal(addr) - price);
+      demoSetBal(c.curator, demoBal(c.curator) + round4(price * 0.9));
+      demoSetBal(TREASURY, demoBal(TREASURY) + round4(price * 0.1));
+      c.owners.push(addr);
+      demoLedger(addr, c.curator, price, '收藏策展「' + c.title + '」', 'socialfi');
+      sfEvent(s, op, c.id, '收藏策展「' + c.title + '」');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: c.id, demo: true };
+    }
+    if (op === 'nova:graph:post') {
+      var pid = sfId('p_', addr + fields.content);
+      s.graph_posts[pid] = { id: pid, addr: addr, content: fields.content, cid: fields.cid || '',
+        likes: [], ts: Date.now() };
+      sfEvent(s, op, pid, String(fields.content).slice(0, 20));
+      saveSfStore(s); return { ok: true, id: pid, demo: true };
+    }
+    if (op === 'nova:graph:follow') {
+      if (String(fields.target) === addr) return { ok: false, error: '不能关注自己' };
+      if ((s.graph_follows[addr] || []).indexOf(fields.target) >= 0) return { ok: false, error: '已关注' };
+      s.graph_follows[addr] = s.graph_follows[addr] || [];
+      s.graph_follows[addr].push(fields.target);
+      sfEvent(s, op, fields.target, '关注 ' + String(fields.target).slice(0, 10) + '…');
+      saveSfStore(s); return { ok: true, id: fields.target, demo: true };
+    }
+    if (op === 'nova:graph:like') {
+      var p = s.graph_posts[fields.pid];
+      if (!p) return { ok: false, error: '动态不存在' };
+      if ((p.likes || []).indexOf(addr) >= 0) return { ok: false, error: '已点赞' };
+      p.likes.push(addr);
+      sfEvent(s, op, p.id, '点赞');
+      saveSfStore(s); return { ok: true, id: p.id, demo: true };
+    }
+    if (op === 'nova:bond:issue') {
+      var bid2 = sfId('bnd_', addr + fields.name);
+      s.bonds[bid2] = { id: bid2, creator: addr, name: fields.name, principal: Number(fields.principal),
+        rate: Number(fields.rate), term_days: Number(fields.term_days), sold: {}, pool: 0,
+        settled: false, created_at: Date.now(), matures_at: Date.now() + Number(fields.term_days) * 86400000 };
+      sfEvent(s, op, bid2, '发行债券「' + fields.name + '」');
+      saveSfStore(s); return { ok: true, id: bid2, demo: true };
+    }
+    if (op === 'nova:bond:buy') {
+      var b = s.bonds[fields.bid];
+      if (!b || b.settled || Date.now() >= b.matures_at) return { ok: false, error: '债券不可认购' };
+      if (addr === b.creator) return { ok: false, error: '不能认购自己的债券' };
+      var amt4 = Number(fields.amount);
+      if (demoBal(addr) < amt4) return { ok: false, error: '余额不足' };
+      b.sold[addr] = round4((b.sold[addr] || 0) + amt4);
+      demoTransfer(addr, b.creator, amt4);
+      demoLedger(addr, b.creator, amt4, '认购债券「' + b.name + '」', 'socialfi');
+      sfEvent(s, op, b.id, '认购债券 ' + amt4 + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: b.id, demo: true };
+    }
+    if (op === 'nova:bond:fund') {
+      var b2 = s.bonds[fields.bid];
+      if (!b2 || addr !== b2.creator) return { ok: false, error: '仅创作者可注资' };
+      var amt5 = Number(fields.amount);
+      if (demoBal(addr) < amt5) return { ok: false, error: '余额不足' };
+      b2.pool = round4(b2.pool + amt5);
+      demoSetBal(addr, demoBal(addr) - amt5);
+      demoLedger(addr, addr, amt5, '注入偿债池「' + b2.name + '」', 'socialfi');
+      sfEvent(s, op, b2.id, '注入偿债池 ' + amt5 + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: b2.id, demo: true };
+    }
+    if (op === 'nova:bond:redeem') {
+      var b3 = s.bonds[fields.bid];
+      if (!b3 || b3.settled) return { ok: false, error: '债券不可赎回' };
+      if (Date.now() < b3.matures_at) return { ok: false, error: '未到到期日' };
+      var invested = b3.sold[addr] || 0;
+      if (invested <= 0 || b3.pool <= 0) return { ok: false, error: '无可赎回份额' };
+      var years = b3.term_days / 365;
+      var totalOwed = 0;
+      Object.keys(b3.sold).forEach(function (k) { totalOwed += b3.sold[k] * (1 + b3.rate * years); });
+      var factor = Math.min(1, b3.pool / totalOwed);
+      var payout = round4(invested * (1 + b3.rate * years) * factor);
+      b3.pool = round4(b3.pool - payout);
+      b3.sold[addr] = 0;
+      demoSetBal(addr, demoBal(addr) + payout);
+      demoLedger(TREASURY, addr, payout, '赎回债券「' + b3.name + '」', 'socialfi');
+      var settled = true;
+      Object.keys(b3.sold).forEach(function (k) { if (b3.sold[k] > 0) settled = false; });
+      if (settled || b3.pool <= 0) b3.settled = true;
+      sfEvent(s, op, b3.id, '赎回债券 ' + payout + ' NOVA');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: b3.id, payout: payout, demo: true };
+    }
+    if (op === 'nova:frac:split') {
+      var fid = sfId('fr_', addr + fields.nft_ref);
+      s.fractions[fid] = { id: fid, owner: addr, name: fields.name, nft_ref: fields.nft_ref,
+        supply: Number(fields.supply), owner_hold: Number(fields.supply), price_per: Number(fields.price_per),
+        fractions: {}, created_at: Date.now() };
+      s.fractions[fid].fractions[addr] = Number(fields.supply);
+      sfEvent(s, op, fid, '拆分 NFT「' + fields.name + '」为 ' + fields.supply + ' 份');
+      saveSfStore(s); return { ok: true, id: fid, demo: true };
+    }
+    if (op === 'nova:frac:buy') {
+      var f = s.fractions[fields.fid];
+      if (!f) return { ok: false, error: '碎片不存在' };
+      if (addr === f.owner) return { ok: false, error: '不能购买自己的碎片' };
+      var qty2 = Number(fields.qty);
+      if (qty2 > f.owner_hold) return { ok: false, error: '超出可售份额' };
+      var cost2 = round4(qty2 * Number(f.price_per));
+      if (demoBal(addr) < cost2) return { ok: false, error: '余额不足' };
+      f.owner_hold -= qty2;
+      f.fractions[addr] = (f.fractions[addr] || 0) + qty2;
+      demoTransfer(addr, f.owner, cost2);
+      demoLedger(addr, f.owner, cost2, '购买 ' + qty2 + ' 份碎片「' + f.name + '」', 'socialfi');
+      sfEvent(s, op, f.id, '购买 ' + qty2 + ' 份碎片');
+      saveSfStore(s); refreshBalance(); return { ok: true, id: f.id, demo: true };
+    }
+    return { ok: false, error: '未知操作' };
+  }
+  function sfReputation(addr) {
+    var s = sfStore();
+    var comp = {};
+    var posts = 0, likesGot = 0, followsOut = 0;
+    Object.keys(s.graph_posts).forEach(function (pid) {
+      var p = s.graph_posts[pid];
+      if (p.addr === addr) { posts++; likesGot += (p.likes || []).length; }
+    });
+    followsOut = (s.graph_follows[addr] || []).length;
+    comp['内容'] = Math.min(posts * 2 + likesGot * 0.5, 10);
+    comp['关注'] = Math.min(followsOut * 2, 10);
+    var curC = 0, curB = 0;
+    Object.keys(s.curations).forEach(function (cid2) {
+      var c = s.curations[cid2];
+      if (c.curator === addr) curC++; else if ((c.owners || []).indexOf(addr) >= 0) curB++;
+    });
+    comp['策展'] = Math.min((curC + curB) * 4, 12);
+    var held = 0;
+    Object.keys(s.fan_tokens).forEach(function (tid) { held += s.fan_tokens[tid].holders[addr] || 0; });
+    comp['粉丝代币'] = Math.min(held / 100, 8);
+    var earned = 0;
+    Object.keys(s.soulbound).forEach(function (aid) { if (s.soulbound[aid][addr]) earned++; });
+    comp['成就'] = Math.min(earned * 3, 12);
+    var bondsAmt = 0;
+    Object.keys(s.bonds).forEach(function (bid2) { bondsAmt += s.bonds[bid2].sold[addr] || 0; });
+    comp['债券'] = Math.min(bondsAmt / 100, 8);
+    var bet = 0;
+    Object.keys(s.markets).forEach(function (mid) {
+      var m = s.markets[mid];
+      if (m.bets[addr]) Object.keys(m.bets[addr]).forEach(function (o) { bet += m.bets[addr][o]; });
+    });
+    comp['预测'] = Math.min(bet / 50, 5);
+    comp['治理'] = Math.min(10, 0);
+    var score = 0;
+    Object.keys(comp).forEach(function (k) { score += comp[k]; });
+    score = Math.round(score * 100) / 100;
+    var tier = '星尘', grade = 'C';
+    [[90, '星核', 'S'], [70, '星环', 'A'], [40, '星芒', 'B'], [0, '星尘', 'C']].forEach(function (r) {
+      if (score >= r[0]) { tier = r[1]; grade = r[2]; }
+    });
+    return { addr: addr, score: Math.min(score, 100), components: comp, tier: tier, grade: grade,
+             fee_multiplier: score >= 80 ? 0.5 : 1 };
+  }
+  function sfRecommend(addr, limit) {
+    limit = limit || 6;
+    var s = sfStore();
+    var score = {}; var reason = {};
+    (s.graph_follows[addr] || []).forEach(function (f) {
+      score[f] = (score[f] || 0) + 1; reason[f] = '已关注';
+      (s.graph_follows[f] || []).forEach(function (f2) {
+        if (f2 !== addr) { score[f2] = (score[f2] || 0) + 3; reason[f2] = '好友的好友'; }
+      });
+    });
+    Object.keys(s.graph_posts).forEach(function (pid) {
+      var p = s.graph_posts[pid];
+      if ((p.likes || []).indexOf(addr) >= 0) {
+        (p.likes || []).forEach(function (liker) {
+          if (liker !== addr) { score[liker] = (score[liker] || 0) + 2; reason[liker] = '品味相似'; }
+        });
+      }
+    });
+    Object.keys(s.fan_tokens).forEach(function (tid) {
+      var c = s.fan_tokens[tid].creator;
+      if (c !== addr) { score[c] = (score[c] || 0) + 1; reason[c] = '创作者'; }
+    });
+    var ranked = Object.keys(score).sort(function (a, b) { return score[b] - score[a] || (a < b ? -1 : 1); });
+    return ranked.slice(0, limit).map(function (cand) {
+      return { addr: cand, score: score[cand], reason: reason[cand] || '潜在兴趣', reputation: sfReputation(cand).score };
+    });
+  }
+  function seedSocialfiDemo() {
+    if (lsGet(LS.seeded, '') === 'v2') return;
+    var s = sfStore();
+    if (!Object.keys(s.fan_tokens).length) {
+      s.fan_tokens['fan_mus'] = { id: 'fan_mus', creator: DEMO_CREATORS[0].addr, symbol: 'MUS',
+        name: 'Nova 音乐实验室粉丝币', supply: 100000, sold: 1200, price: 0.5, avatar_cid: '',
+        created_at: Date.now() - 86400000 * 3, holders: {}, proposals: {}, voted: {} };
+      s.fan_tokens['fan_mus'].holders[DEMO_CREATORS[6].addr] = 300;
+      s.fan_tokens['fan_mus'].holders[DEMO_CREATORS[4].addr] = 900;
+      s.fan_tokens['fan_stg'] = { id: 'fan_stg', creator: DEMO_CREATORS[6].addr, symbol: 'STG',
+        name: '银河演出粉丝币', supply: 50000, sold: 800, price: 1, avatar_cid: '',
+        created_at: Date.now() - 86400000 * 5, holders: {}, proposals: {}, voted: {} };
+      s.fan_tokens['fan_stg'].holders[DEMO_CREATORS[0].addr] = 800;
+    }
+    if (!Object.keys(s.markets).length) {
+      var mid = 'mkt_demo1';
+      s.markets[mid] = { id: mid, creator: DEMO_CREATORS[3].addr, oracle: DEMO_CREATORS[3].addr,
+        question: '《星际邮差》票房能破 10 亿吗？', options: ['能', '不能'],
+        closes_at: Date.now() + 7 * 86400000, pool: [0, 0], bets: {}, settled: false,
+        outcome: null, created_at: Date.now() - 3600000 };
+    }
+    if (!Object.keys(s.curations).length) {
+      s.curations['cur_demo1'] = { id: 'cur_demo1', curator: DEMO_CREATORS[0].addr, title: '2026 星轨精选歌单',
+        items: ['星轨回声', '量子夜航', '超新星原石'], price: 3, owners: [DEMO_CREATORS[0].addr],
+        cover_cid: '', created_at: Date.now() - 86400000 * 2 };
+      s.curations['cur_demo2'] = { id: 'cur_demo2', curator: DEMO_CREATORS[2].addr, title: '像素游戏白名单',
+        items: ['星灵契约', '星轨冲刺', '量子骰子'], price: 2, owners: [DEMO_CREATORS[2].addr],
+        cover_cid: '', created_at: Date.now() - 86400000 };
+    }
+    if (!Object.keys(s.achievements).length) {
+      var aid = 'ach_demo1';
+      s.achievements[aid] = { id: aid, issuer: DEMO_CREATORS[0].addr, title: '连续签到 365 天',
+        desc: '灵魂绑定徽章，不可转让', badge: '🔥', created_at: Date.now() - 86400000 * 30 };
+      s.soulbound[aid] = {};
+      s.soulbound[aid][DEMO_CREATORS[4].addr] = Date.now() - 86400000 * 10;
+    }
+    if (!Object.keys(s.bonds).length) {
+      var bd = 'bnd_demo1';
+      s.bonds[bd] = { id: bd, creator: DEMO_CREATORS[1].addr, name: '星海文字局·连载版权债券',
+        principal: 1000, rate: 0.08, term_days: 365, sold: {}, pool: 0, settled: false,
+        created_at: Date.now() - 86400000, matures_at: Date.now() + 364 * 86400000 };
+    }
+    if (!Object.keys(s.fractions).length) {
+      var fd = 'fr_demo1';
+      s.fractions[fd] = { id: fd, owner: DEMO_CREATORS[7].addr, name: '星尘原石 #001 版权',
+        nft_ref: 'nova-genesis-01', supply: 10000, owner_hold: 10000, price_per: 0.05,
+        fractions: {}, created_at: Date.now() - 3600000 };
+      s.fractions[fd].fractions[DEMO_CREATORS[7].addr] = 10000;
+    }
+    if (!Object.keys(s.graph_posts).length) {
+      s.graph_posts['p_demo1'] = { id: 'p_demo1', addr: DEMO_CREATORS[0].addr,
+        content: '新单曲《星轨回声》链上发行，收藏即解锁粉丝权益 🎧', cid: '', likes: [], ts: Date.now() - 7200000 };
+      s.graph_posts['p_demo1'].likes = [DEMO_CREATORS[6].addr, DEMO_CREATORS[4].addr];
+      s.graph_posts['p_demo2'] = { id: 'p_demo2', addr: DEMO_CREATORS[6].addr,
+        content: '「星舰回响」虚拟演出开票：粉丝代币持有者优先购 🚀', cid: '', likes: [DEMO_CREATORS[0].addr], ts: Date.now() - 3600000 };
+    }
+    lsSet(LS.socialfi, s);
+    lsSet(LS.seeded, 'v2');
+  }  /* ================= 初始化 ================= */
   async function init(opts) {
     opts = opts || {};
     state.active = opts.active || null;
@@ -838,6 +1359,7 @@
     renderTopbar();
     window.addEventListener('nova-wallet', updateWalletUI);
     seedDemoData();
+    seedSocialfiDemo();
     await connectFromStorage();
     updateWalletUI();
     if (typeof opts.onReady === 'function') opts.onReady({ mode: state.mode, connected: state.connected });
@@ -861,6 +1383,8 @@
     feed: feed, saveFeed: saveFeed, addPost: addPost, toggleLike: toggleLike,
     scores: scores, addScore: addScore, topScores: topScores,
     rooms: rooms, saveRooms: saveRooms,
+    sfAction: sfAction, sfList: sfList, sfStore: sfStore, saveSfStore: saveSfStore,
+    sfReputation: sfReputation, sfRecommend: sfRecommend, sfFanPriceAt: sfFanPriceAt,
     openModal: openModal, closeModal: closeModal, confirmDlg: confirmDlg, toast: toast,
     fmt: fmt, shortAddr: shortAddr, timeAgo: timeAgo, esc: esc,
     TREASURY: TREASURY
