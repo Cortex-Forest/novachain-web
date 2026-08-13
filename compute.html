@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 算力市场：发布链上算力任务、多节点接单并提交结果哈希，双节点结果一致即结算赏金。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 算力市场 · 链上任务</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .sf-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .sf-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .sf-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .sf-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .sf-panel { display: none; }
+    .sf-panel.active { display: block; }
+    .sf-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .sf-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .sf-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .sf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sf-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .sf-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 760px) { .sf-grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Compute Market 路 链上算力</span>
+      <h1>⚡ 算力市场</h1>
+      <p class="sub">发布链上算力任务（赏金托管），多节点接单并提交结果哈希——双节点结果一致即结算赏金，无需信任任何单一节点。</p>
+    </section>
+
+    <div class="sf-tabs" id="cmTabs">
+      <button class="sf-tab active" data-tab="publish" onclick="switchTab('publish')">🚀 发布任务</button>
+      <button class="sf-tab" data-tab="market" onclick="switchTab('market')">🌐 任务市场</button>
+      <button class="sf-tab" data-tab="mine" onclick="switchTab('mine')">👤 我的任务</button>
+    </div>
+
+    <!-- 发布任务 -->
+    <section class="sf-panel active" id="cm-panel-publish">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">发布算力任务</h3>
+          <div class="field"><label>任务描述（spec）</label><textarea id="cmSpec" rows="3" placeholder="如：nova:recommend:0x… 或 nova:rank:hot:top100"></textarea></div>
+          <div class="sf-grid2">
+            <div class="field"><label>赏金（NOVA，托管）</label><input id="cmBounty" type="number" step="0.01" value="5"></div>
+            <div class="field"><label>有效期（小时）</label><input id="cmHours" type="number" value="24"></div>
+          </div>
+          <button class="btn primary block" onclick="cmPublish()">🚀 发布</button>
+          <p class="dim mt">赏金进入托管，至少两个节点提交一致结果后平分结算；过期未结算自动退回。</p>
+        </div>
+        <div class="card">
+          <h3 class="mb">结算规则</h3>
+          <div class="sf-sub">任务状态：<span class="tag live">open</span> 招募中 路 <span class="tag">completed</span> 已结算 路 <span class="tag">expired</span> 已过期<br>
+            每位参与者先「接受任务」，再提交 64 位 hex 结果哈希；两个不同节点哈希一致即完成结算，赏金均分。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 任务市场 -->
+    <section class="sf-panel" id="cm-panel-market">
+      <div class="card">
+        <h3 class="mb">全部任务</h3>
+        <div id="cmMarket"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 我的任务 -->
+    <section class="sf-panel" id="cm-panel-mine">
+      <div class="card">
+        <h3 class="mb">我发布的 / 我参与的</h3>
+        <div id="cmMine"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    function fmtN(x) { return Number(x || 0).toLocaleString('zh-CN', { maximumFractionDigits: 6 }); }
+    function addrLink(a) { return '<span class="mono">' + N.esc(String(a || '').slice(0, 12)) + '</span>'; }
+    function taskStatus(t) {
+      if (t.status === 'completed') return '<span class="tag">已结算</span>';
+      if (t.status === 'expired') return '<span class="tag">已过期</span>';
+      if (Date.now() > t.expires_at) return '<span class="tag">已过期</span>';
+      return '<span class="tag live">招募中</span>';
+    }
+
+    function switchTab(name) {
+      var tabs = document.querySelectorAll('#cmTabs .sf-tab');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === name);
+      var panels = document.querySelectorAll('.sf-panel');
+      for (var j = 0; j < panels.length; j++) panels[j].classList.toggle('active', panels[j].id === 'cm-panel-' + name);
+      renderAll();
+    }
+    async function run(op, fields, amount, okMsg) {
+      var ok = await N.requireWallet();
+      if (!ok) return;
+      var r = await N.sfAction(op, fields, amount);
+      if (!r.ok) { N.toast(r.error, 'err'); return; }
+      N.toast((okMsg || '操作成功') + (r.id ? ' 路 ' + String(r.id).slice(0, 14) + '…' : ''));
+      renderAll();
+    }
+
+    async function renderAll() {
+      renderMarket(); renderMine();
+    }
+
+    function cmPublish() {
+      var spec = document.getElementById('cmSpec').value.trim();
+      if (!spec) { N.toast('请输入任务描述', 'err'); return; }
+      var hours = Number(document.getElementById('cmHours').value);
+      run('nova:compute:publish', { spec: spec, expires_in: Math.round(hours * 3600) },
+        Number(document.getElementById('cmBounty').value), '算力任务已发布');
+    }
+
+    async function renderMarket() {
+      var el = document.getElementById('cmMarket');
+      try {
+        var tasks = await N.computeSnapshot();
+        var ids = Object.keys(tasks);
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有算力任务。</p>'; return; }
+        var s = N.getState();
+        var me = s.connected ? s.addr : null;
+        el.innerHTML = ids.map(function (tid) {
+          var t = tasks[tid];
+          var open = t.status === 'open' && Date.now() <= t.expires_at;
+          var accepted = me && (t.accepted || []).indexOf(me) >= 0;
+          var submitted = me && t.results[me];
+          var canAccept = me && open && me !== t.creator && !accepted;
+          var canSubmit = me && open && accepted && !submitted && me !== t.creator;
+          var btns = '';
+          if (canAccept) btns += '<button class="btn primary small" onclick="cmAccept(\'" + tid + "\')">接受任务</button>';
+          if (canSubmit) btns += '<button class="btn success small" onclick="cmSubmit(\'" + tid + "\')">提交结果</button>';
+          return '<div class="sf-item"><h4>⚡ ' + N.esc(t.spec) + ' ' + taskStatus(t) + '</h4>' +
+            '<div class="sf-sub">发布者 ' + addrLink(t.creator) + ' 路 赏金 <span class="price">' + fmtN(t.bounty) + '</span> NOVA 路 参与 ' + (t.accepted || []).length + '/8<br>' +
+            '截止 ' + new Date(t.expires_at).toLocaleString('zh-CN') + (t.status === 'completed' ? ' 路 结果数 ' + Object.keys(t.results || {}).length : '') + '</div>' +
+            (btns ? '<div class="sf-tools">' + btns + '</div>' : '') + '</div>';
+        }).join('');
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+
+    async function renderMine() {
+      var el = document.getElementById('cmMine');
+      try {
+        var tasks = await N.computeSnapshot();
+        var s = N.getState();
+        if (!s.connected) { el.innerHTML = '<p class="dim">连接钱包后展示你发布或参与的任务。</p>'; return; }
+        var ids = Object.keys(tasks).filter(function (tid) {
+          var t = tasks[tid];
+          return t.creator === s.addr || (t.accepted || []).indexOf(s.addr) >= 0;
+        });
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有你发布或参与的任务。</p>'; return; }
+        el.innerHTML = ids.map(function (tid) {
+          var t = tasks[tid];
+          var mine = t.creator === s.addr;
+          var myHash = t.results[s.addr];
+          var open = t.status === 'open' && Date.now() <= t.expires_at;
+          var canSubmit = !mine && open && myHash == null && (t.accepted || []).indexOf(s.addr) >= 0;
+          var btns = canSubmit ? '<div class="sf-tools"><button class="btn success small" onclick="cmSubmit(\'" + tid + "\')">提交结果</button></div>' : '';
+          return '<div class="sf-item"><h4>' + (mine ? '📤 我发布的' : '🤝 我参与的') + ' 路 ' + N.esc(t.spec) + ' ' + taskStatus(t) + '</h4>' +
+            '<div class="sf-sub">赏金 <span class="price">' + fmtN(t.bounty) + '</span> NOVA 路 参与 ' + (t.accepted || []).length + '/8 路 结果 ' + Object.keys(t.results || {}).length + '/' + (t.accepted || []).length +
+            (myHash ? ' 路 我的结果 ' + String(myHash).slice(0, 10) + '…' : '') + '</div>' + btns + '</div>';
+        }).join('');
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+
+    function cmAccept(tid) { run('nova:compute:accept', { task_id: tid }, 0, '已接受任务'); }
+    async function cmSubmit(tid) {
+      var rh = prompt('提交结果哈希（64 位 hex）：', '');
+      if (!rh) return;
+      run('nova:compute:submit', { task_id: tid, result_hash: rh.trim() }, 0, '已提交结果');
+    }
+
+    window.addEventListener('nova-wallet', renderAll);
+    N.init({ active: 'compute', onReady: renderAll });
+  </script>
+</body>
+</html>

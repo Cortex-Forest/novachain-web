@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#04050d">
+  <meta name="description" content="Nova 存储网络：注册存储节点、固定内容（CID）、副本认领与哈希链证明、存储订单托管结算。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 存储网络 · 去中心化存储</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .sf-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .sf-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .sf-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .sf-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .sf-panel { display: none; }
+    .sf-panel.active { display: block; }
+    .sf-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px;
+      margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .sf-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .sf-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .sf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sf-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .sf-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 760px) { .sf-grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Nova Storage Network 路 去中心化存储</span>
+      <h1>🗄️ 存储网络</h1>
+      <p class="sub">注册存储节点、固定内容（CID）、认领副本并提交哈希链证明，赚取存储奖励；存储订单由生态基金托管，到期自动退款。</p>
+    </section>
+
+    <div class="sf-tabs" id="stTabs">
+      <button class="sf-tab active" data-tab="node" onclick="switchTab('node')">🖥️ 我的节点</button>
+      <button class="sf-tab" data-tab="pin" onclick="switchTab('pin')">📌 固定内容</button>
+      <button class="sf-tab" data-tab="claim" onclick="switchTab('claim')">🤝 认领与证明</button>
+      <button class="sf-tab" data-tab="order" onclick="switchTab('order')">📦 存储订单</button>
+      <button class="sf-tab" data-tab="providers" onclick="switchTab('providers')">🌐 提供者</button>
+    </div>
+
+    <!-- 我的节点 -->
+    <section class="sf-panel active" id="st-panel-node">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">注册存储节点</h3>
+          <div class="field"><label>声明容量（GB，上限 1048576）</label><input id="stCap" type="number" value="1024"></div>
+          <button class="btn primary block" onclick="stRegister()">🚀 注册提供者</button>
+          <p class="dim mt">注册后即可认领固定内容的副本，每天提交哈希链证明领取 <span class="price">0.001 NOVA / GB / 天</span>。</p>
+        </div>
+        <div class="card">
+          <h3 class="mb">我的节点状态</h3>
+          <div id="stMyNode"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 固定内容 -->
+    <section class="sf-panel" id="st-panel-pin">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">固定内容（CID）</h3>
+          <div class="field"><label>CID（0x + 64 hex 或 bafy…）</label><input id="stCid" placeholder="0x… 或 bafy…"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>大小（GB）</label><input id="stSize" type="number" step="0.001" value="1"></div>
+            <div class="field"><label>时长（天）</label><input id="stDays" type="number" value="30"></div>
+          </div>
+          <button class="btn primary block" onclick="stPin()">📌 固定</button>
+          <p class="dim mt">固定奖励由生态基金支付，创建存储订单可激励更多节点保存副本。</p>
+        </div>
+        <div class="card">
+          <h3 class="mb">已固定的内容</h3>
+          <div id="stPins"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 认领与证明 -->
+    <section class="sf-panel" id="st-panel-claim">
+      <div class="card">
+        <h3 class="mb">认领副本 / 提交证明</h3>
+        <p class="dim">成为提供者后，可认领固定内容的副本（每 CID 最多 10 份）。认领时提交哈希链链顶作为密封（seal），之后每天可提交证明领取奖励。</p>
+        <div id="stClaimList"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 存储订单 -->
+    <section class="sf-panel" id="st-panel-order">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 class="mb">创建存储订单</h3>
+          <div class="field"><label>CID</label><input id="stOrdCid" placeholder="0x… 或 bafy…"></div>
+          <div class="sf-grid2">
+            <div class="field"><label>副本数（1~10）</label><input id="stOrdReplicas" type="number" value="2"></div>
+            <div class="field"><label>时长（天）</label><input id="stOrdDays" type="number" value="90"></div>
+          </div>
+          <div class="field"><label>托管金额（NOVA）</label><input id="stOrdAmount" type="number" value="100"></div>
+          <button class="btn primary block" onclick="stOrder()">📦 创建订单</button>
+          <p class="dim mt">金额进入托管，订单到期后未发放部分自动退回。</p>
+        </div>
+        <div class="card">
+          <h3 class="mb">订单列表</h3>
+          <div id="stOrders"><p class="dim">加载中…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 提供者 -->
+    <section class="sf-panel" id="st-panel-providers">
+      <div class="card">
+        <h3 class="mb">存储提供者</h3>
+        <div id="stProviders"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    function fmtN(x) { return Number(x || 0).toLocaleString('zh-CN', { maximumFractionDigits: 6 }); }
+    function shortCid(c) { c = String(c || ''); return c.length > 18 ? c.slice(0, 10) + '…' + c.slice(-6) : c; }
+    function addrLink(a) { return '<span class="mono">' + N.esc(String(a || '').slice(0, 12)) + '</span>'; }
+
+    function switchTab(name) {
+      var tabs = document.querySelectorAll('#stTabs .sf-tab');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === name);
+      var panels = document.querySelectorAll('.sf-panel');
+      for (var j = 0; j < panels.length; j++) panels[j].classList.toggle('active', panels[j].id === 'st-panel-' + name);
+      renderAll();
+    }
+    async function run(op, fields, amount, okMsg) {
+      var ok = await N.requireWallet();
+      if (!ok) return;
+      var r = await N.sfAction(op, fields, amount);
+      if (!r.ok) { N.toast(r.error, 'err'); return; }
+      N.toast((okMsg || '操作成功') + (r.id ? ' 路 ' + String(r.id).slice(0, 14) + '…' : ''));
+      renderAll();
+    }
+
+    async function renderAll() {
+      renderNode(); renderPins(); renderClaims(); renderOrders(); renderProviders();
+    }
+
+    function stRegister() {
+      var cap = Number(document.getElementById('stCap').value);
+      if (!(cap > 0)) { N.toast('请输入有效容量', 'err'); return; }
+      run('nova:storage:register', { capacity_gb: cap }, 0, '已注册为存储提供者');
+    }
+    async function renderNode() {
+      var el = document.getElementById('stMyNode');
+      var s = N.getState();
+      if (!s.connected) { el.innerHTML = '<p class="dim">连接钱包后可注册存储节点。</p>'; return; }
+      var snap = await N.storageSnapshot();
+      var me = snap.providers[s.addr];
+      el.innerHTML = me
+        ? '<div class="sf-item"><h4>✅ 已注册</h4><div class="sf-sub">容量 <span class="price">' + fmtN(me.capacity_gb) + '</span> GB 路 注册于 ' + new Date(me.registered_at).toLocaleString('zh-CN') + '</div></div>'
+        : '<div class="sf-item"><h4>未注册</h4><div class="sf-sub">请先在左侧填写容量并注册，注册后即可认领副本、提交证明赚取奖励。</div></div>';
+    }
+
+    function stPin() {
+      run('nova:storage:pin', {
+        cid: document.getElementById('stCid').value.trim(),
+        size_gb: Number(document.getElementById('stSize').value),
+        duration_days: Number(document.getElementById('stDays').value)
+      }, 0, '内容已固定');
+    }
+    async function renderPins() {
+      var el = document.getElementById('stPins');
+      try {
+        var snap = await N.storageSnapshot();
+        var claims = snap.claims || {};
+        var ids = Object.keys(claims);
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有固定任何内容。</p>'; return; }
+        el.innerHTML = ids.map(function (cid) {
+          var c = claims[cid];
+          var expired = Date.now() > c.expires_at;
+          return '<div class="sf-item"><h4>📌 ' + shortCid(cid) + ' ' + (expired ? '<span class="tag">已过期</span>' : '<span class="tag live">有效</span>') + '</h4>' +
+            '<div class="sf-sub">拥有者 ' + addrLink(c.owner) + ' 路 ' + fmtN(c.size_gb) + ' GB 路 ' + fmtN(c.duration_days) + ' 天 路 副本 ' + (c.providers || []).length + '/10<br>' +
+            '到期 ' + new Date(c.expires_at).toLocaleString('zh-CN') + '</div></div>';
+        }).join('');
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+
+    async function renderClaims() {
+      var el = document.getElementById('stClaimList');
+      try {
+        var snap = await N.storageSnapshot();
+        var claims = snap.claims || {};
+        var ids = Object.keys(claims);
+        var s = N.getState();
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有可认领的内容。</p>'; return; }
+        var me = s.connected ? s.addr : null;
+        var registered = me && snap.providers[me];
+        el.innerHTML = ids.map(function (cid) {
+          var c = claims[cid];
+          var expired = Date.now() > c.expires_at;
+          var providers = c.providers || [];
+          var isProvider = me && providers.indexOf(me) >= 0;
+          var canClaim = me && registered && !isProvider && providers.length < 10 && !expired;
+          var btns = '';
+          if (canClaim) btns += '<button class="btn primary small" onclick="stClaim(\'" + cid + "\')">认领副本</button>';
+          if (me && isProvider && !expired) btns += '<button class="btn success small" onclick="stProof(\'" + cid + "\')">提交证明</button>';
+          return '<div class="sf-item"><h4>📌 ' + shortCid(cid) + ' ' + (expired ? '<span class="tag">已过期</span>' : '') + '</h4>' +
+            '<div class="sf-sub">拥有者 ' + addrLink(c.owner) + ' 路 ' + fmtN(c.size_gb) + ' GB 路 ' + fmtN(c.duration_days) + ' 天 路 副本 ' + providers.length + '/10<br>' +
+            '已认领：' + (providers.length ? providers.map(addrLink).join('、') : '无') + '</div>' +
+            (btns ? '<div class="sf-tools">' + btns + '</div>' : '') + '</div>';
+        }).join('') || '<p class="dim">还没有内容。</p>';
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+    async function stClaim(cid) {
+      var seal = prompt('提交哈希链链顶作为密封（seal，64 位 hex）：', '');
+      if (!seal) return;
+      run('nova:storage:claim', { cid: cid, seal: seal.trim() }, 0, '已认领副本');
+    }
+    async function stProof(cid) {
+      var reveal = prompt('提交哈希链证明（reveal，64 位 hex）：', '');
+      if (!reveal) return;
+      run('nova:storage:proof', { cid: cid, reveal: reveal.trim() }, 0, '已提交证明');
+    }
+
+    function stOrder() {
+      run('nova:storage:order', {
+        cid: document.getElementById('stOrdCid').value.trim(),
+        replicas: Number(document.getElementById('stOrdReplicas').value),
+        duration_days: Number(document.getElementById('stOrdDays').value)
+      }, Number(document.getElementById('stOrdAmount').value), '存储订单已创建');
+    }
+    async function renderOrders() {
+      var el = document.getElementById('stOrders');
+      try {
+        var snap = await N.storageSnapshot();
+        var orders = snap.orders || {};
+        var ids = Object.keys(orders);
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有存储订单。</p>'; return; }
+        el.innerHTML = ids.map(function (oid) {
+          var o = orders[oid];
+          var expired = Date.now() > o.expires_at;
+          return '<div class="sf-item"><h4>📦 ' + shortCid(o.cid) + ' ' + (o.status === 'active' && !expired ? '<span class="tag live">托管中</span>' : '<span class="tag">已到期/结算</span>') + '</h4>' +
+            '<div class="sf-sub">创建者 ' + addrLink(o.creator) + ' 路 托管 <span class="price">' + fmtN(o.amount) + '</span> NOVA 路 ' + fmtN(o.replicas) + ' 副本 路 ' + fmtN(o.duration_days) + ' 天<br>' +
+            '到期 ' + new Date(o.expires_at).toLocaleString('zh-CN') + '</div></div>';
+        }).join('');
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+
+    async function renderProviders() {
+      var el = document.getElementById('stProviders');
+      try {
+        var snap = await N.storageSnapshot();
+        var providers = snap.providers || {};
+        var ids = Object.keys(providers);
+        if (!ids.length) { el.innerHTML = '<p class="dim">还没有存储提供者。</p>'; return; }
+        el.innerHTML = ids.map(function (a) {
+          var p = providers[a];
+          return '<div class="sf-item"><h4>🖥️ ' + addrLink(a) + '</h4>' +
+            '<div class="sf-sub">容量 <span class="price">' + fmtN(p.capacity_gb) + '</span> GB 路 注册于 ' + new Date(p.registered_at).toLocaleString('zh-CN') + '</div></div>';
+        }).join('');
+      } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
+    }
+
+    window.addEventListener('nova-wallet', renderAll);
+    N.init({ active: 'storage', onReady: renderAll });
+  </script>
+</body>
+</html>

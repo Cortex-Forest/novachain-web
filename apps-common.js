@@ -183,7 +183,7 @@
     wallets: 'nova_priv', balances: 'nova_demo_balances', ledger: 'nova_demo_ledger',
     nft: 'nova_nft_store', owned: 'nova_nft_owned', profiles: 'nova_app_profiles',
     feed: 'nova_app_feed', seeded: 'nova_app_seeded', rooms: 'nova_app_rooms',
-    scores: 'nova_app_scores', socialfi: 'nova_socialfi'
+    scores: 'nova_app_scores', socialfi: 'nova_socialfi', storage: 'nova_storage', compute: 'nova_compute'
   };
   var state = { mode: 'demo', rpc: null, connected: false, addr: null, priv: null, balance: 0, active: null };
   var TREASURY = '0x' + '0'.repeat(40);
@@ -234,6 +234,22 @@
     }
     if (method === 'GET' && path.indexOf('/api/status') === 0) return { node: '演示模式', demoMode: true };
     if (method === 'POST' && path === '/api/send') return { txid: demoHash(JSON.stringify(body || {})), demoMode: true };
+    if (method === 'GET' && path.indexOf('/api/storage/pins') === 0) return { pins: demoStorage().claims, demoMode: true };
+    if (method === 'GET' && path.indexOf('/api/storage/providers') === 0) return { providers: demoStorage().providers, total: Object.keys(demoStorage().providers).length, demoMode: true };
+    if (method === 'GET' && path.indexOf('/api/storage/orders') === 0) return { orders: demoStorage().orders, demoMode: true };
+    if (method === 'GET' && path.indexOf('/api/compute/tasks') === 0) return { tasks: demoCompute().tasks, demoMode: true };
+    if (method === 'POST' && path.indexOf('/api/storage/') === 0) {
+      try {
+        var d0 = JSON.parse((body && body.data) || '{}');
+        return demoStorageOp(d0.op, d0, Number(body && body.amount) || 0);
+      } catch (e) { return { error: '请求无效', demoMode: true }; }
+    }
+    if (method === 'POST' && path.indexOf('/api/compute/') === 0) {
+      try {
+        var d1 = JSON.parse((body && body.data) || '{}');
+        return demoComputeOp(d1.op, d1, Number(body && body.amount) || 0);
+      } catch (e) { return { error: '请求无效', demoMode: true }; }
+    }
     return { demoMode: true };
   }
   function demoHash(str) {
@@ -576,6 +592,8 @@
   }
 
   /* ================= UI：Toast / 弹窗 ================= */
+  function loadingHtml(text) { return '<p class="dim">' + (text || '加载中…') + '</p>'; }
+  function errHtml(msg) { return '<div class="err-box">⚠️ ' + esc(msg || '加载失败，请重试') + '</div>'; }
   function toast(msg, type) {
     type = type || 'ok';
     var wrap = document.querySelector('.toast-wrap');
@@ -741,6 +759,8 @@
     { key: 'social', href: './social.html', icon: '💬', label: '社交' },
     { key: 'stage', href: './stage.html', icon: '🎪', label: '演出' },
     { key: 'nft', href: './nft.html', icon: '🖼️', label: 'NFT' },
+    { key: 'storage', href: './storage.html', icon: '🗄️', label: '存储' },
+    { key: 'compute', href: './compute.html', icon: '⚡', label: '算力' },
     { key: 'socialfi', href: './socialfi.html', icon: '🌠', label: '链上生态' }
   ];
   function updateWalletUI() {
@@ -1221,7 +1241,215 @@
       sfEvent(s, op, f.id, '购买 ' + qty2 + ' 份碎片');
       saveSfStore(s); refreshBalance(); return { ok: true, id: f.id, demo: true };
     }
+    if (op.indexOf('nova:storage:') === 0) return demoStorageOp(op, fields, amount);
+    if (op.indexOf('nova:compute:') === 0) return demoComputeOp(op, fields, amount);
     return { ok: false, error: '未知操作' };
+  }
+  /* ================= 存储网络 · 算力市场（演示模拟） ================= */
+  function demoStorage() { return lsGet(LS.storage, { providers: {}, claims: {}, orders: {} }); }
+  function saveDemoStorage(s) { lsSet(LS.storage, s); }
+  function demoCompute() { return lsGet(LS.compute, { tasks: {} }); }
+  function saveDemoCompute(c) { lsSet(LS.compute, c); }
+  function demoStorageOp(op, fields, amount) {
+    var s = demoStorage();
+    var addr = state.addr;
+    if (op === 'nova:storage:register') {
+      var cap = Number(fields.capacity_gb);
+      if (!(cap > 0 && cap <= 1048576)) return { ok: false, error: '容量无效（需在 0~1048576 GB 之间）' };
+      if (s.providers[addr]) return { ok: false, error: '该地址已注册为存储提供者' };
+      s.providers[addr] = { registered_at: Date.now(), capacity_gb: cap };
+      saveDemoStorage(s);
+      sfEvent(sfStore(), op, addr, '注册存储节点 ' + cap + ' GB');
+      return { ok: true, id: addr, demo: true };
+    }
+    if (op === 'nova:storage:pin') {
+      var cid = String(fields.cid || '').trim().toLowerCase();
+      var size = Number(fields.size_gb);
+      var days = Number(fields.duration_days);
+      if (!/^(0x[0-9a-f]{64}|bafy[a-z2-7]{46,58})$/.test(cid)) return { ok: false, error: 'CID 格式无效' };
+      if (!(size >= 0.001 && size <= 1024)) return { ok: false, error: '大小需在 0.001~1024 GB 之间' };
+      if (!(days >= 1 && days <= 3650)) return { ok: false, error: '时长需在 1~3650 天之间' };
+      if (s.claims[cid]) return { ok: false, error: '该 CID 已固定' };
+      s.claims[cid] = { owner: addr, size_gb: size, duration_days: days, created_at: Date.now(),
+        expires_at: Date.now() + days * 86400000, providers: [] };
+      saveDemoStorage(s);
+      sfEvent(sfStore(), op, cid, '固定内容 ' + cid.slice(0, 14) + '… ' + size + ' GB');
+      return { ok: true, id: cid, demo: true };
+    }
+    if (op === 'nova:storage:claim') {
+      var cid2 = String(fields.cid || '').trim().toLowerCase();
+      var seal = String(fields.seal || '').trim().toLowerCase();
+      var claim = s.claims[cid2];
+      if (!/^[0-9a-f]{64}$/.test(seal)) return { ok: false, error: 'seal 需为 64 位十六进制' };
+      if (!claim || Date.now() > claim.expires_at) return { ok: false, error: '该 CID 不存在或已过期' };
+      if (!s.providers[addr]) return { ok: false, error: '请先注册为存储提供者' };
+      if (claim.providers.indexOf(addr) >= 0) return { ok: false, error: '已认领该 CID 副本' };
+      if (claim.providers.length >= 10) return { ok: false, error: '副本数已达上限（10）' };
+      claim.providers.push(addr);
+      s.seals = s.seals || {};
+      s.seals[addr + ':' + cid2] = seal;
+      saveDemoStorage(s);
+      sfEvent(sfStore(), op, cid2, '认领副本 ' + cid2.slice(0, 14) + '…');
+      return { ok: true, id: cid2, demo: true };
+    }
+    if (op === 'nova:storage:proof') {
+      var cid3 = String(fields.cid || '').trim().toLowerCase();
+      var reveal = String(fields.reveal || '').trim().toLowerCase();
+      var claim2 = s.claims[cid3];
+      if (!/^[0-9a-f]{64}$/.test(reveal)) return { ok: false, error: 'reveal 需为 64 位十六进制' };
+      if (!claim2 || Date.now() > claim2.expires_at) return { ok: false, error: '该 CID 不存在或已过期' };
+      if (claim2.providers.indexOf(addr) < 0) return { ok: false, error: '你尚未认领该 CID 副本' };
+      s.proofs = s.proofs || {};
+      var pkey = addr + ':' + cid3;
+      if (s.proofs[pkey]) return { ok: false, error: '今日已提交过该 CID 的证明' };
+      var reward = Math.round(claim2.size_gb * claim2.duration_days * 0.001 * 1e8) / 1e8;
+      demoSetBal(addr, demoBal(addr) + reward);
+      s.proofs[pkey] = { reward: reward, ts: Date.now() };
+      saveDemoStorage(s);
+      demoLedger(TREASURY, addr, reward, '存储证明奖励 ' + cid3.slice(0, 14) + '…', 'storage');
+      sfEvent(sfStore(), op, cid3, '提交存储证明 +' + reward + ' NOVA');
+      refreshBalance();
+      return { ok: true, id: cid3, reward: reward, demo: true };
+    }
+    if (op === 'nova:storage:order') {
+      var cid4 = String(fields.cid || '').trim().toLowerCase();
+      var reps = Number(fields.replicas);
+      var days2 = Number(fields.duration_days);
+      var amt = Number(amount || 0);
+      var claim3 = s.claims[cid4];
+      if (!claim3 || Date.now() > claim3.expires_at) return { ok: false, error: '该 CID 不存在或已过期' };
+      if (!(Number.isInteger(reps) && reps >= 1 && reps <= 10)) return { ok: false, error: '副本数需为 1~10 的整数' };
+      if (!(days2 >= 1 && days2 <= 3650)) return { ok: false, error: '时长需在 1~3650 天之间' };
+      if (!(amt > 0)) return { ok: false, error: '托管金额需大于 0' };
+      if (demoBal(addr) < amt) return { ok: false, error: '余额不足' };
+      var oid = demoHash('storage:order:' + cid4 + ':' + addr + ':' + Date.now());
+      s.orders[oid] = { id: oid, creator: addr, cid: cid4, amount: amt, replicas: reps,
+        duration_days: days2, status: 'active', created_at: Date.now(),
+        expires_at: Date.now() + days2 * 86400000 };
+      demoTransfer(addr, TREASURY, amt);
+      demoLedger(addr, TREASURY, amt, '存储订单托管 ' + cid4.slice(0, 14) + '…', 'storage');
+      saveDemoStorage(s);
+      sfEvent(sfStore(), op, oid, '创建存储订单 托管 ' + amt + ' NOVA');
+      refreshBalance();
+      return { ok: true, id: oid, demo: true };
+    }
+    return { ok: false, error: '未知存储操作' };
+  }
+  function demoComputeOp(op, fields, amount) {
+    var c = demoCompute();
+    var addr = state.addr;
+    if (op === 'nova:compute:publish') {
+      var spec = String(fields.spec || '').trim();
+      var exp = Number(fields.expires_in);
+      var bounty = Number(amount || 0);
+      if (!spec || spec.length > 4096) return { ok: false, error: '任务描述无效' };
+      if (!(exp >= 300 && exp <= 90 * 86400)) return { ok: false, error: '有效期需在 5 分钟~90 天之间' };
+      if (!(bounty > 0)) return { ok: false, error: '赏金需大于 0' };
+      if (demoBal(addr) < bounty) return { ok: false, error: '余额不足' };
+      var tid = demoHash('compute:task:' + spec + ':' + addr + ':' + Date.now());
+      c.tasks[tid] = { id: tid, creator: addr, spec: spec, bounty: bounty, status: 'open',
+        accepted: [], results: {}, created_at: Date.now(), expires_at: Date.now() + exp * 1000 };
+      demoTransfer(addr, TREASURY, bounty);
+      demoLedger(addr, TREASURY, bounty, '算力任务托管 ' + spec.slice(0, 24) + '…', 'compute');
+      saveDemoCompute(c);
+      sfEvent(sfStore(), op, tid, '发布算力任务 赏金 ' + bounty + ' NOVA');
+      refreshBalance();
+      return { ok: true, id: tid, demo: true };
+    }
+    if (op === 'nova:compute:accept') {
+      var tid2 = String(fields.task_id || '');
+      var task = c.tasks[tid2];
+      if (!task || task.status !== 'open') return { ok: false, error: '任务不存在或已结束' };
+      if (addr === task.creator) return { ok: false, error: '不能接受自己发布的任务' };
+      if (task.accepted.indexOf(addr) >= 0) return { ok: false, error: '已接受该任务' };
+      if (task.accepted.length >= 8) return { ok: false, error: '参与人数已满（8）' };
+      task.accepted.push(addr);
+      saveDemoCompute(c);
+      sfEvent(sfStore(), op, tid2, '接受算力任务');
+      return { ok: true, id: tid2, demo: true };
+    }
+    if (op === 'nova:compute:submit') {
+      var tid3 = String(fields.task_id || '');
+      var rh = String(fields.result_hash || '').trim().toLowerCase();
+      var task2 = c.tasks[tid3];
+      if (!/^[0-9a-f]{64}$/.test(rh)) return { ok: false, error: '结果哈希需为 64 位十六进制' };
+      if (!task2 || task2.status !== 'open') return { ok: false, error: '任务不存在或已结束' };
+      if (addr === task2.creator || task2.accepted.indexOf(addr) < 0) return { ok: false, error: '请先接受该任务' };
+      if (task2.results[addr]) return { ok: false, error: '已提交过结果' };
+      task2.results[addr] = rh;
+      var match = null;
+      Object.keys(task2.results).forEach(function (w) { if (w !== addr && task2.results[w] === rh) match = w; });
+      if (match) {
+        task2.status = 'completed';
+        task2.completed_at = Date.now();
+        var each = Math.round(task2.bounty / 2 * 1e8) / 1e8;
+        demoSetBal(addr, demoBal(addr) + each);
+        demoSetBal(match, demoBal(match) + each);
+        demoLedger(TREASURY, addr, each, '算力结算 ' + task2.spec.slice(0, 20) + '…', 'compute');
+        demoLedger(TREASURY, match, each, '算力结算 ' + task2.spec.slice(0, 20) + '…', 'compute');
+        sfEvent(sfStore(), op, tid3, '任务结算：双节点结果一致 +' + each + ' NOVA');
+        saveDemoCompute(c);
+        refreshBalance();
+        return { ok: true, id: tid3, reward: each, status: 'completed', demo: true };
+      }
+      saveDemoCompute(c);
+      sfEvent(sfStore(), op, tid3, '提交计算结果');
+      return { ok: true, id: tid3, status: 'open', demo: true };
+    }
+    return { ok: false, error: '未知算力操作' };
+  }
+  async function storageSnapshot() {
+    if (state.mode === 'node') {
+      var ds = await Promise.all([api('/api/storage/pins'), api('/api/storage/providers'), api('/api/storage/orders')]);
+      return { claims: (ds[0] && ds[0].pins) || {}, providers: (ds[1] && ds[1].providers) || {}, orders: (ds[2] && ds[2].orders) || {} };
+    }
+    return demoStorage();
+  }
+  async function computeSnapshot() {
+    if (state.mode === 'node') {
+      var d = await api('/api/compute/tasks');
+      return (d && d.tasks) || {};
+    }
+    return demoCompute().tasks;
+  }
+  function seedStorageComputeDemo() {
+    var s = demoStorage();
+    var c = demoCompute();
+    if (!Object.keys(s.providers).length) {
+      s.providers[DEMO_CREATORS[2].addr] = { registered_at: Date.now() - 86400000 * 20, capacity_gb: 4096 };
+      s.providers[DEMO_CREATORS[5].addr] = { registered_at: Date.now() - 86400000 * 12, capacity_gb: 2048 };
+    }
+    if (!Object.keys(s.claims).length) {
+      var cid1 = '0x' + 'a1b2'.repeat(16);
+      s.claims[cid1] = { owner: DEMO_CREATORS[0].addr, size_gb: 8, duration_days: 90,
+        created_at: Date.now() - 86400000 * 3, expires_at: Date.now() + 87 * 86400000,
+        providers: [DEMO_CREATORS[2].addr] };
+      s.seals = s.seals || {};
+      s.seals[DEMO_CREATORS[2].addr + ':' + cid1] = '11'.repeat(32);
+      var cid2 = '0x' + 'c3d4'.repeat(16);
+      s.claims[cid2] = { owner: DEMO_CREATORS[6].addr, size_gb: 32, duration_days: 30,
+        created_at: Date.now() - 86400000, expires_at: Date.now() + 29 * 86400000, providers: [] };
+    }
+    if (!Object.keys(s.orders).length) {
+      s.orders['ord_demo1'] = { id: 'ord_demo1', creator: DEMO_CREATORS[1].addr,
+        cid: '0x' + 'a1b2'.repeat(16), amount: 120, replicas: 2, duration_days: 90, status: 'active',
+        created_at: Date.now() - 86400000, expires_at: Date.now() + 89 * 86400000 };
+    }
+    if (Object.keys(s.providers).length || Object.keys(s.claims).length || Object.keys(s.orders).length) saveDemoStorage(s);
+    if (!Object.keys(c.tasks).length) {
+      c.tasks['task_demo1'] = { id: 'task_demo1', creator: DEMO_CREATORS[0].addr,
+        spec: 'nova:recommend:' + DEMO_CREATORS[0].addr + ':demo', bounty: 5, status: 'open',
+        accepted: [DEMO_CREATORS[4].addr], results: {}, created_at: Date.now() - 3600000,
+        expires_at: Date.now() + 23 * 3600000 };
+      var t2 = 'task_demo2';
+      c.tasks[t2] = { id: t2, creator: DEMO_CREATORS[1].addr, spec: 'nova:rank:hot:top100',
+        bounty: 10, status: 'completed', accepted: [DEMO_CREATORS[3].addr, DEMO_CREATORS[7].addr],
+        results: {}, created_at: Date.now() - 86400000, expires_at: Date.now() - 3600000,
+        completed_at: Date.now() - 3600000 };
+      c.tasks[t2].results[DEMO_CREATORS[3].addr] = 'aa'.repeat(32);
+      c.tasks[t2].results[DEMO_CREATORS[7].addr] = 'aa'.repeat(32);
+      saveDemoCompute(c);
+    }
   }
   function sfReputation(addr) {
     var s = sfStore();
@@ -1294,7 +1522,7 @@
     });
   }
   function seedSocialfiDemo() {
-    if (lsGet(LS.seeded, '') === 'v2') return;
+    if (lsGet(LS.seeded, '') === 'v3') return;
     var s = sfStore();
     if (!Object.keys(s.fan_tokens).length) {
       s.fan_tokens['fan_mus'] = { id: 'fan_mus', creator: DEMO_CREATORS[0].addr, symbol: 'MUS',
@@ -1350,7 +1578,7 @@
         content: '「星舰回响」虚拟演出开票：粉丝代币持有者优先购 🚀', cid: '', likes: [DEMO_CREATORS[0].addr], ts: Date.now() - 3600000 };
     }
     lsSet(LS.socialfi, s);
-    lsSet(LS.seeded, 'v2');
+    lsSet(LS.seeded, 'v3');
   }  /* ================= 初始化 ================= */
   async function init(opts) {
     opts = opts || {};
@@ -1360,6 +1588,7 @@
     window.addEventListener('nova-wallet', updateWalletUI);
     seedDemoData();
     seedSocialfiDemo();
+    seedStorageComputeDemo();
     await connectFromStorage();
     updateWalletUI();
     if (typeof opts.onReady === 'function') opts.onReady({ mode: state.mode, connected: state.connected });
@@ -1385,6 +1614,9 @@
     rooms: rooms, saveRooms: saveRooms,
     sfAction: sfAction, sfList: sfList, sfStore: sfStore, saveSfStore: saveSfStore,
     sfReputation: sfReputation, sfRecommend: sfRecommend, sfFanPriceAt: sfFanPriceAt,
+    storageSnapshot: storageSnapshot, computeSnapshot: computeSnapshot, seedStorageComputeDemo: seedStorageComputeDemo,
+    demoStorage: demoStorage, demoCompute: demoCompute,
+    loadingHtml: loadingHtml, errHtml: errHtml,
     openModal: openModal, closeModal: closeModal, confirmDlg: confirmDlg, toast: toast,
     fmt: fmt, shortAddr: shortAddr, timeAgo: timeAgo, esc: esc,
     TREASURY: TREASURY

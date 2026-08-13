@@ -227,6 +227,8 @@ h1 {
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-auto { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 
+.err-box { border: 1px solid rgba(255,92,122,.35); background: rgba(255,92,122,.08); color: #ff8fa3;
+  border-radius: 12px; padding: 12px 14px; font-size: .85rem; line-height: 1.6; margin-bottom: 12px; }
 .card {
   position: relative;
   border: 1px solid var(--border);
