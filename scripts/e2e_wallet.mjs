@@ -791,6 +791,39 @@ async function main() {
     check('防截图守卫已关闭', await evalJS(`screenshotGuardOn === false`));
     check('无遥测/数据上报代码', await evalJS(`!document.querySelector('script[src*="beacon"], script[src*="analytics"], script[src*="sentry"]')`));
 
+    stageLog('流程28 开发者生态构件');
+    // ---------- 流程 28：JS SDK（44）/ 扩展包（43）/ API 文档（45） ----------
+    {
+      const read = (rel) => { try { return readFileSync(join(ROOT, rel), 'utf8'); } catch (e) { return null; } };
+      const exists = (rel) => { try { readFileSync(join(ROOT, rel)); return true; } catch (e) { return false; } };
+      const sdkSrc = read('sdk/nova-wallet-sdk.js');
+      check('SDK 存在且含桥协议与握手', !!sdkSrc && sdkSrc.includes('nova-wallet-dapp') && sdkSrc.includes('hello') && sdkSrc.includes('accountsChanged'), 'sdk 缺失');
+      check('SDK 暴露 window.NovaWalletSDK', !!sdkSrc && sdkSrc.includes('global.NovaWalletSDK'));
+      check('SDK 错误码对齐 EIP-1193', !!sdkSrc && sdkSrc.includes('NO_PROVIDER: 4001'));
+      const demo = read('sdk/demo.html');
+      check('SDK demo 页存在并引用 SDK', !!demo && demo.includes('nova-wallet-sdk.js') && demo.includes('btnConnect'));
+      const doc = read('docs/NOVA_WALLET_API.md');
+      check('API 文档存在且覆盖协议/RPC', !!doc && doc.includes('NovaWalletSDK') && doc.includes('postMessage') && doc.includes('/api/early/info') && doc.includes('accountsChanged'));
+      const mfRaw = read('browser-extension/manifest.json');
+      let mf = null; try { mf = mfRaw ? JSON.parse(mfRaw) : null; } catch (e) {}
+      check('扩展 manifest 合法 MV3（无 default_locale 残留）', !!mf && mf.manifest_version === 3 && !('default_locale' in (mf || {})), 'manifest 异常');
+      check('扩展 manifest 注册 content script 与 background', !!mf && Array.isArray(mf.content_scripts) && mf.content_scripts[0].js.includes('content.js') && mf.background && mf.background.service_worker === 'background.js');
+      check('扩展图标齐备（16/48/128）', ['icon16.png', 'icon48.png', 'icon128.png'].every(f => exists('browser-extension/icons/' + f)));
+      const content = read('browser-extension/content.js');
+      check('content.js 含 hello->ready 握手', !!content && content.includes("event === 'hello'") && content.includes("event: 'ready'"));
+      const bg = read('browser-extension/background.js');
+      check('background.js 含余额代理与待确认队列', !!bg && bg.includes('nova:balance') && bg.includes('nova_pending'));
+      const popup = read('browser-extension/popup.html');
+      check('popup 内嵌钱包 iframe', !!popup && popup.includes('wallet.html') && popup.includes('walletFrame'));
+      const extHtml = read('browser-extension/wallet.html');
+      const inlineScripts = extHtml ? (extHtml.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g) || []) : ['<missing>'];
+      check('扩展 wallet.html 无内联脚本（MV3）', !!extHtml && inlineScripts.length === 0, 'inline=' + inlineScripts.length);
+      check('扩展 wallet.html 引用外置 wallet-app.js', !!extHtml && extHtml.includes('wallet-app.js'));
+      check('扩展 wallet.html CSP 已收紧（script-src 去 unsafe-inline）', !!extHtml && extHtml.includes("script-src 'self'") && !/script-src[^;]*'unsafe-inline'/.test(extHtml));
+      check('wallet-app.js 外置产物存在', !!read('browser-extension/wallet-app.js'));
+      check('wallet-crypto/evm/apps-common 随包复制', ['wallet-crypto.js', 'wallet-evm.js', 'apps-common.js'].every(f => exists('browser-extension/' + f)));
+    }
+
     check('全程无未捕获 JS 错误', errors.length === 0, errors.slice(0, 5).join(' | '));
   } finally {
     chrome.kill();

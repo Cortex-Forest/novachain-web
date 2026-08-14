@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: #030309; color: #eef2ff; width: 400px; }
+  .top { display: flex; align-items: center; gap: .55rem; padding: .6rem .8rem; border-bottom: 1px solid rgba(140,210,255,.16); background: rgba(13,16,36,.7); }
+  .logo { font-weight: 800; letter-spacing: .04em; font-size: .9rem; white-space: nowrap; }
+  .addr { font-size: .68rem; color: #8b93b8; font-family: Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 215px; }
+  .pending { display: none; padding: .6rem .8rem; border-bottom: 1px solid rgba(255,177,66,.45); background: rgba(255,177,66,.09); font-size: .74rem; line-height: 1.6; }
+  .pending.show { display: block; }
+  .pending .ptext { word-break: break-all; }
+  .pending .row { display: flex; gap: .45rem; margin-top: .5rem; }
+  .pending button { flex: 1; padding: .42rem .5rem; border-radius: 9px; border: 1px solid rgba(140,210,255,.3); background: transparent; color: #eef2ff; cursor: pointer; font-size: .74rem; }
+  .pending button.ok { background: linear-gradient(120deg, #00f0ff, #b44dff); color: #041018; font-weight: 700; border: none; }
+  iframe { width: 100%; height: 570px; border: 0; display: block; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="logo">🪐 NOVA 钱包</span>
+    <span class="addr" id="addr">未连接</span>
+  </div>
+  <div class="pending" id="pendingBox">
+    <div class="ptext" id="pendingText"></div>
+    <div class="row">
+      <button id="pendingReject" type="button">拒绝</button>
+      <button class="ok" id="pendingOk" type="button">在钱包中确认</button>
+    </div>
+  </div>
+  <iframe src="wallet.html" id="walletFrame"></iframe>
+  <script src="popup.js"></script>
+</body>
+</html>
