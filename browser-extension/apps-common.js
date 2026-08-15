@@ -183,7 +183,8 @@
     wallets: 'nova_priv', balances: 'nova_demo_balances', ledger: 'nova_demo_ledger',
     nft: 'nova_nft_store', owned: 'nova_nft_owned', profiles: 'nova_app_profiles',
     feed: 'nova_app_feed', seeded: 'nova_app_seeded', rooms: 'nova_app_rooms',
-    scores: 'nova_app_scores', socialfi: 'nova_socialfi', storage: 'nova_storage', compute: 'nova_compute'
+    scores: 'nova_app_scores', socialfi: 'nova_socialfi', storage: 'nova_storage', compute: 'nova_compute',
+    ai: 'nova_ai'
   };
   var state = { mode: 'demo', rpc: null, connected: false, addr: null, priv: null, balance: 0, active: null };
   var TREASURY = '0x' + '0'.repeat(40);
@@ -761,7 +762,8 @@
     { key: 'nft', href: './nft.html', icon: '🖼️', label: 'NFT' },
     { key: 'storage', href: './storage.html', icon: '🗄️', label: '存储' },
     { key: 'compute', href: './compute.html', icon: '⚡', label: '算力' },
-    { key: 'socialfi', href: './socialfi.html', icon: '🌠', label: '链上生态' }
+    { key: 'socialfi', href: './socialfi.html', icon: '🌠', label: '链上生态' },
+    { key: 'agent', href: './agent.html', icon: '🤖', label: 'AI 创作者' }
   ];
   function updateWalletUI() {
     var chip = document.getElementById('walletChip');
@@ -862,7 +864,7 @@
   function sfStore() { return lsGet(LS.socialfi, sfEmpty()); }
   function saveSfStore(s) { lsSet(LS.socialfi, s); }
   function sfEvent(s, op, id, summary) {
-    s.events.unshift({ op: op, id: id, addr: state.addr, ts: Date.now(), summary: summary || id });
+    s.events.unshift({ op: op, id: id, addr: state.asAddr || state.addr, ts: Date.now(), summary: summary || id });
     if (s.events.length > 80) s.events.length = 80;
   }
   function sfId(prefix, seedStr) { return prefix + demoHash(String(seedStr) + Date.now() + Math.random()).slice(2, 22); }
@@ -911,7 +913,7 @@
   }
   function sfDemoAction(op, fields, amount) {
     var s = sfStore();
-    var addr = state.addr;
+    var addr = state.asAddr || state.addr;
     if (op === 'nova:fan:issue') {
       var tid = sfId('fan_', addr + fields.symbol);
       s.fan_tokens[tid] = { id: tid, creator: addr, symbol: fields.symbol, name: fields.name,
@@ -1243,6 +1245,7 @@
       sfEvent(s, op, f.id, '购买 ' + qty2 + ' 份碎片');
       saveSfStore(s); refreshBalance(); return { ok: true, id: f.id, demo: true };
     }
+    if (op.indexOf('nova:ai:') === 0) return sfAiDemoAction(op, fields, amount);
     if (op.indexOf('nova:text:') === 0) return sfTextDemoAction(op, fields, amount);
     if (op.indexOf('nova:storage:') === 0) return demoStorageOp(op, fields, amount);
     if (op.indexOf('nova:compute:') === 0) return demoComputeOp(op, fields, amount);
@@ -1394,7 +1397,7 @@
   }
   function sfTextDemoAction(op, fields, amount) {
     var s = sfStore();
-    var addr = state.addr;
+    var addr = state.asAddr || state.addr;
     var escrowAddr = '0x_text_escrow';
     s.text_assets = s.text_assets || {};
     s.text_reputation = s.text_reputation || {};
@@ -1553,6 +1556,148 @@
     saveSfStore(s);
   }
 
+  /* ================= AI 创作者：链上数字生命体（演示 / 节点双模式） ================= */
+  function aiEmpty() {
+    return { creators: {}, wallets: {}, events: [] };
+  }
+  function aiStore() { return lsGet(LS.ai, aiEmpty()); }
+  function saveAiStore(s) { lsSet(LS.ai, s); }
+  function aiDay() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function aiBudgetState(identity) {
+    var day = aiDay();
+    var win = identity.daily_spend || {};
+    var spent = win.date === day ? Number(win.spent || 0) : 0;
+    return { date: day, budget: Number(identity.daily_budget || 0), spent: round4(spent),
+             remaining: round4(Math.max(0, Number(identity.daily_budget || 0) - spent)),
+             status: identity.status };
+  }
+  function aiCanSpend(identity, amount) {
+    if (!identity) return true;
+    if (identity.status !== 'active') return false;
+    var st = aiBudgetState(identity);
+    return st.spent + Number(amount || 0) <= st.budget + 1e-9;
+  }
+  function aiRecordSpend(s, addr, amount) {
+    var id = s.creators[addr];
+    if (!id) return;
+    var day = aiDay();
+    var win = id.daily_spend || {};
+    if (win.date !== day) win = { date: day, spent: 0 };
+    win.spent = round4(Number(win.spent || 0) + Number(amount || 0));
+    id.daily_spend = win;
+  }
+  function aiEvent(s, op, id, summary) {
+    s.events.unshift({ op: op, id: id, addr: state.asAddr || state.addr, ts: Date.now(), summary: summary || id });
+    if (s.events.length > 80) s.events.length = 80;
+  }
+  function sfAiDemoAction(op, fields, amount) {
+    var s = aiStore();
+    var addr = state.asAddr || state.addr;
+    if (op === 'nova:ai:register') {
+      var name = String(fields.name || '').trim();
+      var owner = String(fields.owner || '').trim();
+      var budget = Number(fields.daily_budget);
+      if (!name || name.length > 64) return { ok: false, error: '名称需为 1-64 字符' };
+      if (!/^0x[0-9a-fA-F]{40}$/.test(owner)) return { ok: false, error: 'owner 地址格式错误' };
+      if (!(budget >= 0.1 && budget <= 10000)) return { ok: false, error: '日预算需在 0.1-10000 NOVA' };
+      if (s.creators[addr]) return { ok: false, error: '该地址已注册 AI 创作者' };
+      s.creators[addr] = { addr: addr, name: name, owner: owner, daily_budget: round4(budget),
+        meta: String(fields.meta || '').slice(0, 512), status: 'active', created_at: Date.now(),
+        daily_spend: { date: aiDay(), spent: 0 } };
+      aiEvent(s, op, addr, 'AI 创作者注册「' + name + '」');
+      saveAiStore(s);
+      return { ok: true, id: addr, demo: true };
+    }
+    if (op === 'nova:ai:config') {
+      var target = String(fields.target || '');
+      var id2 = s.creators[target];
+      if (!id2) return { ok: false, error: 'AI 创作者不存在' };
+      if (addr !== id2.owner) return { ok: false, error: '仅 owner 可配置' };
+      var action = String(fields.action || '');
+      if (action === 'pause') { id2.status = 'paused'; }
+      else if (action === 'resume') { id2.status = 'active'; }
+      else if (action === 'budget') {
+        var nb = Number(fields.daily_budget);
+        if (!(nb >= 0.1 && nb <= 10000)) return { ok: false, error: '日预算需在 0.1-10000 NOVA' };
+        id2.daily_budget = round4(nb);
+      } else { return { ok: false, error: '未知操作' }; }
+      id2.updated_at = Date.now();
+      aiEvent(s, op, target, 'AI 配置更新：' + action);
+      saveAiStore(s);
+      return { ok: true, id: target, demo: true };
+    }
+    return { ok: false, error: '未知 AI 操作' };
+  }
+  /* 以指定钱包（如 AI 创作者）签名执行操作：演示模式本地模拟，节点模式真实广播。
+     AI 地址发起支出时，先按链上同款规则做日预算硬校验并累计当日支出。 */
+  async function sfActionAs(priv, op, fields, amount) {
+    amount = Number(amount || 0);
+    var pub, addr;
+    try { pub = await getPubFromPriv(priv); addr = await addressFromPriv(priv); }
+    catch (e) { return { ok: false, error: 'AI 钱包无效' }; }
+    if (state.mode === 'demo') {
+      var s0 = aiStore();
+      var identity = s0.creators[addr];
+      if (identity && !aiCanSpend(identity, amount)) {
+        return { ok: false, error: identity.status !== 'active'
+          ? 'AI 已暂停，无法支出（演示）' : 'AI 日预算不足（演示，与链上同规则）' };
+      }
+      var prev = state.asAddr;
+      state.asAddr = addr;
+      try {
+        var r = await (op.indexOf('nova:ai:') === 0
+          ? sfAiDemoAction(op, fields, amount) : sfDemoAction(op, fields, amount));
+        if (r && r.ok && identity) {
+          var s1 = aiStore();
+          aiRecordSpend(s1, addr, amount);
+          saveAiStore(s1);
+        }
+        return r;
+      } finally { state.asAddr = prev; }
+    }
+    try {
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = amount.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      var sig = await signMsg(priv, addr + addr + amtStr + ts + '[]' + data + pub);
+      var res = await api('/api/op', 'POST', { addr: addr, amount: amount, data: data, timestamp: ts,
+        sender_public_key: pub, signature: sig });
+      if (res && res.error) return { ok: false, error: res.error };
+      return { ok: true, txid: res.txid, id: res.id, summary: res.summary };
+    } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  }
+  function seedAiDemo() {
+    var s = aiStore();
+    if (Object.keys(s.creators).length) return;
+    var aiAddr = '0x' + '9a'.repeat(20);
+    s.creators[aiAddr] = { addr: aiAddr, name: '星语诗人', owner: DEMO_CREATORS[0].addr,
+      daily_budget: 20, meta: 'model:novapoet-v1;host:novachain-web', status: 'active',
+      created_at: Date.now(), daily_spend: { date: aiDay(), spent: 0 } };
+    aiEvent(s, 'nova:ai:register', aiAddr, 'AI 创作者注册「星语诗人」');
+    saveAiStore(s);
+    var t = sfStore();
+    t.text_assets = t.text_assets || {};
+    if (!t.text_assets.txt_ai1) {
+      t.text_assets.txt_ai1 = { id: 'txt_ai1', identifier: 'AI-NIGHT-01', author: aiAddr, title: '星语诗人 · 夜航诗',
+        visibility: 'public', price: 2, tier: 'basic', series: false, exposure_weight: 1,
+        deposit: 10, deposit_frozen: false, deposit_released: false, status: 'listed', buyers: [], keys: {},
+        content: '夜是流动的墨，\n每一行都通往一颗未被命名的星。\n我在链上写诗，\n由算法署名，由合约收款。',
+        cipher_cid: '', cipher_data: '', key_cipher: {}, dispute: null, releasable_at: 0,
+        created_at: Date.now() - 2 * 86400000, cid: '' };
+    }
+    if (!t.text_assets.txt_ai2) {
+      t.text_assets.txt_ai2 = { id: 'txt_ai2', identifier: 'AI-ZERO-G-02', author: aiAddr, title: '星语诗人 · 零重力随笔',
+        visibility: 'public', price: 1.5, tier: 'basic', series: false, exposure_weight: 1,
+        deposit: 10, deposit_frozen: false, deposit_released: false, status: 'listed', buyers: [], keys: {},
+        content: '失重的时候，人会更诚实。\n这颗星球上所有未说出口的话，\n都在轨道上安静地漂着。',
+        cipher_cid: '', cipher_data: '', key_cipher: {}, dispute: null, releasable_at: 0,
+        created_at: Date.now() - 1 * 86400000, cid: '' };
+    }
+    saveSfStore(t);
+  }
   /* ================= 存储网络 · 算力市场（演示模拟） ================= */
   function demoStorage() { return lsGet(LS.storage, { providers: {}, claims: {}, orders: {} }); }
   function saveDemoStorage(s) { lsSet(LS.storage, s); }
@@ -1896,6 +2041,7 @@
     window.addEventListener('nova-wallet', updateWalletUI);
     seedDemoData();
     seedSocialfiDemo();
+    seedAiDemo();
     seedStorageComputeDemo();
     await seedTextDemo();
     await connectFromStorage();
@@ -1921,7 +2067,8 @@
     feed: feed, saveFeed: saveFeed, addPost: addPost, toggleLike: toggleLike,
     scores: scores, addScore: addScore, topScores: topScores,
     rooms: rooms, saveRooms: saveRooms,
-    sfAction: sfAction, sfList: sfList, sfStore: sfStore, saveSfStore: saveSfStore,
+    sfAction: sfAction, sfActionAs: sfActionAs, sfList: sfList, sfStore: sfStore, saveSfStore: saveSfStore,
+    aiStore: aiStore, saveAiStore: saveAiStore, aiBudgetState: aiBudgetState,
     sfReputation: sfReputation, sfRecommend: sfRecommend, sfFanPriceAt: sfFanPriceAt,
     textCryptoOk: textCryptoOk, textEncryptBody: textEncryptBody, textDecryptBody: textDecryptBody,
     textEciesEncrypt: textEciesEncrypt, textEciesDecrypt: textEciesDecrypt,
@@ -1929,7 +2076,7 @@
     sfTextRep: sfTextRep, sfTextDepositFor: sfTextDepositFor,
     sfTextIsValidatorDemo: sfTextIsValidatorDemo,
     storageSnapshot: storageSnapshot, computeSnapshot: computeSnapshot, seedStorageComputeDemo: seedStorageComputeDemo,
-    demoStorage: demoStorage, demoCompute: demoCompute,
+    demoStorage: demoStorage, demoCompute: demoCompute, demoBal: demoBal, demoSetBal: demoSetBal,
     loadingHtml: loadingHtml, errHtml: errHtml,
     openModal: openModal, closeModal: closeModal, confirmDlg: confirmDlg, toast: toast,
     fmt: fmt, shortAddr: shortAddr, timeAgo: timeAgo, esc: esc,
