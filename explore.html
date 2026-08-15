@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nova Chain 探索：密文交易、盲盒抽奖、文本市场、音乐 NFT 与更多创作者内容市场。" />
+  <meta name="theme-color" content="#0A0A0F" />
+  <title data-i18n="explore.title">探索 · 内容与交易市场</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .market-card { display: flex; flex-direction: column; gap: 10px; color: var(--text); }
+    .market-card h3 { font-size: 16px; color: var(--text); }
+    .market-card p { color: var(--dim); font-size: 13px; line-height: 1.65; flex: 1; }
+    .market-card .pill { align-self: flex-start; }
+    .market-card.soon { opacity: 0.78; }
+    .eco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; }
+    .eco-grid a.card { color: var(--text); }
+    .eco-grid a.card h3 { color: var(--text); margin-bottom: 8px; font-size: 15px; }
+    .eco-grid a.card p { color: var(--dim); font-size: 13px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow" data-i18n="explore.eyebrow">EXPLORE · MARKET</span>
+      <h1 data-i18n="explore.title">探索 · 内容与交易市场</h1>
+      <p class="sub" data-i18n="explore.sub">搜索、发布与购买：密文交易、盲盒抽奖、文本市场、音乐 NFT，创作者经济的内容交易都在这里。</p>
+    </section>
+
+    <input class="search" id="marketSearch" type="search" data-i18n-ph="explore.search" placeholder="搜索市场（密文 / 盲盒 / 文本 / 音乐）" />
+
+    <section>
+      <div class="section-title" data-i18n="explore.core">核心市场</div>
+      <div class="grid grid-2" id="marketGrid">
+        <a class="card market-card" href="./socialfi.html" data-tags="encrypted cipher 密文 交易 加密">
+          <div class="app-icon">🔐</div>
+          <h3 data-i18n="explore.encrypted">密文交易</h3>
+          <p data-i18n="explore.encrypted.desc">端到端加密内容发布、购买与解锁，链上存证。</p>
+          <span class="pill" data-i18n="explore.tag.live">交易市场</span>
+        </a>
+        <a class="card market-card" href="./socialfi.html" data-tags="blindbox mystery 盲盒 抽奖">
+          <div class="app-icon">🎁</div>
+          <h3 data-i18n="explore.blind">盲盒抽奖</h3>
+          <p data-i18n="explore.blind.desc">链上随机盲盒，开盒即得 NFT 与粉丝代币。</p>
+          <span class="pill" data-i18n="explore.tag.live">抽奖</span>
+        </a>
+        <a class="card market-card" href="./words.html" data-tags="text novel 文本 文字 阅读">
+          <div class="app-icon">📖</div>
+          <h3 data-i18n="explore.text">文本市场</h3>
+          <p data-i18n="explore.text.desc">长篇、诗歌与连载的阅读、打赏与版权交易。</p>
+          <span class="pill" data-i18n="explore.tag.live">阅读创作</span>
+        </a>
+        <a class="card market-card" href="./music.html" data-tags="music nft 音乐 唱片">
+          <div class="app-icon">🎧</div>
+          <h3 data-i18n="explore.music">音乐 NFT</h3>
+          <p data-i18n="explore.music.desc">上传、铸造与购买链上唱片，收藏即解锁粉丝权益。</p>
+          <span class="pill" data-i18n="explore.tag.live">发行</span>
+        </a>
+        <a class="card market-card soon" href="#" data-tags="ai music 音乐人 未来">
+          <div class="app-icon">🤖</div>
+          <h3 data-i18n="explore.ai">AI 音乐人专区</h3>
+          <p data-i18n="explore.ai.desc">AI 生成音乐的上链发行与版权分成，即将上线。</p>
+          <span class="pill" data-i18n="explore.tag.soon">即将上线</span>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="explore.ecosystem">更多生态</div>
+      <div class="eco-grid">
+        <a class="card" href="./nft.html"><h3 data-i18n="explore.nft">NFT 收藏品</h3><p data-i18n="explore.nft.desc">铸造、买卖与转让数字藏品。</p></a>
+        <a class="card" href="./games.html"><h3 data-i18n="explore.games">游戏</h3><p data-i18n="explore.games.desc">量子骰子与星轨冲刺，链上排行榜。</p></a>
+        <a class="card" href="./video.html"><h3 data-i18n="explore.video">视频</h3><p data-i18n="explore.video.desc">创作者频道与动效放映。</p></a>
+        <a class="card" href="./live.html"><h3 data-i18n="explore.live">直播</h3><p data-i18n="explore.live.desc">弹幕互动与礼物打赏。</p></a>
+        <a class="card" href="./social.html"><h3 data-i18n="explore.social">社交</h3><p data-i18n="explore.social.desc">创作者动态与链上时间戳。</p></a>
+        <a class="card" href="./stage.html"><h3 data-i18n="explore.stage">虚拟演出</h3><p data-i18n="explore.stage.desc">沉浸式舞台与 NFT 门票。</p></a>
+        <a class="card" href="./storage.html"><h3 data-i18n="explore.storage">去中心化存储</h3><p data-i18n="explore.storage.desc">内容固定与链上存证。</p></a>
+        <a class="card" href="./compute.html"><h3 data-i18n="explore.compute">链上算力</h3><p data-i18n="explore.compute.desc">可验证计算任务市场。</p></a>
+        <a class="card" href="./socialfi.html"><h3 data-i18n="explore.socialfi">链上生态</h3><p data-i18n="explore.socialfi.desc">十大 SocialFi 玩法与声誉系统。</p></a>
+        <a class="card" href="./apps.html"><h3>应用中心</h3><p class="dim" style="font-size:13px;line-height:1.6;">钱包、资产与全部生态应用的统一入口。</p></a>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    function filterMarkets() {
+      var q = (document.getElementById('marketSearch').value || '').trim().toLowerCase();
+      document.querySelectorAll('.market-card').forEach(function (card) {
+        var hay = ((card.getAttribute('data-tags') || '') + ' ' + card.textContent).toLowerCase();
+        card.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
+      });
+    }
+    document.getElementById('marketSearch').addEventListener('input', filterMarkets);
+    window.addEventListener('nova-lang', filterMarkets);
+    N.init({ active: 'explore', onReady: function () {} });
+  </script>
+</body>
+</html>

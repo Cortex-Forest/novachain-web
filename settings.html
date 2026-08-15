@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nova Chain 设置：网络配置、助记词管理、安全中心与语言切换。" />
+  <meta name="theme-color" content="#0A0A0F" />
+  <title data-i18n="settings.title">设置</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dim); margin-bottom: 8px; }
+    .panel-desc { color: var(--dim); font-size: 13px; line-height: 1.6; }
+    .set-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow" data-i18n="settings.eyebrow">SETTINGS</span>
+      <h1 data-i18n="settings.title">设置</h1>
+      <p class="sub" data-i18n="settings.sub">网络配置、助记词管理、安全中心与语言偏好，全部本地保存。</p>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="settings.network">网络配置</div>
+      <div class="card">
+        <label class="field">
+          <span data-i18n="settings.rpc">RPC 地址</span>
+          <input class="mono" id="rpcInput" placeholder="http://127.0.0.1:8545" />
+        </label>
+        <div class="set-row">
+          <button class="btn primary" id="rpcSave" data-i18n="settings.save">保存</button>
+          <button class="btn" id="rpcReset" data-i18n="settings.reset">恢复自动检测</button>
+          <span class="dim" style="font-size:12px;" id="rpcHint">auto</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="settings.lang">语言切换</div>
+      <div class="card">
+        <div class="set-row">
+          <button class="btn primary" id="langZh">中文</button>
+          <button class="btn" id="langEn">EN</button>
+          <span class="dim" style="font-size:12px;" id="langHint">当前语言：中文</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="settings.seed">助记词管理</div>
+      <div class="card">
+        <p class="dim" style="font-size:13px;line-height:1.65;" data-i18n="settings.seed.desc">创建、备份与导入助记词均在钱包页完成，私钥只保存在本地浏览器。</p>
+        <div class="set-row" style="margin-top:12px;">
+          <a class="btn" href="./wallet.html" data-i18n="settings.seed.cta">前往钱包管理</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="settings.security">安全中心</div>
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="panel-title" data-i18n="settings.security.wallet">钱包状态</div>
+            <div class="panel-desc" id="secStatus">未连接钱包</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn" id="secClear" data-i18n="settings.security.clear">清除本地演示数据</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="settings.about">关于 Nova</div>
+      <div class="card">
+        <div class="row-info"><span>Nova Chain</span><span class="mono">v0.9.0-demo</span></div>
+        <div class="row-info"><span data-i18n="settings.about.license">开源许可</span><span>MIT</span></div>
+        <p class="dim" style="margin-top:12px;font-size:13px;line-height:1.65;" data-i18n="settings.about.privacy">隐私政策：钱包私钥与助记词仅保存在浏览器本地，不上传任何服务器。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var DEMO_KEYS = ['nova_priv','nova_demo_balances','nova_demo_ledger','nova_nft_store','nova_nft_owned','nova_app_profiles','nova_app_feed','nova_app_seeded','nova_app_rooms','nova_app_scores','nova_socialfi','nova_storage','nova_compute','nova_checkin','nova_early_rewards'];
+    function renderSettings() {
+      var s = N.getState();
+      document.getElementById('secStatus').textContent = s.connected
+        ? N.t('settings.security.connected') + ' · ' + N.shortAddr(s.addr)
+        : N.t('settings.security.disconnected');
+      var cur = N.getLang();
+      document.getElementById('langZh').className = 'btn' + (cur === 'zh' ? ' primary' : '');
+      document.getElementById('langEn').className = 'btn' + (cur === 'en' ? ' primary' : '');
+      document.getElementById('langHint').textContent = N.t('settings.lang.hint') + (cur === 'zh' ? '中文' : 'English');
+      var saved = N.lsGet('nova_rpc', '');
+      if (saved) document.getElementById('rpcInput').value = saved;
+      document.getElementById('rpcHint').textContent = s.rpc ? s.rpc : 'auto';
+    }
+    document.getElementById('langZh').addEventListener('click', function () { N.setLang('zh'); });
+    document.getElementById('langEn').addEventListener('click', function () { N.setLang('en'); });
+    document.getElementById('rpcSave').addEventListener('click', function () {
+      var v = document.getElementById('rpcInput').value.trim().replace(/\/+$/, '');
+      if (!v) { N.toast(N.t('settings.reset.done')); localStorage.removeItem('nova_rpc'); return; }
+      N.lsSet('nova_rpc', v);
+      N.toast(N.t('settings.saved'));
+    });
+    document.getElementById('rpcReset').addEventListener('click', function () {
+      localStorage.removeItem('nova_rpc');
+      document.getElementById('rpcInput').value = '';
+      N.toast(N.t('settings.reset.done'));
+    });
+    document.getElementById('secClear').addEventListener('click', function () {
+      if (!confirm(N.t('settings.security.confirm'))) return;
+      DEMO_KEYS.forEach(function (k) { localStorage.removeItem(k); });
+      N.toast(N.t('toast.cleared'));
+      setTimeout(function () { location.reload(); }, 600);
+    });
+    window.addEventListener('nova-lang', renderSettings);
+    N.init({ active: 'settings', onReady: renderSettings });
+  </script>
+</body>
+</html>

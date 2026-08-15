@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nova Chain 权益中心：超级节点质押、每日签到、早期激励与社区仲裁。" />
+  <meta name="theme-color" content="#0A0A0F" />
+  <title data-i18n="rewards.title">权益 · 质押与激励</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .rewards-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dim); margin-bottom: 8px; }
+    .panel-value { font-size: 20px; font-weight: 800; margin-bottom: 4px; color: var(--accent); font-family: var(--font-mono); }
+    .panel-desc { color: var(--dim); font-size: 13px; line-height: 1.6; }
+    .grid-3 .card h3 { font-size: 16px; margin-bottom: 8px; color: var(--accent); }
+    @media (max-width: 900px) { .rewards-row { grid-template-columns: 1fr; gap: 12px; } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow" data-i18n="rewards.eyebrow">REWARDS · STAKE</span>
+      <h1 data-i18n="rewards.title">权益 · 质押与激励</h1>
+      <p class="sub" data-i18n="rewards.sub">超级节点质押、每日签到与早期激励都在这里；社区仲裁保障每一次交易。</p>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="rewards.stake">超级节点质押</div>
+      <div class="card">
+        <div class="rewards-row">
+          <div><div class="panel-title" data-i18n="rewards.apy">预估年化</div><div class="panel-value" style="color:var(--success);">12.5%</div></div>
+          <div><div class="panel-title" data-i18n="rewards.min">最低门槛</div><div class="panel-value" style="color:var(--text);">100 NOVA</div></div>
+          <div><div class="panel-title" data-i18n="rewards.status">当前状态</div><div class="panel-value" id="stakeStatus" style="color:var(--text);">—</div></div>
+        </div>
+        <div class="row" style="margin-top:16px;">
+          <a class="btn primary" href="./nova.html" data-i18n="rewards.stake.cta">进入质押中心</a>
+          <a class="btn" href="./nova.html?mode=demo" data-i18n="rewards.stake.demo">演示模式体验</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="rewards.checkin">每日签到</div>
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="panel-title" data-i18n="rewards.checkin.streak">连续签到</div>
+            <div class="panel-value" id="checkinStreak" style="color:var(--text);">0 天</div>
+            <div class="panel-desc" id="checkinDesc">每日签到奖励 5 NOVA</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn primary" id="checkinBtn" data-i18n="rewards.checkin.cta">签到</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="rewards.early">早期激励</div>
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="panel-title" data-i18n="rewards.early.total">激励总量</div>
+            <div class="panel-value" style="color:var(--text);">250 NOVA</div>
+            <div class="panel-desc" id="earlyDesc">已领取 0 / 250 NOVA</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn primary" id="earlyBtn" data-i18n="rewards.early.cta">领取激励</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title" data-i18n="rewards.arb">社区仲裁</div>
+      <div class="grid grid-3">
+        <div class="card"><h3 data-i18n="rewards.arb.complain">投诉</h3><p class="dim" style="font-size:13px;line-height:1.65;" data-i18n="rewards.arb.complain.desc">交易纠纷在线提交，自动留存证据。</p></div>
+        <div class="card"><h3 data-i18n="rewards.arb.verify">验证</h3><p class="dim" style="font-size:13px;line-height:1.65;" data-i18n="rewards.arb.verify.desc">链上存证与多签仲裁员验证。</p></div>
+        <div class="card"><h3 data-i18n="rewards.arb.pay">赔付</h3><p class="dim" style="font-size:13px;line-height:1.65;" data-i18n="rewards.arb.pay.desc">仲裁通过后自动执行赔付。</p></div>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <a class="btn" href="./socialfi.html" data-i18n="rewards.arb.cta">进入链上生态 · 仲裁入口</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+    var N = NovaApps;
+    var CK_KEY = 'nova_checkin';
+    var ER_KEY = 'nova_early_rewards';
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function dstr(offset) {
+      var d = new Date(Date.now() + (offset || 0) * 86400000);
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+    function ck() { return N.lsGet(CK_KEY, { last: '', streak: 0, total: 0 }); }
+    function er() { return N.lsGet(ER_KEY, { claimed: 0, total: 250 }); }
+
+    function renderCheckin() {
+      var s = ck();
+      var done = s.last === dstr(0);
+      document.getElementById('checkinStreak').textContent = s.streak + ' ' + N.t('rewards.checkin.days');
+      var desc = document.getElementById('checkinDesc');
+      var btn = document.getElementById('checkinBtn');
+      if (done) {
+        desc.textContent = N.t('rewards.checkin.done') + ' · ' + N.t('rewards.checkin.count') + ' ' + s.total;
+        btn.textContent = N.t('rewards.checkin.done2');
+        btn.className = 'btn';
+        btn.disabled = true;
+      } else {
+        desc.textContent = N.t('rewards.checkin.desc');
+        btn.textContent = N.t('rewards.checkin.cta');
+        btn.className = 'btn primary';
+        btn.disabled = false;
+      }
+    }
+    function doCheckin() {
+      var s = ck();
+      if (s.last === dstr(0)) { N.toast(N.t('toast.checkin.done')); return; }
+      s.streak = (s.last === dstr(-1)) ? s.streak + 1 : 1;
+      s.total += 1;
+      s.last = dstr(0);
+      N.lsSet(CK_KEY, s);
+      var r = N.novaCredit({ amount: 5, memo: '每日签到奖励' });
+      N.toast(r && r.ok ? N.t('toast.checkin.ok') : N.t('toast.checkin.nowallet'));
+      renderCheckin();
+    }
+    function renderEarly() {
+      var s = er();
+      document.getElementById('earlyDesc').textContent = N.t('rewards.early.desc') + ' ' + s.claimed + ' / ' + s.total + ' NOVA';
+      var btn = document.getElementById('earlyBtn');
+      var done = s.claimed >= s.total;
+      btn.textContent = done ? N.t('rewards.early.done') : N.t('rewards.early.cta');
+      btn.className = 'btn ' + (done ? '' : 'primary');
+      btn.disabled = done;
+    }
+    function claimEarly() {
+      var s = er();
+      if (s.claimed >= s.total) return;
+      if (!N.getState().connected) { N.requireWallet().then(function (ok) { if (ok) claimEarly(); }); return; }
+      var amount = Math.min(50, s.total - s.claimed);
+      var r = N.novaCredit({ amount: amount, memo: '早期激励领取' });
+      if (r && r.ok) {
+        s.claimed += amount;
+        N.lsSet(ER_KEY, s);
+        N.toast(N.t('toast.early.claimed') + ' ' + amount + ' NOVA');
+        renderEarly();
+      } else {
+        N.toast(N.t('toast.early.fail'), 'err');
+      }
+    }
+    function renderStake() {
+      document.getElementById('stakeStatus').textContent = N.t('rewards.stake.active');
+      document.getElementById('stakeStatus').style.color = 'var(--success)';
+    }
+    function renderAll() { renderCheckin(); renderEarly(); renderStake(); }
+
+    document.getElementById('checkinBtn').addEventListener('click', doCheckin);
+    document.getElementById('earlyBtn').addEventListener('click', claimEarly);
+    window.addEventListener('nova-lang', renderAll);
+    N.init({ active: 'rewards', onReady: renderAll });
+  </script>
+</body>
+</html>

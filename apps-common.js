@@ -210,6 +210,20 @@
     'http://localhost:8080/api/status'
   ];
   async function detectMode() {
+    var custom = lsGet('nova_rpc', '');
+    if (custom) {
+      try {
+        var cr = await fetch(custom.replace(/\/+$/, '') + '/api/status', { method: 'GET', headers: { Accept: 'application/json' } });
+        if (cr.ok) {
+          var cd = await cr.json();
+          if (cd && typeof cd === 'object') {
+            state.mode = 'node';
+            state.rpc = custom.replace(/\/+$/, '');
+            return cd;
+          }
+        }
+      } catch (e) { /* 自定义 RPC 不可达，继续自动检测 */ }
+    }
     for (var i = 0; i < NODE_CANDIDATES.length; i++) {
       try {
         var res = await fetch(NODE_CANDIDATES[i], { method: 'GET', headers: { Accept: 'application/json' } });
@@ -592,7 +606,7 @@
   }
 
   /* ================= UI：Toast / 弹窗 ================= */
-  function loadingHtml(text) { return '<p class="dim">' + (text || '加载中…') + '</p>'; }
+  function loadingHtml(text) { return '<div class="shimmer" style="height:16px;width:100%"></div>'; }
   function errHtml(msg) { return '<div class="err-box">⚠️ ' + esc(msg || '加载失败，请重试') + '</div>'; }
   function toast(msg, type) {
     type = type || 'ok';
@@ -600,7 +614,7 @@
     if (!wrap) { wrap = document.createElement('div'); wrap.className = 'toast-wrap'; document.body.appendChild(wrap); }
     var el = document.createElement('div');
     el.className = 'toast ' + type;
-    el.textContent = msg;
+    el.textContent = (type === 'ok' ? '✓ ' : '') + msg;
     wrap.appendChild(el);
     setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 3200);
     setTimeout(function () { el.remove(); }, 3600);
@@ -749,20 +763,191 @@
   }
 
   /* ================= UI：顶部导航与钱包 ================= */
+  /* 五大模块（用户视角）：首页 / 钱包 / 探索 / 权益 / 设置 */
   var NAV_ITEMS = [
-    { key: 'apps', href: './apps.html', icon: '🧭', label: '应用中心' },
-    { key: 'music', href: './music.html', icon: '🎧', label: '音乐' },
-    { key: 'words', href: './words.html', icon: '📖', label: '文字' },
-    { key: 'games', href: './games.html', icon: '🎮', label: '游戏' },
-    { key: 'video', href: './video.html', icon: '🎬', label: '视频' },
-    { key: 'live', href: './live.html', icon: '📡', label: '直播' },
-    { key: 'social', href: './social.html', icon: '💬', label: '社交' },
-    { key: 'stage', href: './stage.html', icon: '🎪', label: '演出' },
-    { key: 'nft', href: './nft.html', icon: '🖼️', label: 'NFT' },
-    { key: 'storage', href: './storage.html', icon: '🗄️', label: '存储' },
-    { key: 'compute', href: './compute.html', icon: '⚡', label: '算力' },
-    { key: 'socialfi', href: './socialfi.html', icon: '🌠', label: '链上生态' }
+    { key: 'home', href: './index.html', icon: '🏠', labelKey: 'nav.home' },
+    { key: 'wallet', href: './wallet.html', icon: '💳', labelKey: 'nav.wallet' },
+    { key: 'explore', href: './explore.html', icon: '🧭', labelKey: 'nav.explore' },
+    { key: 'rewards', href: './rewards.html', icon: '🎁', labelKey: 'nav.rewards' },
+    { key: 'settings', href: './settings.html', icon: '⚙️', labelKey: 'nav.settings' }
   ];
+  /* 移动端底部导航与桌面侧边栏一致：五个模块 */
+  var BOTTOM_NAV = NAV_ITEMS;
+  /* 历史页面归属模块：用于统一高亮所在模块 */
+  var MODULE_OF = {
+    apps: 'explore', music: 'explore', words: 'explore', games: 'explore',
+    video: 'explore', live: 'explore', social: 'explore', stage: 'explore',
+    nft: 'explore', storage: 'explore', compute: 'explore', socialfi: 'explore',
+    nova: 'rewards', wallet: 'wallet', home: 'home'
+  };
+
+  /* ================= 国际化：中 / 英 ================= */
+  var I18N = {
+    zh: {
+      'nav.home': '首页', 'nav.wallet': '钱包', 'nav.explore': '探索',
+      'nav.rewards': '权益', 'nav.settings': '设置',
+      'net.demo': '演示网络', 'net.node': '本地节点',
+      'chip.connect': '连接钱包', 'chip.mode.node': '节点', 'chip.mode.demo': '演示',
+      'app.sidebar': '主导航', 'app.nav': '移动端导航', 'app.mode': '当前运行模式',
+      'app.title': 'Nova Chain · 超新星并行宇宙',
+      'home.assets': '资产总览', 'home.assets.total': '总资产', 'home.assets.locked': '锁仓资产',
+      'home.assets.checkin': '今日签到', 'home.chain': '链上数据',
+      'home.chain.block': '区块高度', 'home.chain.nodes': '在线节点', 'home.chain.staked': '全网质押',
+      'home.presale': '预售进度', 'home.presale.stage': '当前阶段', 'home.presale.price': '当前价格',
+      'home.presale.sold': '已售', 'home.quick': '快捷操作',
+      'home.quick.transfer': '转账', 'home.quick.stake': '质押', 'home.quick.explore': '探索', 'home.quick.checkin': '签到',
+      'home.modules': '生态模块', 'home.connect': '连接钱包', 'home.unconnected': '未连接',
+      'home.hello': '欢迎回来', 'home.mode.node': '节点已就绪 · 本地 RPC', 'home.mode.demo': '演示模式 · 静态体验',
+      'home.days': '天', 'home.checked': '已签到 · 连续', 'home.notchecked': '未签到',
+      'home.modules.desc.home': '资产与链上看板', 'home.modules.desc.wallet': '创建、转账与记录',
+      'home.modules.desc.explore': '密文、盲盒、文本、音乐', 'home.modules.desc.rewards': '质押、签到与仲裁',
+      'home.modules.desc.settings': '网络、安全与语言',
+      'explore.eyebrow': 'EXPLORE · MARKET', 'explore.title': '探索 · 内容与交易市场',
+      'explore.sub': '搜索、发布与购买：密文交易、盲盒抽奖、文本市场、音乐 NFT，创作者经济的内容交易都在这里。',
+      'explore.search': '搜索市场（密文 / 盲盒 / 文本 / 音乐）',
+      'explore.core': '核心市场', 'explore.tag.live': '交易市场', 'explore.tag.soon': '即将上线',
+      'explore.encrypted': '密文交易', 'explore.encrypted.desc': '端到端加密内容发布、购买与解锁，链上存证。',
+      'explore.blind': '盲盒抽奖', 'explore.blind.desc': '链上随机盲盒，开盒即得 NFT 与粉丝代币。',
+      'explore.text': '文本市场', 'explore.text.desc': '长篇、诗歌与连载的阅读、打赏与版权交易。',
+      'explore.music': '音乐 NFT', 'explore.music.desc': '上传、铸造与购买链上唱片，收藏即解锁粉丝权益。',
+      'explore.ai': 'AI 音乐人专区', 'explore.ai.desc': 'AI 生成音乐的上链发行与版权分成，即将上线。',
+      'explore.ecosystem': '更多生态',
+      'explore.nft': 'NFT 收藏品', 'explore.nft.desc': '铸造、买卖与转让数字藏品。',
+      'explore.games': '游戏', 'explore.games.desc': '量子骰子与星轨冲刺，链上排行榜。',
+      'explore.video': '视频', 'explore.video.desc': '创作者频道与动效放映。',
+      'explore.live': '直播', 'explore.live.desc': '弹幕互动与礼物打赏。',
+      'explore.social': '社交', 'explore.social.desc': '创作者动态与链上时间戳。',
+      'explore.stage': '虚拟演出', 'explore.stage.desc': '沉浸式舞台与 NFT 门票。',
+      'explore.storage': '去中心化存储', 'explore.storage.desc': '内容固定与链上存证。',
+      'explore.compute': '链上算力', 'explore.compute.desc': '可验证计算任务市场。',
+      'explore.socialfi': '链上生态', 'explore.socialfi.desc': '十大 SocialFi 玩法与声誉系统。',
+      'rewards.eyebrow': 'REWARDS · STAKE', 'rewards.title': '权益 · 质押与激励',
+      'rewards.sub': '超级节点质押、每日签到与早期激励都在这里；社区仲裁保障每一次交易。',
+      'rewards.stake': '超级节点质押', 'rewards.apy': '预估年化', 'rewards.min': '最低门槛',
+      'rewards.status': '当前状态', 'rewards.stake.cta': '进入质押中心', 'rewards.stake.demo': '演示模式体验',
+      'rewards.stake.active': '可质押', 'rewards.checkin': '每日签到', 'rewards.checkin.streak': '连续签到',
+      'rewards.checkin.desc': '每日签到奖励 5 NOVA', 'rewards.checkin.done': '今日已签到',
+      'rewards.checkin.cta': '签到', 'rewards.checkin.done2': '已签到', 'rewards.checkin.days': '天',
+      'rewards.checkin.count': '累计', 'rewards.early': '早期激励', 'rewards.early.total': '激励总量',
+      'rewards.early.desc': '已领取', 'rewards.early.cta': '领取激励', 'rewards.early.done': '已领完',
+      'rewards.arb': '社区仲裁', 'rewards.arb.complain': '投诉', 'rewards.arb.complain.desc': '交易纠纷在线提交，自动留存证据。',
+      'rewards.arb.verify': '验证', 'rewards.arb.verify.desc': '链上存证与多签仲裁员验证。',
+      'rewards.arb.pay': '赔付', 'rewards.arb.pay.desc': '仲裁通过后自动执行赔付。',
+      'rewards.arb.cta': '进入链上生态 · 仲裁入口',
+      'toast.checkin.done': '今日已签到', 'toast.checkin.ok': '签到成功 +5 NOVA',
+      'toast.checkin.nowallet': '签到成功（未连接钱包，未入账）',
+      'toast.early.claimed': '已领取', 'toast.early.fail': '领取失败', 'toast.cleared': '已清除本地数据',
+      'settings.eyebrow': 'SETTINGS', 'settings.title': '设置',
+      'settings.sub': '网络配置、助记词管理、安全中心与语言偏好，全部本地保存。',
+      'settings.network': '网络配置', 'settings.rpc': 'RPC 地址', 'settings.save': '保存',
+      'settings.reset': '恢复自动检测', 'settings.saved': '已保存，下次加载生效', 'settings.reset.done': '已恢复自动检测',
+      'settings.lang': '语言切换', 'settings.lang.hint': '当前语言：',
+      'settings.seed': '助记词管理', 'settings.seed.desc': '创建、备份与导入助记词均在钱包页完成，私钥只保存在本地浏览器。',
+      'settings.seed.cta': '前往钱包管理',
+      'settings.security': '安全中心', 'settings.security.wallet': '钱包状态',
+      'settings.security.connected': '已连接', 'settings.security.disconnected': '未连接钱包',
+      'settings.security.clear': '清除本地演示数据', 'settings.security.confirm': '确认清除所有本地演示数据？此操作不可撤销。',
+      'settings.about': '关于 Nova', 'settings.about.license': '开源许可',
+      'settings.about.privacy': '隐私政策：钱包私钥与助记词仅保存在浏览器本地，不上传任何服务器。'
+    },
+    en: {
+      'nav.home': 'Home', 'nav.wallet': 'Wallet', 'nav.explore': 'Explore',
+      'nav.rewards': 'Rewards', 'nav.settings': 'Settings',
+      'net.demo': 'Demo Network', 'net.node': 'Local Node',
+      'chip.connect': 'Connect Wallet', 'chip.mode.node': 'Node', 'chip.mode.demo': 'Demo',
+      'app.sidebar': 'Main', 'app.nav': 'Mobile navigation', 'app.mode': 'Current network mode',
+      'app.title': 'Nova Chain · Supernova Parallel Universe',
+      'home.assets': 'Assets Overview', 'home.assets.total': 'Total Assets', 'home.assets.locked': 'Locked Assets',
+      'home.assets.checkin': 'Check-in Today', 'home.chain': 'On-chain Data',
+      'home.chain.block': 'Block Height', 'home.chain.nodes': 'Online Nodes', 'home.chain.staked': 'Total Staked',
+      'home.presale': 'Presale Progress', 'home.presale.stage': 'Current Stage', 'home.presale.price': 'Current Price',
+      'home.presale.sold': 'Sold', 'home.quick': 'Quick Actions',
+      'home.quick.transfer': 'Transfer', 'home.quick.stake': 'Stake', 'home.quick.explore': 'Explore', 'home.quick.checkin': 'Check-in',
+      'home.modules': 'Modules', 'home.connect': 'Connect Wallet', 'home.unconnected': 'Not Connected',
+      'home.hello': 'Welcome back', 'home.mode.node': 'Node ready · Local RPC', 'home.mode.demo': 'Demo mode · Static preview',
+      'home.days': 'days', 'home.checked': 'Checked in ·', 'home.notchecked': 'Not checked in',
+      'home.modules.desc.home': 'Assets & chain dashboard', 'home.modules.desc.wallet': 'Create, transfer & history',
+      'home.modules.desc.explore': 'Cipher, box, text, music', 'home.modules.desc.rewards': 'Stake, check-in & arbitration',
+      'home.modules.desc.settings': 'Network, security & language',
+      'explore.eyebrow': 'EXPLORE · MARKET', 'explore.title': 'Explore · Content Market',
+      'explore.sub': 'Search, publish and buy: encrypted content, mystery boxes, text market and music NFTs — all content trading in one place.',
+      'explore.search': 'Search markets (cipher / blind box / text / music)',
+      'explore.core': 'Core Markets', 'explore.tag.live': 'Live', 'explore.tag.soon': 'Coming Soon',
+      'explore.encrypted': 'Encrypted Content', 'explore.encrypted.desc': 'Publish, purchase and unlock end-to-end encrypted content with on-chain proof.',
+      'explore.blind': 'Mystery Box', 'explore.blind.desc': 'On-chain random boxes — open to win NFTs and fan tokens.',
+      'explore.text': 'Text Market', 'explore.text.desc': 'Read, tip and trade rights for novels, poetry and serials.',
+      'explore.music': 'Music NFT', 'explore.music.desc': 'Upload, mint and buy on-chain records; collect to unlock fan perks.',
+      'explore.ai': 'AI Musicians', 'explore.ai.desc': 'On-chain release and royalty splits for AI-generated music. Coming soon.',
+      'explore.ecosystem': 'More Ecosystem',
+      'explore.nft': 'NFT Collectibles', 'explore.nft.desc': 'Mint, trade and transfer digital collectibles.',
+      'explore.games': 'Games', 'explore.games.desc': 'Quantum dice and star-track racing with on-chain leaderboards.',
+      'explore.video': 'Video', 'explore.video.desc': 'Creator channels and motion showcases.',
+      'explore.live': 'Live', 'explore.live.desc': 'Live chat interaction and gift tipping.',
+      'explore.social': 'Social', 'explore.social.desc': 'Creator updates with on-chain timestamps.',
+      'explore.stage': 'Virtual Stage', 'explore.stage.desc': 'Immersive shows with NFT tickets.',
+      'explore.storage': 'Decentralized Storage', 'explore.storage.desc': 'Content pinning and on-chain proofs.',
+      'explore.compute': 'On-chain Compute', 'explore.compute.desc': 'Verifiable computing task market.',
+      'explore.socialfi': 'On-chain Ecosystem', 'explore.socialfi.desc': 'Ten SocialFi play modes with a reputation system.',
+      'rewards.eyebrow': 'REWARDS · STAKE', 'rewards.title': 'Rewards · Staking & Incentives',
+      'rewards.sub': 'Super node staking, daily check-in and early rewards in one place; community arbitration protects every trade.',
+      'rewards.stake': 'Super Node Staking', 'rewards.apy': 'Est. APY', 'rewards.min': 'Minimum',
+      'rewards.status': 'Status', 'rewards.stake.cta': 'Open Staking Center', 'rewards.stake.demo': 'Try Demo Mode',
+      'rewards.stake.active': 'Open for staking', 'rewards.checkin': 'Daily Check-in', 'rewards.checkin.streak': 'Streak',
+      'rewards.checkin.desc': 'Earn 5 NOVA per check-in', 'rewards.checkin.done': 'Checked in today',
+      'rewards.checkin.cta': 'Check-in', 'rewards.checkin.done2': 'Checked in', 'rewards.checkin.days': 'days',
+      'rewards.checkin.count': 'Total', 'rewards.early': 'Early Rewards', 'rewards.early.total': 'Total Pool',
+      'rewards.early.desc': 'Claimed', 'rewards.early.cta': 'Claim Rewards', 'rewards.early.done': 'Fully Claimed',
+      'rewards.arb': 'Community Arbitration', 'rewards.arb.complain': 'Complaints', 'rewards.arb.complain.desc': 'Submit trade disputes online with evidence preserved.',
+      'rewards.arb.verify': 'Verification', 'rewards.arb.verify.desc': 'On-chain proof and multi-sig arbitrator review.',
+      'rewards.arb.pay': 'Payouts', 'rewards.arb.pay.desc': 'Automatic payout once arbitration passes.',
+      'rewards.arb.cta': 'Open On-chain Ecosystem · Arbitration',
+      'toast.checkin.done': 'Already checked in today', 'toast.checkin.ok': 'Check-in +5 NOVA',
+      'toast.checkin.nowallet': 'Checked in (not credited: wallet not connected)',
+      'toast.early.claimed': 'Claimed', 'toast.early.fail': 'Claim failed', 'toast.cleared': 'Local data cleared',
+      'settings.eyebrow': 'SETTINGS', 'settings.title': 'Settings',
+      'settings.sub': 'Network, seed phrase, security and language preferences — all stored locally.',
+      'settings.network': 'Network Settings', 'settings.rpc': 'RPC Endpoint', 'settings.save': 'Save',
+      'settings.reset': 'Restore Auto-detect', 'settings.saved': 'Saved — applies on next load', 'settings.reset.done': 'Auto-detect restored',
+      'settings.lang': 'Language', 'settings.lang.hint': 'Current language: ',
+      'settings.seed': 'Seed Phrase Management', 'settings.seed.desc': 'Create, back up and import your seed phrase in the Wallet page. Keys never leave your browser.',
+      'settings.seed.cta': 'Open Wallet',
+      'settings.security': 'Security Center', 'settings.security.wallet': 'Wallet Status',
+      'settings.security.connected': 'Connected', 'settings.security.disconnected': 'No wallet connected',
+      'settings.security.clear': 'Clear Local Demo Data', 'settings.security.confirm': 'Clear all local demo data? This cannot be undone.',
+      'settings.about': 'About Nova', 'settings.about.license': 'License',
+      'settings.about.privacy': 'Privacy: wallet keys and seed phrases stay in your browser only and are never uploaded.'
+    }
+  };
+  var lang = 'zh';
+  function t(key) {
+    return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
+  }
+  function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n');
+      if (k && I18N.zh[k] && I18N[lang][k]) el.textContent = t(k);
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n-ph');
+      if (k && I18N.zh[k] && I18N[lang][k]) el.setAttribute('placeholder', t(k));
+    });
+  }
+  function initLang() {
+    var saved = lsGet('nova_lang', '');
+    lang = (saved === 'en') ? 'en' : 'zh';
+    if (document.documentElement) document.documentElement.lang = (lang === 'en' ? 'en' : 'zh');
+    applyI18n();
+  }
+  function setLang(l) {
+    lang = (l === 'en') ? 'en' : 'zh';
+    lsSet('nova_lang', lang);
+    if (document.documentElement) document.documentElement.lang = (lang === 'en' ? 'en' : 'zh');
+    applyI18n();
+    renderTopbar();
+    window.dispatchEvent(new CustomEvent('nova-lang', { detail: { lang: lang } }));
+  }
+  initLang();
+
   function updateWalletUI() {
     var chip = document.getElementById('walletChip');
     if (!chip) return;
@@ -770,11 +955,11 @@
     var bal = chip.querySelector('.chip-bal');
     if (state.connected) {
       chip.classList.add('connected');
-      text.textContent = shortAddr(state.addr) + ' · ' + (state.mode === 'node' ? '节点' : '演示');
+      text.textContent = shortAddr(state.addr) + ' · ' + t(state.mode === 'node' ? 'chip.mode.node' : 'chip.mode.demo');
       bal.textContent = fmt(state.balance) + ' NOVA';
     } else {
       chip.classList.remove('connected');
-      text.textContent = '连接钱包';
+      text.textContent = t('chip.connect');
       bal.textContent = '';
     }
   }
@@ -819,18 +1004,43 @@
   function renderTopbar() {
     var el = document.getElementById('topbar');
     if (!el) return;
-    var links = NAV_ITEMS.map(function (n) {
+    var linkArr = NAV_ITEMS.map(function (n) {
       return '<a class="nav-link' + (n.key === state.active ? ' active' : '') + '" href="' + n.href + '">' +
-        n.icon + ' ' + n.label + '</a>';
+        '<span class="nav-icon">' + n.icon + '</span><span class="nav-label">' + t(n.labelKey) + '</span></a>';
+    });
+    var side = linkArr.slice(0, 2).join('') +
+      '<span class="side-sep"></span>' +
+      linkArr.slice(2).join('');
+    var bottom = BOTTOM_NAV.map(function (n) {
+      return '<a class="bn-item' + (n.key === state.active ? ' active' : '') + '" href="' + n.href + '">' +
+        '<span class="bn-icon">' + n.icon + '</span><span>' + t(n.labelKey) + '</span></a>';
     }).join('');
     el.innerHTML =
-      '<div class="topbar">' +
-        '<a class="brand" href="./apps.html"><span class="logo">⬡</span><span>NOVA·应用中心</span></a>' +
-        '<nav class="nav-scroll">' + links + '</nav>' +
-        '<button class="wallet-chip" id="walletChip" title="Nova 钱包">' +
-          '<span class="dot"></span><span class="chip-text">连接钱包</span><span class="chip-bal"></span>' +
+      '<aside class="sidebar" aria-label="' + t('app.sidebar') + '">' + side + '</aside>' +
+      '<header class="topbar">' +
+        '<a class="brand" href="./index.html"><span class="logo">⬡</span><span class="brand-name">Nova Chain</span></a>' +
+        '<span class="spacer"></span>' +
+        '<span class="net-pill ' + (state.mode || 'demo') + '" id="netPill" title="' + t('app.mode') + '">' +
+          '<span class="dot"></span><span class="net-name" id="netName">' +
+          t(state.mode === 'node' ? 'net.node' : 'net.demo') + '</span>' +
+        '</span>' +
+        '<div class="lang-switch" id="langSwitch" role="group" aria-label="Language">' +
+          '<button type="button" class="lang-opt' + (lang === 'zh' ? ' active' : '') + '" data-lang="zh">中文</button>' +
+          '<button type="button" class="lang-opt' + (lang === 'en' ? ' active' : '') + '" data-lang="en">EN</button>' +
+        '</div>' +
+        '<button class="wallet-chip" id="walletChip" title="Nova Wallet">' +
+          '<span class="dot"></span><span class="chip-text">' + t('chip.connect') + '</span><span class="chip-bal"></span>' +
         '</button>' +
-      '</div>';
+      '</header>' +
+      '<nav class="bottom-nav" aria-label="' + t('app.nav') + '">' + bottom + '</nav>';
+    document.body.classList.add('nav-shell');
+    var langSwitch = document.getElementById('langSwitch');
+    if (langSwitch) {
+      langSwitch.addEventListener('click', function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('.lang-opt') : null;
+        if (b && b.getAttribute('data-lang') !== lang) setLang(b.getAttribute('data-lang'));
+      });
+    }
     document.getElementById('walletChip').addEventListener('click', onWalletChipClick);
     updateWalletUI();
   }
@@ -855,7 +1065,9 @@
   function sfEmpty() {
     return { fan_tokens: {}, revenue_shares: {}, achievements: {}, soulbound: {},
              markets: {}, blindboxes: {}, blind_reveals: {}, curations: {},
-             graph_posts: {}, graph_follows: {}, bonds: {}, fractions: {}, events: [] };
+             graph_posts: {}, graph_follows: {}, bonds: {}, fractions: {},
+             text_assets: {}, text_reputation: {}, text_contract: null,
+             text_escrow: 0, text_reader: {}, events: [] };
   }
   function sfStore() { return lsGet(LS.socialfi, sfEmpty()); }
   function saveSfStore(s) { lsSet(LS.socialfi, s); }
@@ -1241,10 +1453,316 @@
       sfEvent(s, op, f.id, '购买 ' + qty2 + ' 份碎片');
       saveSfStore(s); refreshBalance(); return { ok: true, id: f.id, demo: true };
     }
+    if (op.indexOf('nova:text:') === 0) return sfTextDemoAction(op, fields, amount);
     if (op.indexOf('nova:storage:') === 0) return demoStorageOp(op, fields, amount);
     if (op.indexOf('nova:compute:') === 0) return demoComputeOp(op, fields, amount);
     return { ok: false, error: '未知操作' };
   }
+  /* ================= 文本市场：AES-256-GCM + P-256 ECIES（WebCrypto） ================= */
+  var TEXT_ECIES_TAG = 'nova-text-key-v1';
+  var TEXT_CIPHER_TAG = 'nova-text-aes256-gcm';
+  var TEXT_HKDF_INFO = utf8ToBytes('nova:text:key');
+  function textCryptoOk() { return !!(window.crypto && window.crypto.subtle && crypto.subtle.importKey); }
+  function bytesToAb(bytes) { return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength); }
+  function abToBytes(ab) { return new Uint8Array(ab); }
+  async function hkdf256(ikmBytes) {
+    var key = await crypto.subtle.importKey('raw', bytesToAb(ikmBytes), 'HKDF', false, ['deriveBits']);
+    var salt = new Uint8Array(32);
+    var bits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: bytesToAb(salt), info: bytesToAb(TEXT_HKDF_INFO) }, key, 256);
+    return abToBytes(bits);
+  }
+  async function importEcdhPub(pubHex) {
+    return crypto.subtle.importKey('raw', bytesToAb(hexToBytes(pubHex)), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  }
+  async function ecdhShared(myKey, peerPub) {
+    var bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: peerPub }, myKey, 256);
+    return abToBytes(bits);
+  }
+  async function aesGcmEncrypt(keyBytes, ivBytes, dataBytes) {
+    var key = await crypto.subtle.importKey('raw', bytesToAb(keyBytes), 'AES-GCM', false, ['encrypt']);
+    return abToBytes(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: bytesToAb(ivBytes) }, key, bytesToAb(dataBytes)));
+  }
+  async function aesGcmDecrypt(keyBytes, ivBytes, ctBytes) {
+    var key = await crypto.subtle.importKey('raw', bytesToAb(keyBytes), 'AES-GCM', false, ['decrypt']);
+    return abToBytes(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytesToAb(ivBytes) }, key, bytesToAb(ctBytes)));
+  }
+  /* ECIES 信封：{v, tag, curve:'P-256', epk, iv, ct}；明文/密文均为 hex */
+  async function textEciesEncrypt(recipientPubHex, plaintextHex) {
+    var eph = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    var peer = await importEcdhPub(recipientPubHex);
+    var shared = await ecdhShared(eph.privateKey, peer);
+    var key = await hkdf256(shared);
+    var iv = randomBytes(12);
+    var ct = await aesGcmEncrypt(key, iv, hexToBytes(plaintextHex));
+    var epkRaw = await crypto.subtle.exportKey('raw', eph.publicKey);
+    return { v: 1, tag: TEXT_ECIES_TAG, curve: 'P-256', epk: bytesToHex(abToBytes(epkRaw)), iv: bytesToHex(iv), ct: bytesToHex(ct) };
+  }
+  async function textEciesDecrypt(privJwk, env) {
+    var priv = await crypto.subtle.importKey('jwk', privJwk, { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+    var peer = await importEcdhPub(env.epk);
+    var shared = await ecdhShared(priv, peer);
+    var key = await hkdf256(shared);
+    var pt = await aesGcmDecrypt(key, hexToBytes(env.iv), hexToBytes(env.ct));
+    return bytesToHex(pt);
+  }
+  /* 作者：AES-256 加密正文 -> {keyHex, cipherData} */
+  async function textEncryptBody(body) {
+    var key = randomBytes(32);
+    var iv = randomBytes(12);
+    var ct = await aesGcmEncrypt(key, iv, utf8ToBytes(body));
+    return { keyHex: bytesToHex(key), cipherData: JSON.stringify({ v: 1, tag: TEXT_CIPHER_TAG, iv: bytesToHex(iv), ct: bytesToHex(ct) }) };
+  }
+  async function textDecryptBody(keyHex, cipherData) {
+    var env = JSON.parse(cipherData);
+    var pt = await aesGcmDecrypt(hexToBytes(keyHex), hexToBytes(env.iv), hexToBytes(env.ct));
+    return new TextDecoder().decode(pt);
+  }
+  /* 读者加密钥（P-256）：demo 本地保存 JWK，节点模式把公钥随购买交易提交 */
+  async function ensureTextReader(addr) {
+    var s = sfStore();
+    s.text_reader = s.text_reader || {};
+    if (s.text_reader[addr]) return s.text_reader[addr];
+    if (!textCryptoOk()) return null;
+    var kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    var jwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
+    var raw = await crypto.subtle.exportKey('raw', kp.publicKey);
+    var rec = { jwk: jwk, pub: bytesToHex(abToBytes(raw)) };
+    s.text_reader[addr] = rec;
+    saveSfStore(s);
+    return rec;
+  }
+  /* 文本合约公钥：节点模式取链上 /api/text/key，演示模式用本地 demo 合约 */
+  async function textContractPub() {
+    if (state.mode === 'node') {
+      var d = await api('/api/text/key');
+      return (d && d.public_key) || null;
+    }
+    var s = sfStore();
+    if (s.text_contract && s.text_contract.pub) return s.text_contract.pub;
+    if (!textCryptoOk()) return null;
+    var kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    var jwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
+    var raw = await crypto.subtle.exportKey('raw', kp.publicKey);
+    s.text_contract = { jwk: jwk, pub: bytesToHex(abToBytes(raw)) };
+    saveSfStore(s);
+    return s.text_contract.pub;
+  }
+  function sfTextRep(addr) { var s = sfStore(); return (s.text_reputation && s.text_reputation[addr]) || 0; }
+  function sfTextBumpRep(addr, delta) {
+    var s = sfStore();
+    s.text_reputation = s.text_reputation || {};
+    var v = Math.max(0, Math.min(100, (s.text_reputation[addr] || 0) + delta));
+    s.text_reputation[addr] = v;
+    saveSfStore(s);
+  }
+  function sfTextDepositFor(tier, rep) {
+    var base = { basic: 10, advanced: 100, pro: 1000 }[tier] || 10;
+    var discount = 0.5 * Math.min(1, (rep || 0) / 80);
+    return round4(base * (1 - discount));
+  }
+  function sfTextIsValidatorDemo(addr) {
+    var s = sfStore();
+    for (var i = 0; i < DEMO_CREATORS.length; i++) { if (DEMO_CREATORS[i].addr === addr) return true; }
+    if (sfTextRep(addr) >= 70) return true;
+    if (demoBal(addr) >= 100) return true;   // 演示：余额 >= 100 NOVA 视同质押验证者
+    return sfReputation(addr).score >= 70;
+  }
+  function sfTextSettleDemo(a) {
+    var dis = a.dispute;
+    if (!dis || dis.settled) return;
+    var voters = Object.keys(dis.voters), n = voters.length, b = 0, s = 0;
+    voters.forEach(function (v) { if (dis.voters[v] === 'buyer') b++; else if (dis.voters[v] === 'seller') s++; });
+    if (n < 3) { if (Date.now() - dis.started_at > 14 * 86400000) sfTextExecuteDemo(a, 'seller'); return; }
+    if (!dis.escalated) {
+      if (n >= 3 && Math.max(b, s) * 3 >= 2 * n) { sfTextExecuteDemo(a, b > s ? 'buyer' : 'seller'); return; }
+      dis.escalated = true;
+      return;
+    }
+    if (n >= 7) sfTextExecuteDemo(a, b > s ? 'buyer' : 'seller');
+  }
+  function sfTextExecuteDemo(a, winner) {
+    var s = sfStore();
+    var dis = a.dispute;
+    var escrowAddr = '0x_text_escrow';
+    if (winner === 'buyer') {
+      var comp = round4(a.deposit * 0.5);
+      var forfeit = round4(a.deposit - comp);
+      demoTransfer(escrowAddr, dis.complainant, comp);
+      demoTransfer(escrowAddr, TREASURY, forfeit);
+      sfTextBumpRep(a.author, -20);
+      sfTextBumpRep(dis.complainant, 5);
+    } else {
+      demoTransfer(escrowAddr, a.author, a.deposit);
+    }
+    Object.keys(dis.voters).forEach(function (v) { if (dis.voters[v] === winner) sfTextBumpRep(v, 3); });
+    dis.settled = true;
+    dis.outcome = winner;
+    a.deposit_frozen = false;
+    a.deposit_released = true;
+    s.text_escrow = round4(Math.max(0, (s.text_escrow || 0) - a.deposit));
+    saveSfStore(s);
+  }
+  function sfTextDemoAction(op, fields, amount) {
+    var s = sfStore();
+    var addr = state.addr;
+    var escrowAddr = '0x_text_escrow';
+    s.text_assets = s.text_assets || {};
+    s.text_reputation = s.text_reputation || {};
+    s.text_escrow = s.text_escrow || 0;
+    s.text_reader = s.text_reader || {};
+    function depositReq() { return sfTextDepositFor(fields.tier || 'basic', sfTextRep(addr)); }
+    function demoAsset(id) { return s.text_assets[id]; }
+    if (op === 'nova:text:create') {
+      return (async function () {
+        if (!textCryptoOk()) return { ok: false, error: '当前环境不支持 WebCrypto，无法进行加密发布' };
+        var deposit = depositReq();
+        if (demoBal(addr) < deposit) return { ok: false, error: '余额不足（需质押保证金 ' + deposit + ' NOVA）' };
+        var contractPub = await textContractPub();
+        if (!contractPub) return { ok: false, error: '无法获取文本合约公钥' };
+        s = sfStore();   // 重新读取：textContractPub 已把 demo 合约密钥写入存储
+        var tid = 'txt_' + demoHash(addr + fields.title + Date.now() + Math.random()).slice(2, 22);
+        var ident = fields.identifier || ('t-' + demoHash(addr + fields.title + Date.now()).slice(2, 18));
+        var asset = { id: tid, identifier: ident, author: addr, title: fields.title,
+          visibility: fields.visibility, price: Number(fields.price), tier: fields.tier || 'basic',
+          series: !!fields.series, exposure_weight: fields.tier === 'pro' ? 1.5 : 1,
+          deposit: deposit, deposit_frozen: false, deposit_released: false, status: 'listed',
+          buyers: [], keys: {}, content: '', cipher_cid: '', cipher_data: '', key_cipher: {},
+          dispute: null, releasable_at: 0, created_at: Date.now(), cid: '' };
+        if (fields.visibility === 'public') {
+          asset.content = fields.content;
+        } else {
+          var enc = await textEncryptBody(fields.content);
+          asset.key_cipher = await textEciesEncrypt(contractPub, enc.keyHex);
+          asset.cipher_data = enc.cipherData;
+        }
+        demoTransfer(addr, escrowAddr, deposit);
+        s.text_escrow = round4((s.text_escrow || 0) + deposit);
+        s.text_assets[tid] = asset;
+        sfEvent(s, op, tid, (fields.visibility === 'sealed' ? '加密发布' : '发布') + '「' + fields.title + '」');
+        saveSfStore(s);
+        refreshBalance();
+        return { ok: true, id: tid, deposit: deposit, demo: true };
+      })();
+    }
+    if (op === 'nova:text:buy') {
+      return (async function () {
+        var a = demoAsset(fields.text_id);
+        if (!a) return { ok: false, error: '文本不存在' };
+        if (addr === a.author) return { ok: false, error: '不能购买自己的作品' };
+        if (a.status === 'unlisted' || a.status === 'destroyed') return { ok: false, error: '该文本已下架' };
+        if (a.buyers.indexOf(addr) >= 0) return { ok: false, error: '已购买过该文本' };
+        var price = Number(a.price);
+        if (demoBal(addr) < price) return { ok: false, error: '余额不足' };
+        if (a.visibility === 'sealed' && !textCryptoOk()) return { ok: false, error: '当前环境不支持 WebCrypto，无法解锁密文' };
+        demoTransfer(addr, a.author, round4(price * 0.9));
+        demoTransfer(addr, TREASURY, round4(price * 0.1));
+        if (a.visibility === 'sealed') {
+          var reader = await ensureTextReader(addr);
+          if (!reader) return { ok: false, error: '无法生成读者密钥' };
+          s = sfStore();   // 重新读取：读者密钥已写入存储
+          a = demoAsset(fields.text_id);
+          if (a.buyers.indexOf(addr) < 0) a.buyers.push(addr);
+          var kHex = await textEciesDecrypt(s.text_contract.jwk, a.key_cipher);
+          a.keys[addr] = await textEciesEncrypt(reader.pub, kHex);
+        } else {
+          a.buyers.push(addr);
+        }
+        sfTextBumpRep(a.author, 2);
+        sfTextBumpRep(addr, 1);
+        sfEvent(s, op, a.id, '购买「' + a.title + '」' + price + ' NOVA');
+        saveSfStore(s);
+        refreshBalance();
+        return { ok: true, id: a.id, demo: true };
+      })();
+    }
+    if (op === 'nova:text:unlist') {
+      var a1 = demoAsset(fields.text_id);
+      if (!a1 || addr !== a1.author || a1.status !== 'listed' || a1.dispute) return { ok: false, error: '无法下架' };
+      a1.status = 'unlisted';
+      a1.releasable_at = Date.now() + 7 * 86400000;
+      sfEvent(s, op, a1.id, '下架「' + a1.title + '」');
+      saveSfStore(s);
+      return { ok: true, id: a1.id, demo: true };
+    }
+    if (op === 'nova:text:destroy') {
+      var a2 = demoAsset(fields.text_id);
+      if (!a2 || addr !== a2.author || a2.status === 'destroyed' || a2.dispute) return { ok: false, error: '无法销毁' };
+      a2.status = 'destroyed';
+      a2.releasable_at = Date.now();
+      if (!a2.deposit_released) {
+        demoTransfer(escrowAddr, addr, a2.deposit);
+        s.text_escrow = round4(Math.max(0, (s.text_escrow || 0) - a2.deposit));
+        a2.deposit_released = true;
+      }
+      sfEvent(s, op, a2.id, '销毁密文 NFT「' + a2.title + '」');
+      saveSfStore(s);
+      return { ok: true, id: a2.id, demo: true };
+    }
+    if (op === 'nova:text:release_deposit') {
+      var a3 = demoAsset(fields.text_id);
+      if (!a3 || addr !== a3.author || a3.deposit_released || a3.dispute) return { ok: false, error: '无法退回保证金' };
+      if ((a3.status !== 'unlisted' && a3.status !== 'destroyed') || Date.now() < (a3.releasable_at || 0)) {
+        return { ok: false, error: '下架后需等待 7 天无投诉才能退回' };
+      }
+      demoTransfer(escrowAddr, addr, a3.deposit);
+      s.text_escrow = round4(Math.max(0, (s.text_escrow || 0) - a3.deposit));
+      a3.deposit_released = true;
+      sfEvent(s, op, a3.id, '退回保证金 ' + a3.deposit + ' NOVA');
+      saveSfStore(s);
+      return { ok: true, id: a3.id, demo: true };
+    }
+    if (op === 'nova:text:complain') {
+      var a4 = demoAsset(fields.text_id);
+      if (!a4 || a4.visibility !== 'sealed' || addr === a4.author || a4.dispute ||
+          a4.status === 'destroyed' || a4.buyers.indexOf(addr) < 0) return { ok: false, error: '无法投诉' };
+      a4.dispute = { complainant: addr, voters: {}, started_at: Date.now(), escalated: false, settled: false, outcome: null };
+      a4.deposit_frozen = true;
+      sfEvent(s, op, a4.id, '投诉「' + a4.title + '」货不对板');
+      saveSfStore(s);
+      return { ok: true, id: a4.id, demo: true };
+    }
+    if (op === 'nova:text:vote') {
+      var a5 = demoAsset(fields.text_id);
+      var dis5 = a5 && a5.dispute;
+      if (!dis5 || dis5.settled) return { ok: false, error: '该纠纷不存在或已结案' };
+      if (['buyer', 'seller', 'abstain'].indexOf(fields.support) < 0) return { ok: false, error: '无效票型' };
+      if (dis5.voters[addr]) return { ok: false, error: '已投过票' };
+      if (!sfTextIsValidatorDemo(addr)) return { ok: false, error: '你不是社区验证者（演示：余额 >= 100 NOVA 或入驻作者可投票）' };
+      dis5.voters[addr] = fields.support;
+      sfTextSettleDemo(a5);
+      sfEvent(s, op, a5.id, '仲裁投票（' + fields.support + '）');
+      saveSfStore(s);
+      refreshBalance();
+      return { ok: true, id: a5.id, demo: true };
+    }
+    return { ok: false, error: '未知文本操作' };
+  }
+  async function seedTextDemo() {
+    var s = sfStore();
+    if (!s.text_assets || Object.keys(s.text_assets).length) return;
+    if (!textCryptoOk()) return;
+    var contractPub = await textContractPub();
+    if (!contractPub) return;
+    s = sfStore();   // 重新读取：textContractPub 已把 demo 合约密钥写入存储
+    var seed = [
+      { id: 'txt_demo1', author: DEMO_CREATORS[1].addr, title: '星尘手记 · 加密篇', identifier: 'NOVA-SECRET-01', price: 3, tier: 'advanced', age: 2,
+        content: '有些话只能写给愿意支付时间的人。\n这封信在链上加密，密钥由文本合约托管。\n你支付的每一枚 NOVA，90% 直接支持作者，10% 进入生态基金。' },
+      { id: 'txt_demo2', author: DEMO_CREATORS[3].addr, title: '雨夜密码', identifier: 'RAIN-2049', price: 1, tier: 'basic', age: 1,
+        content: '雨是城市给失语者的密码。\n我把它写进密文，等你来解。' }
+    ];
+    for (var i = 0; i < seed.length; i++) {
+      var d = seed[i];
+      var enc = await textEncryptBody(d.content);
+      var kc = await textEciesEncrypt(contractPub, enc.keyHex);
+      s.text_assets[d.id] = { id: d.id, identifier: d.identifier, author: d.author, title: d.title,
+        visibility: 'sealed', price: d.price, tier: d.tier, series: false, exposure_weight: d.tier === 'pro' ? 1.5 : 1,
+        deposit: sfTextDepositFor(d.tier, 0), deposit_frozen: false, deposit_released: false, status: 'listed',
+        buyers: [], keys: {}, content: '', cipher_cid: '', cipher_data: enc.cipherData, key_cipher: kc,
+        dispute: null, releasable_at: 0, created_at: Date.now() - d.age * 86400000, cid: '' };
+    }
+    saveSfStore(s);
+  }
+
   /* ================= 存储网络 · 算力市场（演示模拟） ================= */
   function demoStorage() { return lsGet(LS.storage, { providers: {}, claims: {}, orders: {} }); }
   function saveDemoStorage(s) { lsSet(LS.storage, s); }
@@ -1582,13 +2100,15 @@
   }  /* ================= 初始化 ================= */
   async function init(opts) {
     opts = opts || {};
-    state.active = opts.active || null;
+    state.active = MODULE_OF[opts.active] || opts.active || null;
+    initLang();
     await detectMode();
     renderTopbar();
     window.addEventListener('nova-wallet', updateWalletUI);
     seedDemoData();
     seedSocialfiDemo();
     seedStorageComputeDemo();
+    await seedTextDemo();
     await connectFromStorage();
     updateWalletUI();
     if (typeof opts.onReady === 'function') opts.onReady({ mode: state.mode, connected: state.connected });
@@ -1596,6 +2116,7 @@
 
   window.NovaApps = {
     init: init,
+    t: t, setLang: setLang, getLang: function () { return lang; },
     getState: function () { return state; },
     api: api, demoHash: demoHash,
     wallets: wallets, connectFromStorage: connectFromStorage, connectWith: connectWith,
@@ -1614,6 +2135,11 @@
     rooms: rooms, saveRooms: saveRooms,
     sfAction: sfAction, sfList: sfList, sfStore: sfStore, saveSfStore: saveSfStore,
     sfReputation: sfReputation, sfRecommend: sfRecommend, sfFanPriceAt: sfFanPriceAt,
+    textCryptoOk: textCryptoOk, textEncryptBody: textEncryptBody, textDecryptBody: textDecryptBody,
+    textEciesEncrypt: textEciesEncrypt, textEciesDecrypt: textEciesDecrypt,
+    ensureTextReader: ensureTextReader, textContractPub: textContractPub,
+    sfTextRep: sfTextRep, sfTextDepositFor: sfTextDepositFor,
+    sfTextIsValidatorDemo: sfTextIsValidatorDemo,
     storageSnapshot: storageSnapshot, computeSnapshot: computeSnapshot, seedStorageComputeDemo: seedStorageComputeDemo,
     demoStorage: demoStorage, demoCompute: demoCompute,
     loadingHtml: loadingHtml, errHtml: errHtml,
