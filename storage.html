@@ -47,6 +47,10 @@
       <button class="sf-tab" data-tab="claim" onclick="switchTab('claim')">🤝 认领与证明</button>
       <button class="sf-tab" data-tab="order" onclick="switchTab('order')">📦 存储订单</button>
       <button class="sf-tab" data-tab="providers" onclick="switchTab('providers')">🌐 提供者</button>
+      <button class="sf-tab" data-tab="status" onclick="switchTab('status')">📊 存储状态</button>
+      <button class="sf-tab" data-tab="creator" onclick="switchTab('creator')">🎨 创作者面板</button>
+      <button class="sf-tab" data-tab="monitor" onclick="switchTab('monitor')">🖥️ 节点监控</button>
+      <button class="sf-tab" data-tab="incprove" onclick="switchTab('incprove')">⚡ 激励证明</button>
     </div>
 
     <!-- 我的节点 -->
@@ -122,9 +126,50 @@
         <div id="stProviders"><p class="dim">加载中…</p></div>
       </div>
     </section>
+
+    <!-- 存储状态（文件健康度 🟢/🟡/🔴） -->
+    <section class="sf-panel" id="st-panel-status">
+      <div class="card">
+        <h3 class="mb">📊 存储状态</h3>
+        <p class="dim">每个文件按在线存储节点数计算健康度：🟢 3+ 节点 / 🟡 1-2 节点 / 🔴 无节点。文件状态变为 🔴 时，创作者会收到链上通知。</p>
+        <div id="stIncStatus"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 创作者面板 -->
+    <section class="sf-panel" id="st-panel-creator">
+      <div class="card">
+        <h3 class="mb">🎨 创作者面板</h3>
+        <p class="dim">显示所有已发布文件的存储状态；状态为 🔴 的文件可一键重新上传（自动替换 IPFS 哈希）。</p>
+        <h4 class="mt" style="color:var(--dim);">📣 链上通知</h4>
+        <div id="stIncEvents"><p class="dim">加载中…</p></div>
+        <h4 class="mt" style="color:var(--dim);">💾 我的文件</h4>
+        <div id="stIncCreator"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 节点监控与收益 -->
+    <section class="sf-panel" id="st-panel-monitor">
+      <div class="card">
+        <h3 class="mb">🖥️ 节点监控与收益</h3>
+        <p class="dim">链上每 5 分钟扫描心跳（30 分钟超时判离线），离线节点的文件自动标记濒危并付费重新分配；节点可质押升级配额。</p>
+        <div id="stIncMonitor"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
+
+    <!-- 激励证明 -->
+    <section class="sf-panel" id="st-panel-incprove">
+      <div class="card">
+        <h3 class="mb">⚡ 24 小时存储证明</h3>
+        <p class="dim">节点每 24 小时向链上提交一次存储证明：返回挑战文件的正确片段（前 1KB）。全部通过后记录证明时间戳并结算奖励（每 GB 每月 1 NOVA，生态基金支付）。连续 3 次失败罚没质押 10%。</p>
+        <div id="stIncProve"><p class="dim">加载中…</p></div>
+      </div>
+    </section>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./storage-incentive.js"></script>
+  <script src="./upload-module.js"></script>
   <script>
     var N = NovaApps;
     function fmtN(x) { return Number(x || 0).toLocaleString('zh-CN', { maximumFractionDigits: 6 }); }
@@ -149,6 +194,7 @@
 
     async function renderAll() {
       renderNode(); renderPins(); renderClaims(); renderOrders(); renderProviders();
+      if (typeof storageIncRefresh === 'function') storageIncRefresh();
     }
 
     function stRegister() {
