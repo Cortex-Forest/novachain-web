@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova 跨链桥：打通 BSC/ETH/Polygon，USDT/ETH/BNB 跨入铸 nUSDT/nETH，NOVA 跨出交易，3/5 多签节点验证。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 跨链桥 · 资产互通</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .mod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .mod-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .mod-stat .v { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+    .mod-stat .k { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .mod-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .mod-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .mod-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .mod-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .mod-panel { display: none; } .mod-panel.active { display: block; }
+    .mod-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .mod-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .mod-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge.good { background: rgba(80,220,150,.15); color: #50dc96; }
+    .badge.warn { background: rgba(255,180,60,.15); color: #ffb43c; }
+    .badge.dim { background: rgba(255,255,255,.1); color: var(--dim); }
+    .mono { font-family: var(--font-mono); font-size: .78rem; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .form-row input, .form-row select { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: .85rem; min-width: 160px; }
+    .flow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--dim); margin: 10px 0 16px; }
+    .flow .step { border: 1px solid rgba(0,240,255,.25); border-radius: 999px; padding: 5px 12px; background: rgba(0,240,255,.06); color: #bff6ff; }
+    .flow .arr { color: var(--accent); }
+    @media (max-width: 900px) { .mod-stats { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">BRIDGE · MULTI-SIG · BSC/ETH/POLYGON</span>
+      <h1>跨链桥</h1>
+      <p class="sub">打通 BSC、ETH、Polygon 等 EVM 链：USDT/ETH/BNB 跨入 Nova 铸造包装资产，NOVA 跨出到其他链交易。节点共同签名确认，3/5 多签验证，作恶全额罚没。</p>
+    </section>
+
+    <section class="mod-stats" id="stats"></section>
+
+    <div class="flow">
+      <span class="step">跨入：BSC/ETH 存入 USDT</span><span class="arr">→</span>
+      <span class="step">节点监听存款事件</span><span class="arr">→</span>
+      <span class="step">Nova 铸造 nUSDT</span><span class="arr">→</span>
+      <span class="step">用户获得包装资产</span>
+    </div>
+
+    <div class="mod-tabs" id="tabs">
+      <button class="mod-tab active" onclick="switchTab('in')">跨入 Nova</button>
+      <button class="mod-tab" onclick="switchTab('out')">跨出 Nova</button>
+      <button class="mod-tab" onclick="switchTab('records')">跨链记录</button>
+      <button class="mod-tab" onclick="switchTab('nodes')">桥节点</button>
+    </div>
+
+    <section class="mod-panel active" id="panel-in">
+      <div class="card"><h3 class="mb">跨入：外部资产 → Nova</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">模拟在 BSC/ETH 上存入资产并登记跨入事件；节点 3/5 多签后铸造等额包装资产（nUSDT / nETH）。手续费 0.1%（最低 1 USDT），100% 回流验证者激励池。日额度 100 万 USDT，&gt;10 万 USDT 延迟 24 小时。</p>
+        <div class="form-row">
+          <select id="inAsset"><option value="USDT">USDT（→ nUSDT）</option><option value="ETH">ETH（→ nETH）</option></select>
+          <input id="inAmount" type="number" step="0.01" placeholder="存入数量">
+          <input id="inFrom" placeholder="源链地址（可选）">
+          <button class="btn primary" onclick="doDeposit()">登记跨入</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;"><h3 class="mb">待确认跨入（节点多签）</h3><div id="pendingIn"></div></div>
+    </section>
+
+    <section class="mod-panel" id="panel-out">
+      <div class="card"><h3 class="mb">跨出：Nova → 外部资产</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">在 Nova 上销毁包装资产（nUSDT / nETH）或销毁 NOVA 跨出；节点共同签名后，在 BSC/ETH 上释放原始资产。手续费 0.1%（最低 1 USDT）回流激励池。</p>
+        <div class="form-row">
+          <select id="outAsset"><option value="nUSDT">nUSDT（→ USDT）</option><option value="nETH">nETH（→ ETH）</option><option value="NOVA">NOVA（→ 跨链交易）</option></select>
+          <input id="outAmount" type="number" step="0.01" placeholder="销毁数量">
+          <input id="outTo" placeholder="目标链地址（可选）">
+          <button class="btn primary" onclick="doWithdraw()">登记跨出</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;"><h3 class="mb">待确认跨出（节点多签）</h3><div id="pendingOut"></div></div>
+    </section>
+
+    <section class="mod-panel" id="panel-records">
+      <div class="card"><h3 class="mb">跨入记录</h3><div id="deposits"></div></div>
+      <div class="card" style="margin-top:14px;"><h3 class="mb">跨出记录</h3><div id="withdrawals"></div></div>
+    </section>
+
+    <section class="mod-panel" id="panel-nodes">
+      <div class="card"><h3 class="mb">桥节点（质押 1000 NOVA · 3/5 多签）</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">由 Nova 超级节点担任跨链桥节点：监听并取证、共同签名确认跨链事件。作恶节点罚没全部质押。</p>
+        <button class="btn primary" onclick="doNodeRegister()">质押注册（1000 NOVA）</button>
+        <div id="nodes" style="margin-top:12px;"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+  var N = window.NovaApps;
+  var DEMO = {
+    assets: { nUSDT: { supply: 22000, holders: 3 }, nETH: { supply: 2, holders: 1 }, NOVA: { supply: 0, holders: 0 } },
+    deposits: [{ id: 'demo-dep-1', user: '0x' + '22'.repeat(20), asset: 'USDT', amount: 1000, status: 'confirmed', ts: Date.now() - 60000 }],
+    withdrawals: [{ id: 'demo-wd-1', user: '0x' + '22'.repeat(20), asset: 'nUSDT', amount: 500, status: 'pending', ts: Date.now() - 30000 }]
+  };
+
+  function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+  function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
+  function switchTab(name) {
+    document.querySelectorAll('.mod-tab').forEach(function (b) { b.classList.toggle('active', b.getAttribute('onclick').indexOf(name) >= 0); });
+    document.querySelectorAll('.mod-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+    load();
+  }
+  function moduleOp(op, fields, amount) {
+    var st = N.getState();
+    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    return N.getPubFromPriv(st.priv).then(function (pub) {
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = (Number(amount || 0)).toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
+        return N.api('/api/bridge/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
+          timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
+          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
+          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          return res;
+        });
+      });
+    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+  }
+
+  function badge(st) { return st === 'confirmed' ? '<span class="badge good">已确认</span>'
+    : st === 'pending' ? '<span class="badge warn">待签名</span>'
+    : '<span class="badge dim">' + esc(st) + '</span>'; }
+  function item(row) {
+    return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+      '<h4 class="mono">' + esc(row.id || row.txid || '-') + '</h4>' + badge(row.status) + '</div>' +
+      '<div class="mod-sub">' + esc(row.user || row.sender || row.addr || '-') + ' ｜ ' + esc(row.asset) + ' ' +
+      N.fmt(row.amount) + (row.from ? ' ｜ 源链 ' + esc(row.from) : '') + (row.signatures ? ' ｜ 签名 ' + (row.signatures || []).length + '/5' : '') +
+      ' ｜ ' + N.timeAgo(row.ts || row.timestamp) + '</div></div>';
+  }
+
+  async function load() {
+    var d = null;
+    try { d = await N.api('/api/bridge/summary'); } catch (e) {}
+    var demo = !d || d.demoMode || !d.assets;
+    d = d && !d.demoMode && d.assets ? d : DEMO;
+    document.getElementById('stats').innerHTML =
+      stat('桥节点', d.nodes || 0) + stat('包装资产', Object.keys(d.assets || {}).length) +
+      stat('今日使用额度', N.fmt(d.daily_usage_usd || 0) + ' / ' + N.fmt(d.daily_limit_usd || 1000000)) +
+      stat('手续费池 (NOVA)', N.fmt(d.fee_pool || 0));
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点后显示实时链上数据</div>');
+
+    var deps = null, wds = null;
+    try {
+      deps = await N.api('/api/bridge/deposits');
+      wds = await N.api('/api/bridge/withdrawals');
+    } catch (e) {}
+    var dl = deps && deps.deposits ? deps.deposits : DEMO.deposits;
+    var wl = wds && wds.withdrawals ? wds.withdrawals : DEMO.withdrawals;
+    document.getElementById('deposits').innerHTML = dl.length ? dl.map(item).join('') : '<p class="dim">暂无记录</p>';
+    document.getElementById('withdrawals').innerHTML = wl.length ? wl.map(item).join('') : '<p class="dim">暂无记录</p>';
+    document.getElementById('pendingIn').innerHTML = dl.filter(function (x) { return x.status !== 'confirmed'; }).map(item).join('') || '<p class="dim">无待确认跨入</p>';
+    document.getElementById('pendingOut').innerHTML = wl.filter(function (x) { return x.status !== 'confirmed'; }).map(item).join('') || '<p class="dim">无待确认跨出</p>';
+
+    var nodes = d.nodes && typeof d.nodes === 'number' ? d.nodes : 0;
+    document.getElementById('nodes').innerHTML = '<p class="dim">当前 ' + nodes + ' 个桥节点在线（需要 5 个节点，3/5 签名确认）</p>';
+  }
+
+  function doDeposit() {
+    var asset = document.getElementById('inAsset').value;
+    var amount = Number(document.getElementById('inAmount').value);
+    if (!amount || amount <= 0) { N.toast('请输入有效数量'); return; }
+    moduleOp('nova:bridge:deposit', { amount: amount, asset: asset, from: document.getElementById('inFrom').value.trim() }).then(function () { load(); });
+  }
+  function doWithdraw() {
+    var asset = document.getElementById('outAsset').value;
+    var amount = Number(document.getElementById('outAmount').value);
+    if (!amount || amount <= 0) { N.toast('请输入有效数量'); return; }
+    moduleOp('nova:bridge:withdraw', { amount: amount, asset: asset, to: document.getElementById('outTo').value.trim() }).then(function () { load(); });
+  }
+  function doNodeRegister() {
+    moduleOp('nova:bridge:node:register', {}, 1000).then(function () { load(); });
+  }
+
+  N.init({ active: 'bridge', onReady: function () { load(); } });
+  </script>
+</body>
+</html>

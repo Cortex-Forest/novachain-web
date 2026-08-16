@@ -1,0 +1,855 @@
+openapi: 3.0.3
+info:
+  title: Nova 娱乐链 REST API
+  version: 1.0.0
+  description: >
+    Nova 娱乐链公开 RPC 接口（中英文注释）。写操作为签名交易（sender+receiver+amount+timestamp+parents+data+pub，
+    Ed25519 签名），只读接口可直接调用。Nova public chain REST API; write ops are signed transactions,
+    read-only endpoints are callable directly.
+servers:
+  - url: http://127.0.0.1:8080
+    description: 本地节点 / Local node
+tags:
+  - name: Wallet
+    description: 钱包 / 节点状态 / 转账 / 交易查询
+  - name: Contract
+    description: 合约部署 / 调用 / 查询
+  - name: Content
+    description: 内容交易 SocialFi（密文发布 / 购买 / 搜索）
+  - name: Staking
+    description: 质押 / 解押 / 签到 / 空投
+  - name: Subscription
+    description: 创作者订阅与会员
+  - name: Arbitration
+    description: 社区仲裁
+  - name: Oracle
+    description: 预言机（VRF / 价格 / AI 验证）
+  - name: Bridge
+    description: 跨链桥（多签 / 额度 / 延迟）
+  - name: DEX
+    description: 去中心化交易所（AMM / LP / 挖矿）
+  - name: Governance
+    description: 链上治理（提案 / 投票 / 委托 / 时间锁）
+  - name: DID
+    description: 去中心化身份与声誉
+  - name: Explorer
+    description: 链浏览器与索引器
+components:
+  securitySchemes: {}
+  schemas:
+    SignedTx:
+      type: object
+      description: 签名交易请求体（写接口通用）Signed transaction body
+      properties:
+        addr:
+          type: string
+          description: 发送方地址（模块操作 sender==receiver）
+        amount:
+          type: number
+          description: NOVA 数量（模块操作通常为业务金额或 0）
+        data:
+          type: string
+          description: data 原文（模块操作为 {"op":"nova:xxx",...} 的 JSON 字符串）
+        timestamp:
+          type: integer
+          description: Unix 秒（与节点差 ≤300s）
+        parents:
+          type: array
+          items: { type: string }
+          default: []
+        sender_public_key:
+          type: string
+          description: 公钥 hex（Ed25519 32B / Dilithium5 2592B）
+        signature:
+          type: string
+          description: 签名 hex
+      required: [addr, amount, data, timestamp, sender_public_key, signature]
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+    TxResult:
+      type: object
+      properties:
+        status: { type: string, enum: [ok] }
+        txid: { type: string, description: 交易哈希 64 hex }
+        id:
+          type: string
+          description: 业务 ID（如 VRF request_id / 提案 id / 内容 text_id）
+        target: { type: string }
+        summary: { type: string }
+    Feed:
+      type: object
+      properties:
+        feed: { type: string }
+        price: { type: number, nullable: true }
+        ts: { type: number }
+        sources: { type: object, additionalProperties: { type: number } }
+        method: { type: string }
+paths:
+  /api/status:
+    get:
+      tags: [Wallet]
+      summary: 节点状态 Node status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "node": "0.0.0.0:9000", "height": 128, "consensus": "checkpoint", "algorithm": "Ed25519", "total_stake": 5000 }
+  /api/balance/{addr}:
+    get:
+      tags: [Wallet]
+      summary: 查询余额 Get balance
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string }, description: Nova 地址 0x+40hex }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0xb86a48fe63a9e65ee72bd7245bb62fe1e0751084", "balance": 1234.5 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/send:
+    post:
+      tags: [Wallet]
+      summary: 转账 Transfer NOVA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sender: { type: string }
+                receiver: { type: string }
+                amount: { type: number }
+                data: { type: string, description: memo }
+                timestamp: { type: integer }
+                parents: { type: array, items: { type: string } }
+                sender_public_key: { type: string }
+                signature: { type: string }
+              required: [sender, receiver, amount, timestamp, sender_public_key, signature]
+      responses:
+        '200':
+          description: 已上链 Broadcasted
+          content:
+            application/json:
+              example: { "txid": "882a07c268d4f5ac1b2f7eb7ca6b302547df179c7a3cb2ff001650709f8dc34b" }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/txs/{addr}:
+    get:
+      tags: [Wallet]
+      summary: 地址交易历史（倒序）Address tx history
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "txs": [ { "txid": "...", "sender": "0x...", "receiver": "0x...", "amount": 10 } ] }
+  /api/tx/{txid}:
+    get:
+      tags: [Wallet]
+      summary: 单笔交易详情 Get single tx
+      parameters:
+        - { name: txid, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/stats:
+    get:
+      tags: [Wallet]
+      summary: 全网激励参数 Incentive params
+      responses:
+        '200': { description: OK }
+  /api/deploy:
+    post:
+      tags: [Contract]
+      summary: 部署 NexLang 合约 Deploy contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bytecode: { type: string, description: NexLang 合约源码/字节码 }
+                creator: { type: string, description: 部署者地址（可选，提供则需签名） }
+                signature: { type: string, description: 'Ed25519("deploy:{addr}:{bytecode}")' }
+                sender_public_key: { type: string }
+              required: [bytecode]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "contract": "0x5abbc3500366bd4a7294a25475953e5ccc854377", "txid": "...", "reward": 50 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/call:
+    post:
+      tags: [Contract]
+      summary: 调用合约 Call contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sender: { type: string }
+                contract: { type: string }
+                amount: { type: number }
+                message: { type: string }
+                timestamp: { type: integer }
+                sender_public_key: { type: string }
+                signature: { type: string }
+              required: [sender, contract, amount, timestamp, sender_public_key, signature]
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/contract/{addr}:
+    get:
+      tags: [Contract]
+      summary: 合约信息（恶意合约检测）Contract info
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "is_contract": true, "creator": "0x...", "code_size": 128 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/op:
+    post:
+      tags: [Content]
+      summary: 内容交易 / SocialFi 模块操作（发布/购买/粉丝代币/盲盒等）Content & SocialFi op
+      description: data 为 JSON 字符串，如 {"op":"nova:text:create","title":"...","content":"...","price":10}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/socialfi/{domain}:
+    get:
+      tags: [Content]
+      summary: 社交数据域（fan_tokens / text / blindboxes / graph 等）SocialFi domain
+      parameters:
+        - { name: domain, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/text/key:
+    get:
+      tags: [Content]
+      summary: 文本合约公钥（密文发布 ECIES 用）Text contract pubkey
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "pubkey": "04...", "algorithm": "P-256" }
+  /api/reputation/{addr}:
+    get:
+      tags: [Content]
+      summary: 社会信誉分 Social reputation
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "score": 72.5, "comp": { "质押": 20, "签到": 15 } }
+  /api/stake:
+    post:
+      tags: [Staking]
+      summary: 质押（data="nova:stake"，最低 100）Stake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                amount: { type: number, minimum: 100 }
+                timestamp: { type: integer }
+                sender_public_key: { type: string }
+                signature: { type: string }
+              required: [addr, amount, timestamp, sender_public_key, signature]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "status": "已质押", "txid": "...", "amount": 100 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/unstake:
+    post:
+      tags: [Staking]
+      summary: 解押（7 天冷却）Unstake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                amount: { type: number }
+                timestamp: { type: integer }
+                sender_public_key: { type: string }
+                signature: { type: string }
+              required: [addr, amount, timestamp, sender_public_key, signature]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "status": "7天冷静期", "txid": "..." }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/claim:
+    post:
+      tags: [Staking]
+      summary: 领取解押返还 Claim unstaked
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                timestamp: { type: integer }
+                sender_public_key: { type: string }
+                signature: { type: string }
+              required: [addr, timestamp, sender_public_key, signature]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "status": "已返还", "txid": "..." }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/stakes:
+    get:
+      tags: [Staking]
+      summary: 质押全景 All stakes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "stakes": { "0x...": 100 }, "total": 100 }
+  /api/checkin:
+    post:
+      tags: [Staking]
+      summary: 签到（无需签名，空投资格）Check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                fingerprint: { type: string, description: 设备指纹（可选） }
+              required: [addr]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "status": "签到成功", "streak": 1 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/unlock:
+    post:
+      tags: [Staking]
+      summary: 解锁到期锁仓 Unlock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+              required: [addr]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "unlocked": 50 }
+  /api/sub/op:
+    post:
+      tags: [Subscription]
+      summary: 订阅操作（create/subscribe/renew/cancel）Subscription op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/sub/summary:
+    get:
+      tags: [Subscription]
+      summary: 订阅全局统计 Subscription summary
+      responses:
+        '200': { description: OK }
+  /api/sub/creator/{addr}:
+    get:
+      tags: [Subscription]
+      summary: 创作者订阅信息 Creator subscriptions
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/sub/status/{user}/{creator}:
+    get:
+      tags: [Subscription]
+      summary: 用户对创作者的订阅状态 Subscription status
+      parameters:
+        - { name: user, in: path, required: true, schema: { type: string } }
+        - { name: creator, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "user": "0x...", "creator": "0x...", "status": "active", "expires_at": 1786890000, "auto_renew": true, "tier_name": "基础会员" }
+  /api/arb/summary:
+    get:
+      tags: [Arbitration]
+      summary: 仲裁全局概况 Arbitration summary
+      responses:
+        '200': { description: OK }
+  /api/arb/cases:
+    get:
+      tags: [Arbitration]
+      summary: 案件列表 Case list
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/arb/cases/{case_id}:
+    get:
+      tags: [Arbitration]
+      summary: 案件详情 Case detail
+      parameters:
+        - { name: case_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/arb/arbitrators:
+    get:
+      tags: [Arbitration]
+      summary: 在职仲裁员列表 Arbitrators
+      responses:
+        '200': { description: OK }
+  /api/arb/candidates:
+    get:
+      tags: [Arbitration]
+      summary: 仲裁员候选池 Candidates
+      responses:
+        '200': { description: OK }
+  /api/arb/user/{addr}:
+    get:
+      tags: [Arbitration]
+      summary: 用户仲裁信息 User arbitration info
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/arb/panel/{addr}:
+    get:
+      tags: [Arbitration]
+      summary: 仲裁员面板 Arbitrator panel
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/oracle/op:
+    post:
+      tags: [Oracle]
+      summary: 预言机操作（节点注册/VRF/价格/AI 验证）Oracle op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/oracle/summary:
+    get:
+      tags: [Oracle]
+      summary: 预言机全局统计 Oracle summary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "nodes": 3, "total_stake": 1500, "requests": 12, "feeds": { "USDT/USD": { "price": 1.0 } }, "ai_verified": 4 }
+  /api/oracle/price/{feed}:
+    get:
+      tags: [Oracle]
+      summary: 聚合价格（中位数，5 分钟频次）Aggregated price
+      parameters:
+        - { name: feed, in: path, required: true, schema: { type: string }, example: "USDT/USD", description: 需 URL 编码 URL-encoded (USDT%2FUSD) }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Feed' }
+  /api/oracle/vrf/{request_id}:
+    get:
+      tags: [Oracle]
+      summary: VRF 随机数结果（可验证）VRF result
+      parameters:
+        - { name: request_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "request_id": "0000000000000001", "status": "fulfilled", "random": "0x...", "proof": { "gamma": "...", "c": "...", "s": "..." }, "node": "0x..." }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/oracle/nodes:
+    get:
+      tags: [Oracle]
+      summary: 预言机节点列表 Oracle nodes
+      responses:
+        '200': { description: OK }
+  /api/oracle/ai/{content_hash}:
+    get:
+      tags: [Oracle]
+      summary: AI 生成结果验证状态 AI verification status
+      parameters:
+        - { name: content_hash, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "content_hash": "0x...", "status": "verified", "verified_by": "0x...", "verdict": true }
+  /api/bridge/op:
+    post:
+      tags: [Bridge]
+      summary: 跨链桥操作（存款/跨出/多签/节点）Bridge op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/bridge/summary:
+    get:
+      tags: [Bridge]
+      summary: 跨链桥全局统计 Bridge summary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "nodes": 5, "assets": { "USDT": { "supply": 100000, "holders": 12 } }, "fee_pool": 500, "daily_limit_usd": 1000000 }
+  /api/bridge/asset/{symbol}:
+    get:
+      tags: [Bridge]
+      summary: 包装资产信息 Wrapped asset
+      parameters:
+        - { name: symbol, in: path, required: true, schema: { type: string }, example: USDT }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/bridge/deposits:
+    get:
+      tags: [Bridge]
+      summary: 跨入记录（倒序 100 条）Deposits
+      responses:
+        '200': { description: OK }
+  /api/bridge/withdrawals:
+    get:
+      tags: [Bridge]
+      summary: 跨出记录（倒序 100 条）Withdrawals
+      responses:
+        '200': { description: OK }
+  /api/dex/op:
+    post:
+      tags: [DEX]
+      summary: DEX 操作（swap/add/remove/farm）DEX op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/dex/summary:
+    get:
+      tags: [DEX]
+      summary: DEX 全局（交易对储备/挖矿 APR）DEX summary
+      responses:
+        '200': { description: OK }
+  /api/dex/quote:
+    get:
+      tags: [DEX]
+      summary: 报价 Quote
+      parameters:
+        - { name: pair, in: query, required: true, schema: { type: string }, example: "NOVA/USDT", description: 需 URL 编码 URL-encoded }
+        - { name: amount_in, in: query, required: true, schema: { type: number } }
+        - { name: token_in, in: query, schema: { type: integer, enum: [0, 1], default: 0 }, description: 0=NOVA 1=包装资产 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "pair": "NOVA/USDT", "token_in": 0, "amount_out": 96.5, "price_impact": 0.035, "price": 0.965 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/dex/split:
+    get:
+      tags: [DEX]
+      summary: 大额交易分拆建议 Split quote
+      parameters:
+        - { name: pair, in: query, required: true, schema: { type: string } }
+        - { name: amount_in, in: query, required: true, schema: { type: number } }
+        - { name: token_in, in: query, schema: { type: integer, enum: [0, 1], default: 0 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "pair": "NOVA/USDT", "pieces": 3, "per_piece": 33.33, "total_out": 96.2 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/dex/lp/{addr}:
+    get:
+      tags: [DEX]
+      summary: LP 持仓 LP positions
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/dex/farm/{pair}/{addr}:
+    get:
+      tags: [DEX]
+      summary: 挖矿收益 Farm rewards
+      parameters:
+        - { name: pair, in: path, required: true, schema: { type: string } }
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "pair": "NOVA/USDT", "staked": 50, "pending_reward": 1.2, "apr": 0.3 }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/gov/op:
+    post:
+      tags: [Governance]
+      summary: 治理操作（提案/投票/委托/确认/执行）Governance op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/gov/summary:
+    get:
+      tags: [Governance]
+      summary: 治理全局（提案数/流通量/quorum）Governance summary
+      responses:
+        '200': { description: OK }
+  /api/gov/proposals:
+    get:
+      tags: [Governance]
+      summary: 提案列表 Proposal list
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [discussion, voting, passed, rejected, executed] } }
+      responses:
+        '200': { description: OK }
+  /api/gov/proposals/{pid}:
+    get:
+      tags: [Governance]
+      summary: 提案详情 Proposal detail
+      parameters:
+        - { name: pid, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/gov/power/{addr}:
+    get:
+      tags: [Governance]
+      summary: 投票权与委托 Voting power
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "voting_power": 1500, "delegate": "0x..." }
+  /api/did/op:
+    post:
+      tags: [DID]
+      summary: DID 操作（绑定/撤销/认证/投票）DID op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignedTx' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TxResult' }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/did/summary:
+    get:
+      tags: [DID]
+      summary: DID 全局统计 DID summary
+      responses:
+        '200': { description: OK }
+  /api/did/{addr}:
+    get:
+      tags: [DID]
+      summary: DID 资料（viewer 可选，隐私隐藏项仅本人可见）DID profile
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+        - { name: viewer, in: query, schema: { type: string }, description: 查看者地址（本人可见隐藏项） }
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/did/reputation/{addr}:
+    get:
+      tags: [DID]
+      summary: 声誉分四维明细 Reputation detail
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+        - { name: viewer, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "score": 68.4, "quality": 20, "community": 18, "asset": 16, "identity": 14.4 }
+  /api/chain/sync:
+    get:
+      tags: [Explorer]
+      summary: 增量同步（新区块/交易/合约/统计）Incremental sync
+      parameters:
+        - { name: after_height, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "height": 128, "blocks": [], "txs": [], "contracts": [], "stats": { "height": 128, "total_txs": 1024, "total_addresses": 88, "total_contracts": 6, "total_staked": 5000 } }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/chain/block/{height}:
+    get:
+      tags: [Explorer]
+      summary: 区块详情 Block detail
+      parameters:
+        - { name: height, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "block": { "height": 5, "txids": [], "timestamp": 1786890000, "prev_hash": "0x..." }, "txs": [] }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/chain/search:
+    get:
+      tags: [Explorer]
+      summary: 搜索交易/地址/合约/区块（即时下拉）Search
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "query": "0xabc", "results": [ { "type": "address", "id": "0x...", "label": "地址 0xabc..." } ] }
+  /api/chain/stats:
+    get:
+      tags: [Explorer]
+      summary: 全网统计（总交易/地址/合约/质押）Network stats
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "height": 128, "total_txs": 1024, "total_addresses": 88, "total_contracts": 6, "total_staked": 5000 }
+  /api/faucet/status:
+    get:
+      tags: [Faucet]
+      summary: 水龙头状态（余额/今日发放/限频参数）Faucet status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "enabled": true, "pool_balance": 1000000, "amount": 100, "today": { "date": "2026-08-16", "count": 3, "amount": 300 }, "daily_cap": 20000, "daily_ip_cap": 2, "cooldown_seconds": 86400, "total_claimed": 12300, "total_recipients": 123 }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/faucet/request:
+    post:
+      tags: [Faucet]
+      summary: 免费领取测试 NOVA（无需签名，限频：地址 24h 一次 / IP 每日 2 次 / 全局日限额）Claim test NOVA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string, description: Nova 地址 0x+40hex }
+                fingerprint: { type: string, description: 可选设备指纹，用于设备唯一性限频 }
+              required: [addr]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "status": "领取成功", "amount": 100, "addr": "0x...", "balance": 100, "receipt": "faucet-34d17977ed5e48d8", "remaining_today": 19700 }
+        '400': { $ref: '#/components/schemas/Error' }
+        '403': { $ref: '#/components/schemas/Error' }

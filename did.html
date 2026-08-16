@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova 去中心化身份与声誉：哈希绑定、创作者认证徽章、四维声誉分（创作质量/社区贡献/资产稳定/身份完整）。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 身份 · DID 与声誉</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .mod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .mod-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .mod-stat .v { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+    .mod-stat .k { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .mod-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .mod-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .mod-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .mod-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .mod-panel { display: none; } .mod-panel.active { display: block; }
+    .mod-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .mod-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .mod-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge.good { background: rgba(80,220,150,.15); color: #50dc96; }
+    .badge.warn { background: rgba(255,180,60,.15); color: #ffb43c; }
+    .badge.dim { background: rgba(255,255,255,.1); color: var(--dim); }
+    .mono { font-family: var(--font-mono); font-size: .78rem; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .form-row input, .form-row select { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: .85rem; min-width: 160px; }
+    .big-rep { font-size: 3rem; font-weight: 900; font-family: var(--font-mono);
+      background: linear-gradient(90deg, #00f0ff, #b44dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .rep-dim { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0; }
+    .rep-dim .d { border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 10px; text-align: center; }
+    .rep-dim .d b { display: block; font-size: 1.3rem; font-family: var(--font-mono); color: var(--accent); }
+    .rep-dim .d span { font-size: .72rem; color: var(--dim); }
+    @media (max-width: 900px) { .mod-stats { grid-template-columns: repeat(2, 1fr); } .rep-dim { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">DID · REPUTATION · SOULBOUND</span>
+      <h1>去中心化身份与声誉</h1>
+      <p class="sub">邮箱 / Telegram / X / IPFS 头像只存哈希，Nova 私钥签名确认；社区投票授予不可转让的"认证创作者"徽章；声誉分 100 分制，决定手续费折扣与权限。</p>
+    </section>
+
+    <section class="mod-stats" id="stats"></section>
+
+    <div class="mod-tabs" id="tabs">
+      <button class="mod-tab active" onclick="switchTab('me')">我的身份</button>
+      <button class="mod-tab" onclick="switchTab('bind')">绑定 / 撤销</button>
+      <button class="mod-tab" onclick="switchTab('creator')">创作者认证</button>
+    </div>
+
+    <section class="mod-panel active" id="panel-me">
+      <div class="card">
+        <h3 class="mb">我的声誉分</h3>
+        <div id="repBox"><p class="dim">连接钱包后查看</p></div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3 class="mb">绑定信息（只存哈希，原始数据永不上链）</h3>
+        <div id="bindings"><p class="dim">连接钱包后查看</p></div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-bind">
+      <div class="card"><h3 class="mb">绑定身份</h3>
+        <div class="form-row">
+          <select id="bdKind"><option value="email">邮箱哈希</option><option value="telegram">Telegram 哈希</option><option value="x">X/Twitter 哈希</option><option value="avatar">IPFS 头像哈希</option></select>
+          <input id="bdHash" placeholder="sha3-256 哈希（64 hex）">
+          <label class="dim" style="font-size:.8rem;"><input type="checkbox" id="bdVisible" checked> 公开可见</label>
+          <button class="btn primary" onclick="doBind()">绑定</button>
+          <button class="btn" onclick="doUnbind()">撤销</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-creator">
+      <div class="card"><h3 class="mb">申请认证创作者（不可转让徽章）</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">提交作品集（本人部署的合约地址列表，逗号分隔），社区投票超过 50% 赞成后获得 "认证创作者" 徽章。</p>
+        <div class="form-row">
+          <input id="crPortfolio" placeholder="合约地址列表（逗号分隔）">
+          <button class="btn primary" onclick="doApply()">提交申请</button>
+        </div>
+        <div id="applications"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+  var N = window.NovaApps;
+  var KINDS = { email: '邮箱', telegram: 'Telegram', x: 'X/Twitter', avatar: 'IPFS 头像' };
+
+  function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+  function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
+  function switchTab(name) {
+    document.querySelectorAll('.mod-tab').forEach(function (b) { b.classList.toggle('active', b.getAttribute('onclick').indexOf(name) >= 0); });
+    document.querySelectorAll('.mod-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+    load();
+  }
+  function moduleOp(op, fields, amount) {
+    var st = N.getState();
+    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    return N.getPubFromPriv(st.priv).then(function (pub) {
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = (Number(amount || 0)).toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
+        return N.api('/api/did/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
+          timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
+          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
+          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          return res;
+        });
+      });
+    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+  }
+
+  async function load() {
+    var d = null;
+    try { d = await N.api('/api/did/summary'); } catch (e) {}
+    var demo = !d || d.demoMode || !('profiles' in (d || {}));
+    d = d || {};
+    document.getElementById('stats').innerHTML =
+      stat('DID 档案', d.profiles || 0) +
+      stat('认证申请', d.applications || 0) +
+      stat('认证创作者', d.creator_badges || 0) +
+      stat('平均声誉分', N.fmt(d.avg_score || 0));
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点后显示实时链上数据</div>');
+    renderMe();
+  }
+  async function renderMe() {
+    var st = N.getState();
+    var repEl = document.getElementById('repBox');
+    var bindEl = document.getElementById('bindings');
+    if (!st.connected) return;
+    try {
+      var rep = await N.api('/api/did/reputation/' + st.addr);
+      if (rep && rep.score != null) {
+        var comps = rep.components || {};
+        var dims = Object.keys(comps).map(function (k) {
+          return '<div class="d"><b>' + N.fmt(comps[k]) + '</b><span>' + esc(k) + '</span></div>';
+        }).join('');
+        repEl.innerHTML = '<div class="row" style="gap:18px;align-items:center;flex-wrap:wrap;">' +
+          '<div><div class="big-rep">' + N.fmt(rep.score) + '</div>' +
+          '<div class="dim" style="font-size:.8rem;">' + esc(rep.tier || '') + ' ｜ ' + esc(rep.grade || '') + '</div></div>' +
+          '<div class="rep-dim" style="flex:1;min-width:280px;">' + (dims || '<div class="d"><b>—</b><span>无明细</span></div>') + '</div></div>' +
+          '<div class="mod-sub">' + (rep.perks && rep.perks.benefits ? rep.perks.benefits.map(function (b) { return '· ' + esc(b); }).join('<br>') : '') + '</div>';
+      } else {
+        repEl.innerHTML = '<p class="dim">尚无声誉分（初始 50 分，随链上行为自动计算）</p>';
+      }
+      var prof = await N.api('/api/did/' + st.addr);
+      var binds = (prof && prof.bindings) || {};
+      bindEl.innerHTML = Object.keys(binds).length ? Object.keys(binds).map(function (k) {
+        var b = binds[k];
+        return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+          '<h4>' + esc(KINDS[k] || k) + '</h4>' +
+          (b.visible === false ? '<span class="badge dim">私密</span>' : '<span class="badge good">公开</span>') + '</div>' +
+          '<div class="mod-sub mono">' + esc(b.hash || b) + '</div></div>';
+      }).join('') : '<p class="dim">尚未绑定任何身份</p>';
+      if (prof && prof.creator_badge) {
+        bindEl.insertAdjacentHTML('beforeend', '<div class="mod-item"><h4>🏅 认证创作者</h4><div class="mod-sub">不可转让徽章（soulbound NFT）</div></div>');
+      }
+    } catch (e) {}
+  }
+
+  function doBind() {
+    var kind = document.getElementById('bdKind').value;
+    var hash = document.getElementById('bdHash').value.trim();
+    if (!/^[0-9a-fA-F]{64}$/.test(hash)) { N.toast('请输入 64 位 hex 哈希（先对原始数据做 sha3-256）'); return; }
+    moduleOp('nova:did:bind', { kind: kind, hash: hash, visible: document.getElementById('bdVisible').checked }).then(function () { load(); });
+  }
+  function doUnbind() {
+    var kind = document.getElementById('bdKind').value;
+    moduleOp('nova:did:unbind', { kind: kind }).then(function () { load(); });
+  }
+  function doApply() {
+    var raw = document.getElementById('crPortfolio').value.trim();
+    var portfolio = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!portfolio.length) { N.toast('请输入作品集合约地址列表'); return; }
+    moduleOp('nova:did:apply', { portfolio: portfolio }).then(function () { load(); });
+  }
+
+  N.init({ active: 'did', onReady: function () { load(); } });
+  </script>
+</body>
+</html>

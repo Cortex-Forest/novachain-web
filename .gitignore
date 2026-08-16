@@ -8,3 +8,7 @@ Thumbs.db
 # 备份与临时文件
 *.bak
 *.tmp
+
+# 开发临时脚本
+scripts/_check_js.py
+scripts/_patch_faucet.py

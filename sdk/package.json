@@ -1,0 +1,58 @@
+{
+  "name": "@nova/sdk",
+  "version": "1.0.0",
+  "description": "Nova 娱乐链官方 JavaScript SDK —— 钱包管理、合约调用、内容交易、质押激励、订阅会员、预言机、跨链桥、DEX、治理、DID、链浏览器事件与水龙头（零依赖，浏览器 / Node / 打包器通用）。",
+  "main": "nova-sdk-open.js",
+  "module": "nova-sdk-open.js",
+  "browser": "nova-sdk-open.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./nova-sdk-open.js",
+      "require": "./nova-sdk-open.js",
+      "default": "./nova-sdk-open.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "nova-sdk-open.js",
+    "index.d.ts",
+    "README.md",
+    "demo.html",
+    "sdk-demo.html"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node test/nova-sdk-crypto.test.js && node test/nova-sdk-e2e.js",
+    "check": "node --check nova-sdk-open.js"
+  },
+  "keywords": [
+    "nova",
+    "nova-chain",
+    "blockchain",
+    "sdk",
+    "wallet",
+    "web3",
+    "crypto",
+    "decentralized",
+    "nft",
+    "subscription",
+    "oracle",
+    "dex",
+    "vrf"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nova-chain/nova-sdk"
+  },
+  "homepage": "https://docs.nova.chain/sdk",
+  "bugs": {
+    "url": "https://github.com/nova-chain/nova-sdk/issues"
+  },
+  "author": "Nova Chain Team",
+  "sideEffects": false
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova 预言机：ECVRF 可验证随机数、多源价格聚合、AI 生成结果验证，链上可验证、作恶罚没。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 预言机 · 可验证数据</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .mod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .mod-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .mod-stat .v { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+    .mod-stat .k { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .mod-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .mod-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .mod-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .mod-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .mod-panel { display: none; } .mod-panel.active { display: block; }
+    .mod-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .mod-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .mod-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge.good { background: rgba(80,220,150,.15); color: #50dc96; }
+    .badge.warn { background: rgba(255,180,60,.15); color: #ffb43c; }
+    .badge.dim { background: rgba(255,255,255,.1); color: var(--dim); }
+    .mono { font-family: var(--font-mono); font-size: .78rem; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .form-row input, .form-row select { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: .85rem; min-width: 180px; }
+    @media (max-width: 900px) { .mod-stats { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">ORACLE · ECVRF · MULTI-SOURCE</span>
+      <h1>链上预言机</h1>
+      <p class="sub">为链上合约提供外部数据：USDT/ETH 价格、VRF 可验证随机数、AI 生成结果验证。多数据源聚合，偏离数据自动剔除，作恶节点罚没质押。</p>
+    </section>
+
+    <section class="mod-stats" id="stats"></section>
+
+    <div class="mod-tabs" id="tabs">
+      <button class="mod-tab active" onclick="switchTab('price')">价格预言机</button>
+      <button class="mod-tab" onclick="switchTab('vrf')">VRF 随机数</button>
+      <button class="mod-tab" onclick="switchTab('ai')">AI 结果验证</button>
+      <button class="mod-tab" onclick="switchTab('nodes')">预言机节点</button>
+    </div>
+
+    <section class="mod-panel active" id="panel-price">
+      <div class="card"><h3 class="mb">价格聚合（USDT/USD · ETH/USD）</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">每 5 分钟更新一次；多数据源（Chainlink / Pyth / 交易所）取中位数，偏离 &gt;10% 的数据被剔除，连续异常可举报罚没。</p>
+        <div id="feeds"></div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3 class="mb">上报价格（预言机节点）</h3>
+        <div class="form-row">
+          <select id="upFeed"><option value="USDT/USD">USDT/USD</option><option value="ETH/USD">ETH/USD</option></select>
+          <select id="upSource"><option value="chainlink">Chainlink</option><option value="pyth">Pyth</option><option value="binance">Binance</option><option value="okx">OKX</option><option value="gate">Gate</option></select>
+          <input id="upPrice" type="number" step="0.00000001" placeholder="价格">
+          <button class="btn primary" onclick="doPriceUpdate()">上报</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-vrf">
+      <div class="card"><h3 class="mb">VRF 可验证随机数</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">盲盒、抽奖、AI 生成结果验证都使用 ECVRF-P256：随机数上链前不可预测，上链后可由公钥 + 证明验证。</p>
+        <div class="form-row">
+          <input id="vrfHint" placeholder="用途提示（如：盲盒抽奖 #12）">
+          <button class="btn primary" onclick="doVrfRequest()">发起 VRF 请求</button>
+        </div>
+        <div id="vrfResult" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-ai">
+      <div class="card"><h3 class="mb">AI 生成结果验证</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">AI 生成内容时，预言机节点验证生成结果的哈希；验证通过后合约才允许上架销售，验证节点获得小额 NOVA 奖励。</p>
+        <div class="form-row">
+          <input id="aiHash" placeholder="内容哈希（64 位 hex 或 bafy CID）">
+          <button class="btn" onclick="doAiSubmit()">提交内容</button>
+          <button class="btn primary" onclick="doAiVerify()">验证（节点）</button>
+        </div>
+        <div id="aiList"></div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-nodes">
+      <div class="card"><h3 class="mb">预言机节点（质押 500 NOVA）</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;">冷启动阶段使用 Chainlink 公共测试网预言机；主网上线后由 Nova 超级节点担任预言机节点，用 NOVA 激励，作恶罚没。</p>
+        <div class="form-row">
+          <input id="nodePub" placeholder="VRF 公钥（0x + 128 hex）">
+          <button class="btn primary" onclick="doNodeRegister()">质押注册（500 NOVA）</button>
+        </div>
+        <div id="nodes"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+  var N = window.NovaApps;
+  var DEMO = {
+    feeds: { 'USDT/USD': { price: 1.0, updated_at: Date.now() - 60000, sources: 5 },
+             'ETH/USD': { price: 3120.5, updated_at: Date.now() - 120000, sources: 5 } },
+    nodes: [{ addr: '0x' + '11'.repeat(20), stake: 500, status: 'active', fulfills: 3, updates: 12 }]
+  };
+
+  function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+  function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
+  function switchTab(name) {
+    document.querySelectorAll('.mod-tab').forEach(function (b, i) {
+      b.classList.toggle('active', b.getAttribute('onclick').indexOf(name) >= 0);
+    });
+    document.querySelectorAll('.mod-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+    load();
+  }
+  function moduleOp(op, fields, amount) {
+    var st = N.getState();
+    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    return N.getPubFromPriv(st.priv).then(function (pub) {
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = (Number(amount || 0)).toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
+        return N.api('/api/oracle/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
+          timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
+          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
+          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          return res;
+        });
+      });
+    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+  }
+
+  async function load() {
+    var d = null;
+    try { d = await N.api('/api/oracle/summary'); } catch (e) {}
+    var demo = !d || d.demoMode || !d.feeds;
+    d = d && !d.demoMode && d.feeds ? d : DEMO;
+    document.getElementById('stats').innerHTML =
+      stat('预言机节点', d.nodes || 0) + stat('质押总量 (NOVA)', N.fmt((d.total_stake || 0))) +
+      stat('VRF 请求', d.requests || 0) + stat('AI 已验证', d.ai_verified || 0);
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点（127.0.0.1:8080）后显示实时链上数据</div>');
+    renderFeeds(d.feeds || {});
+    renderNodes(d);
+  }
+  function renderFeeds(feeds) {
+    var el = document.getElementById('feeds');
+    var rows = Object.keys(feeds || {}).map(function (f) {
+      var agg = feeds[f];
+      return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+        '<h4>' + esc(f) + '</h4><span class="badge good">' + (agg ? '聚合价 ' + N.fmt(agg.price) : '无数据') + '</span></div>' +
+        '<div class="mod-sub">更新于 ' + N.timeAgo(agg.updated_at) + ' ｜ 数据源 ' + (agg.sources || 0) + ' 个' +
+        (agg.values ? ' ｜ 明细 ' + JSON.stringify(agg.values) : '') + '</div></div>';
+    }).join('');
+    el.innerHTML = rows || '<p class="dim">暂无价格数据</p>';
+  }
+  function renderNodes(d) {
+    var el = document.getElementById('nodes');
+    var nodes = d.nodes && typeof d.nodes === 'object' ? d.nodes : DEMO.nodes;
+    if (Array.isArray(nodes)) {
+      el.innerHTML = nodes.map(function (n) {
+        return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+          '<h4 class="mono">' + esc(n.addr || n) + '</h4>' +
+          '<span class="badge good">' + esc(n.status || 'active') + '</span></div>' +
+          '<div class="mod-sub">质押 ' + N.fmt(n.stake || 0) + ' NOVA ｜ 服务 ' + (n.fulfills || 0) +
+          ' 次 ｜ 价格上报 ' + (n.updates || 0) + ' 次</div></div>';
+      }).join('') || '<p class="dim">暂无节点</p>';
+    } else {
+      el.innerHTML = '<p class="dim">暂无节点</p>';
+    }
+  }
+
+  function doPriceUpdate() {
+    var feed = document.getElementById('upFeed').value;
+    var source = document.getElementById('upSource').value;
+    var price = Number(document.getElementById('upPrice').value);
+    if (!price || price <= 0) { N.toast('请输入有效价格'); return; }
+    moduleOp('nova:oracle:price:update', { feed: feed, source: source, price: price }).then(function () { load(); });
+  }
+  function doVrfRequest() {
+    var hint = document.getElementById('vrfHint').value.trim() || '盲盒抽奖';
+    moduleOp('nova:oracle:vrf:request', { hint: hint }).then(function (r) {
+      if (r && r.txid) { N.toast('VRF 请求已上链，等待节点 fulfilled'); }
+      load();
+    });
+  }
+  function doAiSubmit() {
+    var h = document.getElementById('aiHash').value.trim();
+    if (!h) { N.toast('请输入内容哈希'); return; }
+    moduleOp('nova:oracle:ai:submit', { content_hash: h, meta: { kind: 'music' } }).then(function () { load(); });
+  }
+  function doAiVerify() {
+    var h = document.getElementById('aiHash').value.trim();
+    if (!h) { N.toast('请输入内容哈希'); return; }
+    moduleOp('nova:oracle:ai:verify', { content_hash: h, verdict: true }).then(function () { load(); });
+  }
+  function doNodeRegister() {
+    var pub = document.getElementById('nodePub').value.trim();
+    if (!/^0x[0-9a-fA-F]{128}$/.test(pub)) { N.toast('公钥格式：0x + 128 位 hex（Ed25519）'); return; }
+    moduleOp('nova:oracle:node:register', { pubkey: pub }, 500).then(function () { load(); });
+  }
+
+  N.init({ active: 'oracle', onReady: function () { load(); } });
+  </script>
+</body>
+</html>

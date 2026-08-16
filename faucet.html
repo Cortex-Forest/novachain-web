@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova 测试网水龙头：开发者免费领取测试 NOVA，地址 24 小时限领一次，助力合约开发与生态体验。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 测试网水龙头 · 免费测试币</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .mod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .mod-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .mod-stat .v { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+    .mod-stat .k { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .claim-box { border: 1px solid rgba(0,240,255,.28); background: linear-gradient(135deg, rgba(0,240,255,.06), rgba(180,77,255,.06)); border-radius: 16px; padding: 20px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+    .form-row input { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 10px 12px; color: #fff; font-size: .85rem; min-width: 260px; font-family: var(--font-mono); flex: 1; }
+    .hint { font-size: .8rem; color: var(--dim); line-height: 1.8; }
+    .mod-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .mod-item h4 { margin: 0 0 6px; font-size: .95rem; }
+    .mod-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge.good { background: rgba(80,220,150,.15); color: #50dc96; }
+    .badge.warn { background: rgba(255,180,60,.15); color: #ffb43c; }
+    .badge.dim { background: rgba(255,255,255,.1); color: var(--dim); }
+    .mono { font-family: var(--font-mono); font-size: .78rem; }
+    .rule-list { font-size: .82rem; color: var(--dim); line-height: 2; margin: 10px 0 0; padding-left: 18px; }
+    @media (max-width: 900px) { .mod-stats { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">TESTNET FAUCET · FREE TEST TOKENS</span>
+      <h1>测试网水龙头</h1>
+      <p class="sub">开发者免费领取测试 NOVA，用于合约开发、盲盒抽奖、DEX 兑换与全生态功能体验。领取记录链上可查，仅测试网开放，主网自动关闭。</p>
+    </section>
+
+    <section class="mod-stats" id="stats"></section>
+
+    <section class="claim-box">
+      <h3 class="mb">领取测试 NOVA</h3>
+      <div class="form-row">
+        <input id="faucetAddr" placeholder="Nova 地址（0x + 40 位 hex），已连接钱包自动填入">
+        <button class="btn primary" onclick="doClaim()">领取 100 测试币</button>
+      </div>
+      <p class="hint">领取规则：同一地址每 24 小时限领 1 次 ｜ 同一 IP 每日最多 2 次 ｜ 每日全网发放上限 20,000 NOVA ｜ 测试币仅用于测试网，无任何经济价值。</p>
+      <ul class="rule-list">
+        <li>领取后测试币直接到账目标地址，可在钱包页查看余额。</li>
+        <li>开发者可通过 REST API 自动领取：<span class="mono">POST /api/faucet/request</span>。</li>
+      </ul>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h3 class="mb">领取记录与状态</h3>
+      <div id="records"></div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+  var N = window.NovaApps;
+  var DEMO = {
+    enabled: true,
+    pool_balance: 1000000,
+    amount: 100,
+    today: { date: '', count: 3, amount: 300 },
+    daily_cap: 20000,
+    daily_ip_cap: 2,
+    cooldown_seconds: 86400,
+    total_claimed: 12300,
+    total_recipients: 123
+  };
+
+  function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+  function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
+
+  async function load() {
+    var st = N.getState();
+    if (st && st.connected && st.addr) {
+      document.getElementById('faucetAddr').value = st.addr;
+    }
+    var d = null;
+    try { d = await N.api('/api/faucet/status'); } catch (e) {}
+    var demo = !d || d.demoMode;
+    d = d && !d.demoMode ? d : DEMO;
+    var left = Math.max(0, Number(d.daily_cap) - Number(d.today ? d.today.amount : 0));
+    document.getElementById('stats').innerHTML =
+      stat('资金池余额', N.fmt(d.pool_balance) + ' NOVA') +
+      stat('每次领取', N.fmt(d.amount) + ' NOVA') +
+      stat('今日已发放', N.fmt(d.today ? d.today.amount : 0) + ' NOVA') +
+      stat('今日剩余额度', N.fmt(left) + ' NOVA');
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend',
+      '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地测试节点（127.0.0.1:8080，需 --faucet 启动）后显示实时数据</div>');
+    renderRecords(d);
+  }
+
+  function renderRecords(d) {
+    var el = document.getElementById('records');
+    var list = d.receipts || [];
+    if (!list.length) {
+      el.innerHTML = '<p class="dim">暂无领取记录。全网已累计发放 ' + N.fmt(d.total_claimed) + ' NOVA（' + d.total_recipients + ' 个地址）。</p>';
+      return;
+    }
+    el.innerHTML = list.slice(0, 20).map(function (r) {
+      return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+        '<h4 class="mono">' + esc(r.receipt || r.id || '') + '</h4>' +
+        '<span class="badge good">+' + N.fmt(r.amount) + ' NOVA</span></div>' +
+        '<div class="mod-sub">' + esc(r.addr || '') + ' ｜ ' + (r.ts ? new Date(r.ts * 1000).toLocaleString() : '') + '</div></div>';
+    }).join('');
+  }
+
+  function doClaim() {
+    var st = N.getState();
+    var addr = document.getElementById('faucetAddr').value.trim().toLowerCase();
+    if (!addr) {
+      addr = st && st.addr || '';
+      document.getElementById('faucetAddr').value = addr;
+    }
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { N.toast('请输入合法的 Nova 地址（0x + 40 位 hex）'); return; }
+    if (!st.connected) {
+      N.toast('水龙头为节点服务，请先连接本地测试节点');
+      return;
+    }
+    N.api('/api/faucet/request', 'POST', { addr: addr }).then(function (res) {
+      if (res && res.error) { N.toast('领取失败：' + res.error); load(); return null; }
+      if (res && res.status) { N.toast('领取成功 ✓ +' + res.amount + ' NOVA'); }
+      load();
+      return res;
+    }).catch(function (e) { N.toast('领取失败：' + (e && e.message || e)); });
+  }
+
+  N.init({ active: 'faucet', onReady: function () { load(); } });
+  </script>
+</body>
+</html>

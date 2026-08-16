@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova 开发者 SDK（@nova/sdk）：钱包、合约、内容、质押、订阅、预言机、跨链桥、DEX、治理、DID、链上事件与测试网水龙头。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova 开发者 SDK · 在线体验</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../apps-common.css">
+  <style>
+    .sdk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    .sdk-grid .card { min-height: 120px; }
+    .mono { font-family: var(--font-mono); font-size: .78rem; word-break: break-all; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .form-row input, .form-row select { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: .85rem; min-width: 200px; }
+    .log { background: #0b0e1f; border: 1px solid rgba(140,210,255,.14); border-radius: 12px; padding: 14px;
+      font-size: .76rem; line-height: 1.8; min-height: 180px; max-height: 420px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: rgba(80,220,150,.15); color: #50dc96; }
+    @media (max-width: 900px) { .sdk-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">@nova/sdk · DEVELOPER KIT</span>
+      <h1>Nova 开发者 SDK</h1>
+      <p class="sub">钱包 / 合约 / 内容 / 质押 / 订阅 / 预言机 / 跨链桥 / DEX / 治理 / DID / 链上事件 / 测试网水龙头——零依赖 UMD，浏览器与 Node 通用。下方为在线体验：连接本地测试节点即可真实上链。</p>
+      <div class="row" style="margin-top:10px;">
+        <input id="nodeUrl" value="http://127.0.0.1:8080" style="width:260px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 12px;color:#fff;">
+        <button class="btn primary" onclick="sdkConnect()">连接节点</button>
+        <a class="btn" href="../docs/api/README.md">📖 API 文档</a>
+      </div>
+    </section>
+
+    <div class="sdk-grid">
+      <div class="card">
+        <h3 class="mb">💳 钱包</h3>
+        <p class="dim" style="font-size:13px;">创建（BIP39 助记词）/ 导入 / 签名交易 / 查询余额</p>
+        <div class="form-row">
+          <button class="btn primary" onclick="walletCreate()">创建钱包</button>
+          <button class="btn" onclick="walletBalance()">查余额</button>
+          <button class="btn" onclick="walletSend()">转 1 NOVA</button>
+        </div>
+        <div class="mono" id="walletBox" style="margin-top:8px;">—</div>
+      </div>
+      <div class="card">
+        <h3 class="mb">⚙️ 质押与签到</h3>
+        <p class="dim" style="font-size:13px;">质押 100 NOVA / 解押 / 签到（空投资格）</p>
+        <div class="form-row">
+          <button class="btn primary" onclick="stake()">质押 100</button>
+          <button class="btn" onclick="checkin()">签到</button>
+          <button class="btn" onclick="stakes()">我的质押</button>
+        </div>
+        <div class="mono" id="stakeBox" style="margin-top:8px;">—</div>
+      </div>
+      <div class="card">
+        <h3 class="mb">🔮 预言机</h3>
+        <p class="dim" style="font-size:13px;">VRF 可验证随机数请求 / AI 生成结果验证</p>
+        <div class="form-row">
+          <button class="btn primary" onclick="vrf()">VRF 请求</button>
+          <button class="btn" onclick="aiVerify()">AI 验证</button>
+        </div>
+        <div class="mono" id="oracleBox" style="margin-top:8px;">—</div>
+      </div>
+      <div class="card">
+        <h3 class="mb">🌠 内容发布</h3>
+        <p class="dim" style="font-size:13px;">发布公开内容（链上确权，缴纳基础档保证金 10 NOVA）</p>
+        <div class="form-row">
+          <input id="contentTitle" value="SDK 体验作品" style="min-width:140px;">
+          <button class="btn primary" onclick="publish()">发布</button>
+        </div>
+        <div class="mono" id="contentBox" style="margin-top:8px;">—</div>
+      </div>
+      <div class="card">
+        <h3 class="mb">🚰 测试网水龙头</h3>
+        <p class="dim" style="font-size:13px;">免费领取测试 NOVA（地址 24h 限领一次，节点需 --faucet 启动）</p>
+        <div class="form-row">
+          <button class="btn primary" onclick="faucetClaim()">领取 100</button>
+          <button class="btn" onclick="faucetStatus()">状态</button>
+        </div>
+        <div class="mono" id="faucetBox" style="margin-top:8px;">—</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h3 class="mb">📡 链上事件监听 <span class="pill">每 3 秒轮询</span></h3>
+      <p class="dim" style="font-size:13px;">NovaEvents 监听新区块、新交易、合约部署与全网统计，回调实时推送到下方日志。</p>
+      <div class="log" id="logBox">等待操作…</div>
+    </div>
+  </main>
+
+  <script src="../apps-common.js"></script>
+  <script src="nova-sdk-open.js"></script>
+  <script>
+    var SDK = window.NovaSDK;
+    var wallet = null;
+    var events = null;
+    var boxCache = {};
+    function box(id) { return document.getElementById(id); }
+    function log(msg) {
+      var el = box('logBox');
+      var line = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      el.textContent = (el.textContent === '等待操作…' ? '' : el.textContent + '\n') + line;
+      el.scrollTop = el.scrollHeight;
+    }
+    function show(id, v) { box(id).textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function fmtErr(e) { return '❌ ' + ((e && e.message) || e); }
+    function nodeUrl() { return box('nodeUrl').value.trim() || 'http://127.0.0.1:8080'; }
+    async function ensureWallet() {
+      if (wallet) return wallet;
+      wallet = await SDK.NovaWallet.create({ nodeUrl: nodeUrl() });
+      show('walletBox', '地址: ' + wallet.getAddress() + '\n助记词: ' + wallet.getMnemonic());
+      log('已创建钱包 ' + wallet.getAddress().slice(0, 12) + '…');
+      return wallet;
+    }
+    async function faucetClaim() {
+      try {
+        var w = await ensureWallet();
+        var fc = new SDK.NovaFaucet({ nodeUrl: nodeUrl() });
+        var res = await fc.request(w.getAddress());
+        show('faucetBox', JSON.stringify(res, null, 2));
+        log('🚰 领取成功 +' + res.amount + ' NOVA（回执 ' + String(res.receipt).slice(0, 12) + '…）');
+      } catch (e) { show('faucetBox', fmtErr(e)); }
+    }
+    async function faucetStatus() {
+      try {
+        var fc = new SDK.NovaFaucet({ nodeUrl: nodeUrl() });
+        var st = await fc.status();
+        show('faucetBox', JSON.stringify({ pool_balance: st.pool_balance, amount: st.amount, today: st.today, daily_cap: st.daily_cap }, null, 2));
+        log('🚰 水龙头池 ' + st.pool_balance + ' NOVA / 每次 ' + st.amount + ' / 今日已发 ' + st.today.amount);
+      } catch (e) { show('faucetBox', fmtErr(e)); }
+    }
+    async function sdkConnect() {
+      try {
+        var w = await ensureWallet();
+        var st = await w.getStatus();
+        log('已连接节点 ' + nodeUrl() + '（height ' + st.height + '，共识 ' + st.consensus + '）');
+        if (!events) {
+          events = new SDK.NovaEvents({ nodeUrl: nodeUrl(), intervalMs: 3000 });
+          events.onBlock(function (b) { log('⛓ 新区块 #' + b.height + '（' + (b.txids || []).length + ' 笔交易）'); });
+          events.onTx(function (t) { log('📦 交易确认 ' + String(t.txid || '').slice(0, 14) + '… ' + (t.receiver || '').slice(0, 12) + '…'); });
+          events.onStats(function (s) { log('📊 全网：' + s.total_txs + ' 笔交易 / ' + s.total_addresses + ' 地址 / 质押 ' + s.total_staked + ' NOVA'); });
+          events.start();
+          log('事件监听已启动（3 秒轮询 /api/chain/sync）');
+        }
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function walletCreate() {
+      try {
+        var w = await ensureWallet();
+        show('walletBox', '地址: ' + w.getAddress() + '\n公钥: ' + w.pub + '\n助记词: ' + w.getMnemonic());
+        log('钱包地址 ' + w.getAddress());
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function walletBalance() {
+      try {
+        var w = await ensureWallet();
+        var d = await w.getBalance();
+        show('walletBox', '地址: ' + w.getAddress() + '\n余额: ' + d.balance + ' NOVA');
+        log('余额 ' + d.balance + ' NOVA');
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function walletSend() {
+      try {
+        var w = await ensureWallet();
+        var r = await w.send({ to: w.getAddress(), amount: 1, memo: 'SDK demo' });
+        show('walletBox', 'txid: ' + r.txid);
+        log('转账已上链 ' + r.txid.slice(0, 16) + '…');
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function stake() {
+      try {
+        var w = await ensureWallet();
+        var s = new SDK.NovaStaking(w, { rpc: w.rpc });
+        var r = await s.stake(100);
+        show('stakeBox', 'txid: ' + r.txid);
+        log('已质押 100 NOVA ' + r.txid.slice(0, 16) + '…');
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function checkin() {
+      try {
+        var w = await ensureWallet();
+        var s = new SDK.NovaStaking(w, { rpc: w.rpc });
+        var r = await s.checkin('sdk-demo');
+        show('stakeBox', JSON.stringify(r));
+        log('签到成功（前置空投资格）');
+      } catch (e) { show('stakeBox', fmtErr(e)); log(fmtErr(e)); }
+    }
+    async function stakes() {
+      try {
+        var w = await ensureWallet();
+        var s = new SDK.NovaStaking(w, { rpc: w.rpc });
+        var r = await s.rewards();
+        show('stakeBox', '质押: ' + r.stake + ' NOVA\n全网总质押: ' + r.total);
+        log('质押查询完成');
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function vrf() {
+      try {
+        var w = await ensureWallet();
+        var o = new SDK.NovaOracle(w, { rpc: w.rpc });
+        var r = await o.requestVrf('SDK 盲盒体验 #' + Math.floor(Math.random() * 1000));
+        show('oracleBox', 'request_id: ' + (r.id || r.target) + '\ntxid: ' + r.txid);
+        log('VRF 请求已受理 ' + (r.id || r.target));
+        var vr = await o.getVrfResult(r.id || r.target);
+        log('VRF 状态：' + vr.status + (vr.random ? '，随机数 ' + String(vr.random).slice(0, 18) + '…' : ''));
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function aiVerify() {
+      try {
+        var w = await ensureWallet();
+        var o = new SDK.NovaOracle(w, { rpc: w.rpc });
+        var hash = '0x' + Math.random().toString(16).slice(2, 18).padEnd(32, 'ab');
+        await o.submitAi(hash, { kind: 'music' });
+        show('oracleBox', 'content_hash: ' + hash + '\n已提交，等待节点验证');
+        log('AI 内容已提交待验证 ' + hash.slice(0, 18) + '…');
+      } catch (e) { log(fmtErr(e)); }
+    }
+    async function publish() {
+      try {
+        var w = await ensureWallet();
+        var c = new SDK.NovaContent(w, { rpc: w.rpc });
+        var title = box('contentTitle').value.trim() || 'SDK 体验作品';
+        var r = await c.publish({ title: title, content: '由 @nova/sdk 在线体验发布：' + new Date().toISOString(), price: 1, visibility: 'public', tier: 'basic' });
+        show('contentBox', 'text_id: ' + (r.id || r.target) + '\ntxid: ' + r.txid);
+        log('内容已上链「' + title + '」' + (r.id || r.target));
+      } catch (e) { log(fmtErr(e)); }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0A0F">
+  <meta name="description" content="Nova DEX：NOVA/USDT、NOVA/nETH 自动做市，恒定乘积 x*y=k，0.3% 手续费，流动性挖矿年化 20-50%。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Nova DEX · 去中心化交易所</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js" integrity="sha384-NKbaJKqJPrFeb86qfU2iNy4KO3oyIe6F5xm1PBYMpAkiVTxHjjafUKlebp0mAeNC" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="./apps-common.css">
+  <style>
+    .mod-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .mod-stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .mod-stat .v { font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+    .mod-stat .k { font-size: 12px; color: var(--dim); margin-top: 4px; }
+    .mod-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .mod-tab { padding: 9px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04); cursor: pointer; font-size: .85rem; color: var(--dim); transition: all .2s; }
+    .mod-tab:hover { color: #fff; border-color: rgba(0,240,255,.35); }
+    .mod-tab.active { background: linear-gradient(135deg, rgba(0,240,255,.18), rgba(180,77,255,.18));
+      border-color: rgba(0,240,255,.45); color: #fff; }
+    .mod-panel { display: none; } .mod-panel.active { display: block; }
+    .mod-item { border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: rgba(255,255,255,.03); }
+    .mod-item h4 { margin: 0 0 6px; font-size: .98rem; }
+    .mod-sub { font-size: .8rem; color: var(--dim); line-height: 1.75; word-break: break-all; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge.good { background: rgba(80,220,150,.15); color: #50dc96; }
+    .badge.warn { background: rgba(255,180,60,.15); color: #ffb43c; }
+    .badge.dim { background: rgba(255,255,255,.1); color: var(--dim); }
+    .mono { font-family: var(--font-mono); font-size: .78rem; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+    .form-row input, .form-row select { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: .85rem; min-width: 150px; }
+    .quote-box { background: rgba(0,240,255,.06); border: 1px dashed rgba(0,240,255,.3); border-radius: 12px;
+      padding: 12px; margin: 10px 0; font-size: .85rem; color: #bff6ff; }
+    @media (max-width: 900px) { .mod-stats { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div id="topbar"></div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">DEX · AMM · x*y=k</span>
+      <h1>去中心化交易所</h1>
+      <p class="sub">NOVA/USDT、NOVA/nETH 自动做市。恒定乘积公式 x·y=k，每笔 0.3% 手续费（0.25% 归流动性提供者，0.05% 回购 NOVA 销毁），LP 可质押挖矿，年化 20-50%。</p>
+    </section>
+
+    <section class="mod-stats" id="stats"></section>
+
+    <div class="mod-tabs" id="tabs">
+      <button class="mod-tab active" onclick="switchTab('swap')">兑换</button>
+      <button class="mod-tab" onclick="switchTab('liq')">流动性</button>
+      <button class="mod-tab" onclick="switchTab('farm')">流动性挖矿</button>
+      <button class="mod-tab" onclick="switchTab('pools')">资金池</button>
+    </div>
+
+    <section class="mod-panel active" id="panel-swap">
+      <div class="card"><h3 class="mb">兑换</h3>
+        <div class="form-row">
+          <select id="swPair"><option value="NOVA/USDT">NOVA/USDT</option><option value="NOVA/nETH">NOVA/nETH</option></select>
+          <select id="swDir"><option value="0">卖 NOVA → 买 USDT/nETH</option><option value="1">卖 USDT/nETH → 买 NOVA</option></select>
+          <input id="swIn" type="number" step="0.01" placeholder="输入数量" oninput="doQuote()">
+        </div>
+        <div class="quote-box" id="swQuote">输入数量后显示预计获得与滑点</div>
+        <div class="form-row">
+          <span class="dim" style="font-size:.8rem;">最大滑点容忍度</span>
+          <select id="swSlip"><option value="0.05">5%（默认）</option><option value="0.01">1%</option><option value="0.10">10%</option></select>
+          <button class="btn primary" onclick="doSwap()">兑换</button>
+        </div>
+        <p class="dim" style="font-size:12px;line-height:1.7;">滑点超过容忍度自动取消；大额交易自动分拆执行以减少价格冲击。</p>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-liq">
+      <div class="card"><h3 class="mb">添加流动性</h3>
+        <div class="form-row">
+          <select id="liqPair"><option value="NOVA/USDT">NOVA/USDT</option><option value="NOVA/nETH">NOVA/nETH</option></select>
+          <input id="liq0" type="number" step="0.01" placeholder="NOVA 数量">
+          <input id="liq1" type="number" step="0.01" placeholder="nUSDT / nETH 数量">
+          <button class="btn primary" onclick="doAdd()">添加（获得 LP）</button>
+        </div>
+        <div id="myLp"></div>
+      </div>
+      <div class="card" style="margin-top:14px;"><h3 class="mb">移除流动性</h3>
+        <div class="form-row">
+          <select id="rmPair"><option value="NOVA/USDT">NOVA/USDT</option><option value="NOVA/nETH">NOVA/nETH</option></select>
+          <input id="rmShares" type="number" step="0.0001" placeholder="LP 份额">
+          <button class="btn primary" onclick="doRemove()">移除（取回资产）</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-farm">
+      <div class="card"><h3 class="mb">质押 LP 挖矿（年化 20-50%）</h3>
+        <div class="form-row">
+          <select id="farmPair"><option value="NOVA/USDT">NOVA/USDT</option><option value="NOVA/nETH">NOVA/nETH</option></select>
+          <input id="farmShares" type="number" step="0.0001" placeholder="LP 份额">
+          <button class="btn primary" onclick="doFarmStake()">质押</button>
+          <button class="btn" onclick="doFarmClaim()">领取奖励</button>
+          <button class="btn" onclick="doFarmUnstake()">解质押</button>
+        </div>
+        <div id="myFarm"></div>
+      </div>
+    </section>
+
+    <section class="mod-panel" id="panel-pools">
+      <div class="card"><h3 class="mb">资金池</h3><div id="pools"></div></div>
+    </section>
+  </main>
+
+  <script src="./apps-common.js"></script>
+  <script>
+  var N = window.NovaApps;
+  var DEMO = {
+    pairs: { 'NOVA/USDT': { reserve0: 10000, reserve1: 20000, total_shares: 14142, paused: false },
+             'NOVA/nETH': { reserve0: 5000, reserve1: 2, total_shares: 100, paused: false } },
+    farms: { 'NOVA/USDT': { total_staked: 8000, apr: 35 }, 'NOVA/nETH': { total_staked: 0, apr: 35 } }
+  };
+
+  function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
+  function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
+  function switchTab(name) {
+    document.querySelectorAll('.mod-tab').forEach(function (b) { b.classList.toggle('active', b.getAttribute('onclick').indexOf(name) >= 0); });
+    document.querySelectorAll('.mod-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+    load();
+  }
+  function moduleOp(op, fields, amount) {
+    var st = N.getState();
+    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    return N.getPubFromPriv(st.priv).then(function (pub) {
+      var ts = Math.floor(Date.now() / 1000);
+      var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
+      var amtStr = (Number(amount || 0)).toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
+        return N.api('/api/dex/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
+          timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
+          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
+          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          return res;
+        });
+      });
+    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+  }
+
+  function pairPrice(p, tokenIdx) {
+    if (!p || !p.reserve1) return 0;
+    return tokenIdx === 1 ? p.reserve0 / p.reserve1 : p.reserve1 / p.reserve0;
+  }
+
+  async function load() {
+    var d = null;
+    try { d = await N.api('/api/dex/summary'); } catch (e) {}
+    var demo = !d || d.demoMode || !d.pairs;
+    d = d && !d.demoMode && d.pairs ? d : DEMO;
+    var p0 = d.pairs['NOVA/USDT'] || {}, p1 = d.pairs['NOVA/nETH'] || {};
+    document.getElementById('stats').innerHTML =
+      stat('NOVA/USDT 价格', N.fmt(pairPrice(p0, 0)) + ' USDT') +
+      stat('NOVA/nETH 价格', N.fmt(pairPrice(p1, 0)) + ' nETH') +
+      stat('总流动性', N.fmt((p0.reserve1 || 0) + (p1.reserve1 || 0) * 3000) + ' USDT') +
+      stat('协议暂停', d.paused ? '是' : '否');
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点后显示实时链上数据</div>');
+    renderPools(d.pairs, d.farms);
+    renderMy();
+  }
+  function renderPools(pairs, farms) {
+    var el = document.getElementById('pools');
+    el.innerHTML = Object.keys(pairs || {}).map(function (pid) {
+      var p = pairs[pid], f = (farms || {})[pid] || {};
+      return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+        '<h4>' + esc(pid) + '</h4><span class="badge ' + (p.paused ? 'warn' : 'good') + '">' + (p.paused ? '已暂停' : '运行中') + '</span></div>' +
+        '<div class="mod-sub">储备 ' + N.fmt(p.reserve0) + ' / ' + N.fmt(p.reserve1) +
+        ' ｜ 总份额 ' + N.fmt(p.total_shares) + ' ｜ 挖矿年化 ' + N.fmt(f.apr || 0) + '%' +
+        (p.burned0 ? ' ｜ 已销毁 ' + N.fmt(p.burned0) + ' NOVA' : '') + '</div></div>';
+    }).join('') || '<p class="dim">暂无资金池（预售资金注入后自动创建）</p>';
+  }
+  async function renderMy() {
+    var st = N.getState();
+    if (!st.connected) { document.getElementById('myLp').innerHTML = '<p class="dim">连接钱包后查看我的 LP</p>'; return; }
+    var lp = null, farm = null;
+    try {
+      lp = await N.api('/api/dex/lp/' + st.addr);
+      farm = await N.api('/api/dex/farm/NOVA%2FUSDT/' + st.addr);
+    } catch (e) {}
+    if (lp && lp.positions) {
+      document.getElementById('myLp').innerHTML = Object.keys(lp.positions).map(function (pid) {
+        var pos = lp.positions[pid];
+        return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+          '<h4>' + esc(pid) + '</h4><span class="badge dim">LP ' + N.fmt(pos.shares) + '</span></div>' +
+          '<div class="mod-sub">累计手续费 ' + N.fmt(pos.fees0 || 0) + ' / ' + N.fmt(pos.fees1 || 0) + '</div></div>';
+      }).join('') || '<p class="dim">暂无 LP 持仓</p>';
+    }
+    if (farm && farm.pool) {
+      document.getElementById('myFarm').innerHTML = '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
+        '<h4>NOVA/USDT 挖矿</h4><span class="badge good">质押 ' + N.fmt(farm.pool.staked || 0) + ' LP</span></div>' +
+        '<div class="mod-sub">已获奖励 ' + N.fmt(farm.pool.reward || 0) + ' NOVA ｜ 年化 ' + N.fmt(farm.pool.apr || 0) + '%</div></div>';
+    }
+  }
+
+  async function doQuote() {
+    var pair = document.getElementById('swPair').value;
+    var dir = Number(document.getElementById('swDir').value);
+    var amt = Number(document.getElementById('swIn').value);
+    var el = document.getElementById('swQuote');
+    if (!amt || amt <= 0) { el.innerHTML = '输入数量后显示预计获得与滑点'; return; }
+    try {
+      var q = await N.api('/api/dex/quote?pair=' + encodeURIComponent(pair) + '&amount=' + amt + '&token_in=' + dir);
+      if (q && q.amount_out) {
+        el.innerHTML = '预计获得 <b>' + N.fmt(q.amount_out) + '</b> ' + (dir === 0 ? '（扣除 0.3% 手续费）' : 'NOVA') +
+          ' ｜ 滑点 ' + N.fmt(q.slippage || 0) + '% ｜ 最小可得 ' + N.fmt(q.min_out || 0) +
+          (q.pieces > 1 ? ' ｜ 自动分拆 ' + q.pieces + ' 笔' : '');
+      } else { el.innerHTML = '暂无报价（资金池可能为空）'; }
+    } catch (e) { el.innerHTML = '报价失败：' + (e && e.message || e); }
+  }
+  function doSwap() {
+    var pair = document.getElementById('swPair').value;
+    var dir = Number(document.getElementById('swDir').value);
+    var amt = Number(document.getElementById('swIn').value);
+    if (!amt || amt <= 0) { N.toast('请输入兑换数量'); return; }
+    moduleOp('nova:dex:swap', { pair_id: pair, amount_in: amt, token_in: dir, min_out: 0,
+      slippage: Number(document.getElementById('swSlip').value) }, amt).then(function () { load(); });
+  }
+  function doAdd() {
+    var pair = document.getElementById('liqPair').value;
+    var a0 = Number(document.getElementById('liq0').value);
+    var a1 = Number(document.getElementById('liq1').value);
+    if (!a0 || !a1 || a0 <= 0 || a1 <= 0) { N.toast('请输入 NOVA 与 代币 数量'); return; }
+    moduleOp('nova:dex:add', { pair_id: pair, amount0: a0, amount1: a1 }, a0).then(function () { load(); });
+  }
+  function doRemove() {
+    var pair = document.getElementById('rmPair').value;
+    var shares = Number(document.getElementById('rmShares').value);
+    if (!shares || shares <= 0) { N.toast('请输入 LP 份额'); return; }
+    moduleOp('nova:dex:remove', { pair_id: pair, shares: shares }).then(function () { load(); });
+  }
+  function doFarmStake() {
+    var pair = document.getElementById('farmPair').value;
+    var shares = Number(document.getElementById('farmShares').value);
+    if (!shares || shares <= 0) { N.toast('请输入 LP 份额'); return; }
+    moduleOp('nova:dex:farm:stake', { pair_id: pair, shares: shares }).then(function () { load(); });
+  }
+  function doFarmUnstake() { moduleOp('nova:dex:farm:unstake', { pair_id: document.getElementById('farmPair').value }).then(function () { load(); }); }
+  function doFarmClaim() { moduleOp('nova:dex:farm:claim', { pair_id: document.getElementById('farmPair').value }).then(function () { load(); }); }
+
+  N.init({ active: 'dex', onReady: function () { load(); } });
+  </script>
+</body>
+</html>
