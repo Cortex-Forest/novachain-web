@@ -739,8 +739,63 @@
         return bytesToHex(sigBytes);
     }
 
-    function getPriv() { return localStorage.getItem('nova_priv'); }
-    function setPriv(k) { localStorage.setItem('nova_priv', k); }
+    // ---------- 钱包加密存储（H-05）：私钥不再明文落盘 ----------
+    const VAULT_KEY = 'nova_vault';
+    const LEGACY_KEY = 'nova_priv';
+    let sessionPriv = null;
+
+    function b64FromBytes(bytes) { return btoa(String.fromCharCode.apply(null, bytes)); }
+    function bytesFromB64(s) { return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+    async function vaultKeyFromPassphrase(passphrase, salt) {
+        const baseKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase),
+            'PBKDF2', false, ['deriveKey']);
+        return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' },
+            baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    }
+    async function saveVault(priv, passphrase) {
+        const salt = new Uint8Array(16); const iv = new Uint8Array(12);
+        crypto.getRandomValues(salt); crypto.getRandomValues(iv);
+        const key = await vaultKeyFromPassphrase(passphrase, salt);
+        const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(priv));
+        localStorage.setItem(VAULT_KEY, b64FromBytes(salt) + '.' + b64FromBytes(iv) + '.' + b64FromBytes(new Uint8Array(data)));
+        sessionPriv = priv;
+    }
+    async function unlockVault(passphrase) {
+        const parts = localStorage.getItem(VAULT_KEY).split('.');
+        const salt = bytesFromB64(parts[0]); const iv = bytesFromB64(parts[1]);
+        const key = await vaultKeyFromPassphrase(passphrase, salt);
+        const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, bytesFromB64(parts[2]));
+        sessionPriv = new TextDecoder().decode(data);
+        return sessionPriv;
+    }
+    function hasVault() { return !!localStorage.getItem(VAULT_KEY); }
+    function getPriv() { return sessionPriv; }
+    function setPriv(k) { sessionPriv = k; }   // 仅内存会话，不落盘
+    async function promptNewPassphrase() {
+        const p1 = prompt('设置钱包密码（用于加密私钥，至少 8 位，请牢记）');
+        if (p1 == null) return null;
+        if (String(p1).length < 8) { alert('密码至少 8 位'); return null; }
+        const p2 = prompt('再次输入密码确认');
+        if (p2 !== p1) { alert('两次密码不一致'); return null; }
+        return String(p1);
+    }
+    async function unlockByPrompt() {
+        if (!hasVault()) return null;
+        const pass = prompt('钱包已加密锁定，请输入密码解锁');
+        if (pass == null) return null;
+        try { return await unlockVault(String(pass)); }
+        catch (e) { alert('密码错误，解锁失败'); return null; }
+    }
+    async function migrateLegacyKey() {
+        // 旧版明文私钥 → 加密迁移（H-05）
+        const old = localStorage.getItem(LEGACY_KEY);
+        if (!old || hasVault()) return;
+        const pass = await promptNewPassphrase();
+        if (!pass) return;
+        await saveVault(old, pass);
+        localStorage.removeItem(LEGACY_KEY);
+        alert('已加密迁移旧钱包');
+    }
     async function getAddrFromPriv(priv) {
         return deriveAddress(await getPubFromPriv(priv));
     }
@@ -749,7 +804,14 @@
     }
 
     async function updateUI() {
-        const priv = getPriv();
+        let priv = getPriv();
+        if (!priv) {
+            await migrateLegacyKey();
+            priv = getPriv();
+        }
+        if (!priv && hasVault()) {
+            priv = await unlockByPrompt();
+        }
         if (!priv) {
             document.getElementById('myAddress').textContent = '—';
             document.getElementById('myBalance').textContent = '0';
@@ -761,16 +823,15 @@
 
     async function createWallet() {
         if (!webcryptoAvailable()) return alert('当前环境不支持 WebCrypto（需要 HTTPS 或 localhost），无法创建钱包');
+        if (!(window.crypto && window.crypto.getRandomValues)) return alert('当前环境缺少安全随机源（crypto.getRandomValues），无法安全创建钱包');
         const randomBytes = new Uint8Array(32);
-        if (window.crypto && window.crypto.getRandomValues) {
-            window.crypto.getRandomValues(randomBytes);
-        } else {
-            for (let i = 0; i < randomBytes.length; i++) randomBytes[i] = Math.floor(Math.random() * 256);
-        }
+        window.crypto.getRandomValues(randomBytes);
+        const pass = await promptNewPassphrase();
+        if (!pass) return;
         const priv = bytesToHex(randomBytes);
-        setPriv(priv);
+        await saveVault(priv, pass);
         await updateUI();
-        alert('抗量子钱包已创建！请导出私钥并离线备份。');
+        alert('抗量子钱包已创建，私钥已加密保存！导出私钥需输入密码。');
     }
 
     async function importWallet() {
@@ -778,13 +839,16 @@
         if (!priv) return alert('请输入私钥');
         const clean = priv.replace(/^0x/, '');
         if (!/^[0-9a-fA-F]{64}$/.test(clean)) return alert('无效私钥（应为 64 位十六进制）');
-        setPriv(clean);
+        const pass = await promptNewPassphrase();
+        if (!pass) return;
+        await saveVault(clean, pass);
         await updateUI();
-        alert('导入成功');
+        alert('导入成功，私钥已加密保存');
     }
 
-    function exportKey() {
-        const priv = getPriv();
+    async function exportKey() {
+        let priv = getPriv();
+        if (!priv && hasVault()) priv = await unlockByPrompt();
         if (!priv) return alert('没有钱包');
         prompt('复制私钥（绝不要分享！）', priv);
     }
