@@ -180,7 +180,7 @@
 
   /* ================= 状态与存储 ================= */
   var LS = {
-    wallets: 'nova_priv', balances: 'nova_demo_balances', ledger: 'nova_demo_ledger',
+    wallets: 'nova_demo_priv', balances: 'nova_demo_balances', ledger: 'nova_demo_ledger',
     nft: 'nova_nft_store', owned: 'nova_nft_owned', profiles: 'nova_app_profiles',
     feed: 'nova_app_feed', seeded: 'nova_app_seeded', rooms: 'nova_app_rooms',
     scores: 'nova_app_scores', socialfi: 'nova_socialfi', storage: 'nova_storage', compute: 'nova_compute',
@@ -2117,6 +2117,25 @@
       if (!(spendAmt > 0)) return { ok: false, error: '金额无效' };
       if ((s.fund_guardians || []).indexOf(addr) < 0) return { ok: false, error: '仅基金监护人可支出' };
       if ((s.fund_balance || 0) < spendAmt) return { ok: false, error: '基金余额不足' };
+      var FUND_LIMIT = 20; // 与链上 FUND_SINGLE_SPEND_LIMIT 一致（H-04）
+      if (spendAmt > FUND_LIMIT) {
+        // 大额支出：进入双监护人审批
+        s.fund_pending = s.fund_pending || {};
+        s.fund_pending_seq = (s.fund_pending_seq || 0) + 1;
+        var pid = 'spend_' + s.fund_pending_seq;
+        s.fund_pending[pid] = { id: pid, amount: round4(spendAmt), recipient: recipient,
+          purpose: purpose, by: addr, approvals: [addr], created_at: Date.now() };
+        aiFundLedger(s, 'pending', 'fund_spend_pending', pid, addr, spendAmt, '大额基金支出待审批：' + purpose);
+        aiEvent(s, op, pid, '大额基金支出待审批 ' + spendAmt + ' NOVA：' + purpose);
+        saveAiStore(s); refreshBalance();
+        return { ok: true, id: pid, status: 'pending', demo: true };
+      }
+      // 小额支出：单监护人单日上限
+      var dayKey = new Date().toISOString().slice(0, 10) + '|' + addr;
+      s.fund_spend_day = s.fund_spend_day || {};
+      var spentToday = s.fund_spend_day[dayKey] || 0;
+      if (spentToday + spendAmt > FUND_LIMIT) return { ok: false, error: '超过单监护人单日支出上限（20 NOVA）' };
+      s.fund_spend_day[dayKey] = round4(spentToday + spendAmt);
       s.fund_balance = round4((s.fund_balance || 0) - spendAmt);
       demoSetBal(recipient, demoBal(recipient) + spendAmt);
       demoLedger('0x_ai_growth_fund', recipient, spendAmt, '基金支出：' + purpose, 'ai');
@@ -2124,6 +2143,27 @@
       aiEvent(s, op, recipient, '基金支出 ' + spendAmt + ' NOVA：' + purpose);
       saveAiStore(s); refreshBalance();
       return { ok: true, id: recipient, demo: true };
+    }
+    if (op === 'nova:ai:fund:approve') {
+      var apid = String(fields.pid || '');
+      s.fund_pending = s.fund_pending || {};
+      var ap = s.fund_pending[apid];
+      if (!ap) return { ok: false, error: '待审批支出不存在或已处理' };
+      if ((s.fund_guardians || []).indexOf(addr) < 0) return { ok: false, error: '仅基金监护人可审批' };
+      if (ap.approvals.indexOf(addr) >= 0) return { ok: false, error: '该监护人已审批' };
+      ap.approvals.push(addr);
+      aiFundLedger(s, 'approval', 'fund_approve', apid, addr, 0, '审批大额支出：' + ap.purpose);
+      aiEvent(s, op, apid, '监护人审批大额支出（' + ap.approvals.length + '/2）');
+      if (ap.approvals.length < 2) { saveAiStore(s); return { ok: true, id: apid, status: 'waiting', demo: true }; }
+      // 审批达成：执行转账
+      s.fund_balance = round4((s.fund_balance || 0) - ap.amount);
+      demoSetBal(ap.recipient, demoBal(ap.recipient) + ap.amount);
+      demoLedger('0x_ai_growth_fund', ap.recipient, ap.amount, '基金支出（审批通过）：' + ap.purpose, 'ai');
+      aiFundLedger(s, 'expense', 'fund_spend', ap.recipient, apid, ap.amount, '基金支出（审批通过）：' + ap.purpose);
+      aiEvent(s, op, ap.recipient, '基金支出（审批通过）' + ap.amount + ' NOVA：' + ap.purpose);
+      delete s.fund_pending[apid];
+      saveAiStore(s); refreshBalance();
+      return { ok: true, id: ap.recipient, amount: ap.amount, status: 'executed', demo: true };
     }
     return { ok: false, error: '未知 AI 操作' };
   }
@@ -2983,8 +3023,12 @@
     s.fund_ledger = s.fund_ledger || [];
     var income = 0, expense = 0;
     s.fund_ledger.forEach(function (e) { if (e.kind === 'income') income += e.amount; else expense += e.amount; });
+    var pend = s.fund_pending || {};
     return { balance: s.fund_balance || 0, income_total: round4(income), expense_total: round4(expense),
-      guardians: s.fund_guardians || [], ledger: s.fund_ledger.slice(0, 50), demoMode: true };
+      guardians: s.fund_guardians || [], single_spend_limit: 20, approvals_required: 2,
+      pending: Object.keys(pend).map(function (k) { return pend[k]; })
+        .sort(function (a, b) { return (b.created_at || 0) - (a.created_at || 0); }).slice(0, 20),
+      ledger: s.fund_ledger.slice(0, 50), demoMode: true };
   }
   function aiStatusSnapshot() {
     var s = aiStore();

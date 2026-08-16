@@ -134,6 +134,8 @@
           <div id="aiFundGuardians"><p class="dim">加载中…</p></div>
           <div class="field mt"><label>授权监护人地址</label><input id="fundGuardAddr" placeholder="0x…"></div>
           <button class="btn primary block" onclick="fundGuard()">🛡️ 授权监护人</button>
+          <h3 class="mb mt">⏳ 待审批支出（大额 >20 NOVA 需双监护人）</h3>
+          <div id="aiFundPending"><p class="dim">加载中…</p></div>
           <h3 class="mb mt">💸 基金支出（购买算力 / 训练模型）</h3>
           <div class="field"><label>收款地址</label><input id="fundRecipient" placeholder="0x…"></div>
           <div class="sf-grid2">
@@ -346,13 +348,25 @@
       gEl.innerHTML = (fund.guardians || []).length
         ? (fund.guardians || []).map(function (g) { return '<div class="sf-sub">🛡️ ' + addrLink(g) + '</div>'; }).join('')
         : '<p class="dim">暂无监护人。AI 创作者或现有监护人可授权新监护人。</p>';
+      var pEl = document.getElementById('aiFundPending');
+      var pend = fund.pending || [];
+      if (pEl) {
+        pEl.innerHTML = pend.length ? pend.map(function (p) {
+          return '<div class="sf-item"><h4>⏳ 待审批支出 <span class="price">' + fmtN(p.amount) + '</span> NOVA → ' + addrLink(p.recipient) + '</h4>' +
+            '<div class="sf-sub">' + esc(p.purpose || '') + ' · 审批 ' + (p.approvals || []).length + '/' + (fund.approvals_required || 2) +
+            ' · <button class="btn-sm" onclick="fundApprove(\'' + esc(p.id) + '\')">✅ 审批</button></div></div>';
+        }).join('') : '<p class="dim">暂无待审批支出。单笔超过 20 NOVA 的支出需 2 名监护人审批。</p>';
+      }
     }
     function fundGuard() { run('nova:ai:fund:guard', { addr: document.getElementById('fundGuardAddr').value.trim() }, 0, '监护人已授权'); }
     function fundSpend() {
       run('nova:ai:fund:spend', {
         recipient: document.getElementById('fundRecipient').value.trim(),
         purpose: document.getElementById('fundPurpose').value.trim()
-      }, Number(document.getElementById('fundAmt').value), '基金支出已执行');
+      }, Number(document.getElementById('fundAmt').value), '基金支出已提交');
+    }
+    function fundApprove(pid) {
+      run('nova:ai:fund:approve', { pid: pid }, 0, '已审批，支出执行');
     }
 
     window.addEventListener('nova-wallet', aiRender);
