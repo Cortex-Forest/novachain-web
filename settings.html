@@ -38,6 +38,7 @@
           <button class="btn" id="rpcReset" data-i18n="settings.reset">恢复自动检测</button>
           <span class="dim" style="font-size:12px;" id="rpcHint">auto</span>
         </div>
+        <p class="dim" style="font-size:12px;line-height:1.6;margin-top:10px;" id="nodeStatus">检测中…</p>
       </div>
     </section>
 
@@ -102,19 +103,33 @@
       var saved = N.lsGet('nova_rpc', '');
       if (saved) document.getElementById('rpcInput').value = saved;
       document.getElementById('rpcHint').textContent = s.rpc ? s.rpc : 'auto';
+      var ns = document.getElementById('nodeStatus');
+      if (s.mode === 'node' && s.rpc) {
+        ns.textContent = '✅ 节点模式：已连接 ' + s.rpc + '，展示链上实时数据';
+        ns.style.color = '#22c55e';
+      } else {
+        ns.textContent = '⚠️ 演示模式：未检测到可用 Nova 节点。请在下方填写公网 RPC（需支持 CORS），或先启动本地节点 http://127.0.0.1:8080。';
+        ns.style.color = '#f59e0b';
+      }
     }
     document.getElementById('langZh').addEventListener('click', function () { N.setLang('zh'); });
     document.getElementById('langEn').addEventListener('click', function () { N.setLang('en'); });
     document.getElementById('rpcSave').addEventListener('click', function () {
       var v = document.getElementById('rpcInput').value.trim().replace(/\/+$/, '');
-      if (!v) { N.toast(N.t('settings.reset.done')); localStorage.removeItem('nova_rpc'); return; }
-      N.lsSet('nova_rpc', v);
-      N.toast(N.t('settings.saved'));
+      if (!v) { N.toast(N.t('settings.reset.done')); localStorage.removeItem('nova_rpc'); }
+      else { N.lsSet('nova_rpc', v); N.toast(N.t('settings.saved')); }
+      // 保存后立即重新检测节点并刷新余额，无需刷新页面
+      Promise.resolve(N.redetect()).then(function () {
+        if (N.getState().connected) return N.refreshBalance();
+      }).then(renderSettings).catch(function () { renderSettings(); });
     });
     document.getElementById('rpcReset').addEventListener('click', function () {
       localStorage.removeItem('nova_rpc');
       document.getElementById('rpcInput').value = '';
       N.toast(N.t('settings.reset.done'));
+      Promise.resolve(N.redetect()).then(function () {
+        if (N.getState().connected) return N.refreshBalance();
+      }).then(renderSettings).catch(function () { renderSettings(); });
     });
     document.getElementById('secClear').addEventListener('click', function () {
       if (!confirm(N.t('settings.security.confirm'))) return;

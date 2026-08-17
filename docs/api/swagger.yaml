@@ -853,3 +853,298 @@ paths:
               example: { "status": "领取成功", "amount": 100, "addr": "0x...", "balance": 100, "receipt": "faucet-34d17977ed5e48d8", "remaining_today": 19700 }
         '400': { $ref: '#/components/schemas/Error' }
         '403': { $ref: '#/components/schemas/Error' }
+  /api/early/info:
+    get:
+      tags: [Wallet]
+      summary: 早期激励进度（锁仓/推荐/达标）Early incentive progress
+      parameters:
+        - { name: addr, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "miner_registered": true, "miner_uptime_days": 12.5, "light_checkin_days": 12, "locked_balance": 100, "lock_start_time": 1788000000, "lock_unlocked": 0, "referral_count": 3, "miner_qualified": true, "light_qualified": false }
+  /api/light/verify:
+    post:
+      tags: [Wallet]
+      summary: 轻节点验证 Light node verify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                txid: { type: string }
+              required: [addr, txid]
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/presale/bind:
+    post:
+      tags: [Wallet]
+      summary: 预售 BSC 地址绑定（专属签名消息 BIND_PRESALE:{bsc_address}）Presale bind
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nova_address: { type: string }
+                nova_public_key: { type: string }
+                bsc_address: { type: string }
+                signature: { type: string, description: 'Ed25519("BIND_PRESALE:{bsc_address}")' }
+              required: [nova_address, nova_public_key, bsc_address, signature]
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/schemas/Error' }
+  /api/chat/pubkey:
+    post:
+      tags: [Content]
+      summary: 发布端到端聊天公钥 Publish chat pubkey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                chat_pub: { type: string }
+              required: [addr, chat_pub]
+      responses:
+        '200': { description: OK }
+  /api/chat/pubkey/{addr}:
+    get:
+      tags: [Content]
+      summary: 查询聊天公钥 Get chat pubkey
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "chat_pub": "04..." }
+        '404': { $ref: '#/components/schemas/Error' }
+  /api/chat/send:
+    post:
+      tags: [Content]
+      summary: 发送加密私信 Send encrypted message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+                sender: { type: string }
+                recipient: { type: string }
+                chat_pub: { type: string }
+                nonce: { type: string }
+                ciphertext: { type: string }
+                ts: { type: integer }
+              required: [sender, recipient, ciphertext, ts]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "id": "msg_...", "status": "queued" }
+  /api/chat/inbox/{addr}:
+    get:
+      tags: [Content]
+      summary: 拉取私信收件箱 Fetch inbox
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "addr": "0x...", "messages": [] }
+  /api/chat/ack:
+    post:
+      tags: [Content]
+      summary: 确认已读并删除消息 Acknowledge messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+                ids: { type: array, items: { type: string } }
+              required: [addr]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "removed": 2 }
+  /api/graph/recommend/{addr}:
+    get:
+      tags: [Content]
+      summary: 社交图谱推荐与任务社交图谱推荐 Social graph recommendations
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { "recommendations": [], "task_spec": "" }
+  /api/arb/notifications/{addr}:
+    get:
+      tags: [Arbitration]
+      summary: 仲裁通知列表 Arbitration notifications
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/arb/notifications/read:
+    post:
+      tags: [Arbitration]
+      summary: 标记通知已读 Mark notifications read
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addr: { type: string }
+              required: [addr]
+      responses:
+        '200': { description: OK }
+  /api/storage/pins:
+    get:
+      tags: [Storage]
+      summary: 存储固定列表（快照）Storage pins
+      responses:
+        '200': { description: OK }
+  /api/storage/providers:
+    get:
+      tags: [Storage]
+      summary: 存储提供者列表 Storage providers
+      responses:
+        '200': { description: OK }
+  /api/storage/orders:
+    get:
+      tags: [Storage]
+      summary: 存储订单列表 Storage orders
+      responses:
+        '200': { description: OK }
+  /api/storage/events:
+    get:
+      tags: [Storage]
+      summary: 存储事件流 Storage events
+      parameters:
+        - { name: addr, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/storage/status/{file_hash}:
+    get:
+      tags: [Storage]
+      summary: 文件存储状态 File storage status
+      parameters:
+        - { name: file_hash, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/storage/creator/{addr}:
+    get:
+      tags: [Storage]
+      summary: 创作者存储激励 Creator storage incentive
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/storage/nodes:
+    get:
+      tags: [Storage]
+      summary: 存储激励节点列表 Storage incentive nodes
+      responses:
+        '200': { description: OK }
+  /api/storage/nodes/{addr}:
+    get:
+      tags: [Storage]
+      summary: 存储激励节点详情（/challenge /revenue 子路径查询挑战与收益）Storage node detail
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/storage/inc/summary:
+    get:
+      tags: [Storage]
+      summary: 存储激励全局概况 Storage incentive summary
+      responses:
+        '200': { description: OK }
+  /api/compute/tasks:
+    get:
+      tags: [Compute]
+      summary: 算力任务列表 Compute tasks
+      responses:
+        '200': { description: OK }
+  /api/compute/nodes:
+    get:
+      tags: [Compute]
+      summary: 算力节点列表 Compute nodes
+      responses:
+        '200': { description: OK }
+  /api/compute/node/{addr}:
+    get:
+      tags: [Compute]
+      summary: 算力节点详情 Compute node detail
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/compute/income/{addr}:
+    get:
+      tags: [Compute]
+      summary: 算力节点收益 Compute node income
+      parameters:
+        - { name: addr, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/compute/overview:
+    get:
+      tags: [Compute]
+      summary: 算力全网概况 Compute overview
+      responses:
+        '200': { description: OK }
+  /api/compute/events:
+    get:
+      tags: [Compute]
+      summary: 算力事件流 Compute events
+      responses:
+        '200': { description: OK }
+  /api/ai/services:
+    get:
+      tags: [AI]
+      summary: AI 服务列表 AI services
+      responses:
+        '200': { description: OK }
+  /api/ai/works:
+    get:
+      tags: [AI]
+      summary: AI 作品列表 AI works
+      responses:
+        '200': { description: OK }
+  /api/ai/fund:
+    get:
+      tags: [AI]
+      summary: AI 创作基金概况 AI fund
+      responses:
+        '200': { description: OK }
+  /api/ai/status:
+    get:
+      tags: [AI]
+      summary: AI 生态状态 AI status
+      responses:
+        '200': { description: OK }

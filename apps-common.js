@@ -205,11 +205,16 @@
   function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
   /* ================= 节点检测与 API ================= */
-  var NODE_CANDIDATES = [
+  /* 公共节点：部署者在此配置公网可达的 Nova 节点地址（留空则仅探测同源与本地节点）。
+   * 注意：节点必须允许 CORS（响应头 Access-Control-Allow-Origin），否则浏览器会拦截请求。 */
+  var PUBLIC_RPC = '';
+  var NODE_CANDIDATES = [];
+  if (PUBLIC_RPC) NODE_CANDIDATES.push(PUBLIC_RPC.replace(/\/+$/, '') + '/api/status');
+  NODE_CANDIDATES.push(
     window.location.origin + '/api/status',
     'http://127.0.0.1:8080/api/status',
     'http://localhost:8080/api/status'
-  ];
+  );
   async function detectMode() {
     var custom = lsGet('nova_rpc', '');
     if (custom) {
@@ -238,7 +243,9 @@
         }
       } catch (e) { /* 继续尝试下一候选 */ }
     }
+    // 全部候选不可达：进入演示模式并清空已探测 RPC（避免显示过期节点）
     state.mode = 'demo';
+    state.rpc = null;
     return { demoMode: true };
   }
   function demoApi(path, method, body) {
@@ -355,14 +362,47 @@
   function demoHash(str) {
     try { return '0x' + computeSha3_512(utf8ToBytes(str)).substring(0, 64); } catch (e) { return '0x' + bytesToHex(randomBytes(32)); }
   }
+  var nodeRecheckTimer = null;
+  /* 节点掉线后的后台重探：节点恢复后自动回到 node 模式，避免单次网络错误永久降级 demo */
+  function scheduleNodeRecheck(delay) {
+    if (nodeRecheckTimer || !state.rpc) return;
+    nodeRecheckTimer = setTimeout(function () {
+      nodeRecheckTimer = null;
+      if (state.mode === 'node') return;
+      fetch(state.rpc + '/api/status', {
+        method: 'GET', headers: { Accept: 'application/json' },
+        signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(3000) : undefined
+      }).then(function (r) {
+        return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status));
+      }).then(function (d) {
+        if (d && typeof d === 'object' && !d.demoMode) {
+          state.mode = 'node';
+          dispatchWallet();
+          try { window.dispatchEvent(new CustomEvent('nova-mode', { detail: { mode: 'node', rpc: state.rpc } })); } catch (e) { /* 忽略 */ }
+        }
+      }).catch(function () { scheduleNodeRecheck(8000); });
+    }, delay == null ? 3000 : delay);
+  }
   async function api(path, method, body) {
     if (state.mode === 'node' && state.rpc) {
       try {
         var opts = { method: method || 'GET', headers: { 'Content-Type': 'application/json', Accept: 'application/json' } };
         if (body !== undefined) opts.body = JSON.stringify(body);
         var res = await fetch(state.rpc + path, opts);
-        return await res.json();
-      } catch (e) { state.mode = 'demo'; }
+        if (!res.ok) {
+          // 后端业务错误（400 校验失败 / 404 不存在等）：原样返回错误体，不降级为演示
+          var eb = await res.json().catch(function () { return null; });
+          if (eb && typeof eb === 'object') return eb;
+          throw new Error('HTTP ' + res.status);
+        }
+        var text = await res.text();
+        return text ? JSON.parse(text) : {};
+      } catch (e) {
+        // 仅网络不可达 / 响应非 JSON 等才本次回退演示，并后台重探节点以便恢复
+        state.mode = 'demo';
+        scheduleNodeRecheck();
+        return demoApi(path, method || 'GET', body);
+      }
     }
     return demoApi(path, method || 'GET', body);
   }
@@ -3862,6 +3902,7 @@
     t: t, setLang: setLang, getLang: function () { return lang; },
     getState: function () { return state; },
     api: api, demoHash: demoHash,
+    redetect: detectMode, scheduleNodeRecheck: scheduleNodeRecheck,
     wallets: wallets, connectFromStorage: connectFromStorage, connectWith: connectWith,
     createDemoWallet: createDemoWallet, importPrivKey: importPrivKey,
     disconnect: disconnect, refreshBalance: refreshBalance, requireWallet: requireWallet,

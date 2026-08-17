@@ -38,3 +38,40 @@
 本仓库前端文件位于根目录，两种方式均可：
 - 简单方式：Settings → Pages → Source 选 `Deploy from a branch`，分支 `main`，目录 `/`。
 - 推荐方式：配置 GitHub Actions 工作流（`actions/upload-pages-artifact` + `actions/deploy-pages`），Pages 源选择 `GitHub Actions`。
+
+---
+
+## 与后端节点互通（Node / RPC 连接）
+
+本仓库是**纯静态前端**，本身不包含后端。页面通过 REST 与 Nova 节点（`/api/*`）交互，节点不可达时自动降级为本地演示数据（`demoMode`）。要让线上/本地站点真正跑在链上，需按下述方式打通：
+
+### 1. 节点必须支持 CORS
+浏览器 `fetch` 跨域访问节点必须满足：
+- 响应头包含 `Access-Control-Allow-Origin: *`（或站点域名）；
+- 对 `POST`（带 `Content-Type: application/json`）需正确处理预检 `OPTIONS`（`Access-Control-Allow-Methods: GET,POST,OPTIONS`、`Access-Control-Allow-Headers: Content-Type`）。
+
+nginx 示例：
+```nginx
+location /api/ {
+    add_header Access-Control-Allow-Origin * always;
+    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Content-Type" always;
+    if ($request_method = OPTIONS) { return 204; }
+    proxy_pass http://127.0.0.1:8080;
+}
+```
+
+### 2. 三种连接方式
+- **方式 A（推荐·正式环境）**：把 `apps-common.js` 顶部的 `PUBLIC_RPC` 常量配置为公网可达节点地址（如 `https://rpc.nova.chain`）。保存后该地址会作为第一候选自动探测，全站进入「节点模式」。
+- **方式 B（反向代理）**：在 `vercel.json` 增加 `rewrites`，把 `/api/*` 转发到节点服务，前端会命中同源候选（`window.location.origin + /api/status`）。注意 Vercel 上需用 Serverless Function 或 Rewrites 到可访问的后端域名。
+- **方式 C（用户手动）**：在「设置 → 网络配置」填入节点 RPC 并保存，前端立即重连；或扩展钱包在设置里改 `nova_rpc`。
+
+### 3. 节点掉线自动恢复
+`apps-common.js` 的 API 层已内置**后台重探**：单次网络错误不会永久降级演示，页面会每数秒重试 `/api/status`，节点恢复后自动切回「节点模式」并派发 `nova-mode` 事件。
+
+### 4. 排查清单
+- 浏览器控制台是否有 CORS 报错（`Access-Control-Allow-Origin`）；
+- 直接访问 `你的节点/api/status` 是否返回 JSON；
+- 「设置」页的节点状态是否显示「演示模式 / 节点模式」；
+- HTTPS 页面访问 `http://127.0.0.1:8080` 受 mixed-content 限制，请使用 `http://localhost` 或升级为 HTTPS 节点。
+- **注意**：后端返回的 `4xx` 业务错误（如 `400 {"error":"交易校验失败"}`）**不会**再被误判为节点不可达，页面会原样展示节点拒绝原因（如余额不足、签名错误、时间戳超窗），请勿把它当成「演示模式」。

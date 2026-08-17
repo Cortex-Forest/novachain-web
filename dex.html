@@ -208,12 +208,16 @@
     var el = document.getElementById('swQuote');
     if (!amt || amt <= 0) { el.innerHTML = '输入数量后显示预计获得与滑点'; return; }
     try {
-      var q = await N.api('/api/dex/quote?pair=' + encodeURIComponent(pair) + '&amount=' + amt + '&token_in=' + dir);
+      var q = await N.api('/api/dex/quote?pair=' + encodeURIComponent(pair) + '&amount_in=' + amt + '&token_in=' + dir);
       if (q && q.amount_out) {
+        // 兼容后端返回 slippage（部分版本返回 price_impact）
+        var slip = q.slippage != null ? Number(q.slippage) : (q.price_impact != null ? Number(q.price_impact) : 0);
+        var minOut = q.min_out != null ? Number(q.min_out) : (q.amount_out * (1 - slip / 100));
         el.innerHTML = '预计获得 <b>' + N.fmt(q.amount_out) + '</b> ' + (dir === 0 ? '（扣除 0.3% 手续费）' : 'NOVA') +
-          ' ｜ 滑点 ' + N.fmt(q.slippage || 0) + '% ｜ 最小可得 ' + N.fmt(q.min_out || 0) +
+          ' ｜ 滑点 ' + N.fmt(slip) + '% ｜ 最小可得 ' + N.fmt(minOut) +
           (q.pieces > 1 ? ' ｜ 自动分拆 ' + q.pieces + ' 笔' : '');
-      } else { el.innerHTML = '暂无报价（资金池可能为空）'; }
+      } else if (q && q.error) { el.innerHTML = '报价失败：' + N.esc(q.error); }
+      else { el.innerHTML = '暂无报价（资金池可能为空）'; }
     } catch (e) { el.innerHTML = '报价失败：' + (e && e.message || e); }
   }
   function doSwap() {

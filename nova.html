@@ -901,10 +901,16 @@
         if (body) opts.body = JSON.stringify(body);
         try {
             const r = await fetch(getRpc()+path, opts);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            if (!r.ok) {
+                // 后端业务错误（400 校验失败 / 404 不存在等）：原样返回错误体，不落入演示回退
+                const data = await r.json().catch(() => null);
+                if (data && typeof data === 'object' && (data.error || data.status)) return data;
+                throw new Error((data && data.error) || `HTTP ${r.status}`);
+            }
             const text = await r.text();
             return text ? JSON.parse(text) : {};
         } catch (e) {
+            // 仅网络不可达等非业务错误才回退演示
             const demo = getDemoResponse(path, method, body);
             demo.error = e.message;
             return demo;
