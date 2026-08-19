@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 链上治理：1 NOVA=1 票，提案公示 3 天、投票 7 天、时间锁 48 小时，参数调整自动执行，基金支出多签确认。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 链上治理 · 提案与投票</title>
+  <title data-i18n="governance.title">Nova 链上治理 · 提案与投票</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -41,63 +41,64 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">GOVERNANCE · 1 NOVA = 1 VOTE</span>
-      <h1>链上治理</h1>
-      <p class="sub">经济参数调整、基金支出、协议升级、仲裁参数，全部由社区投票决定。公示 3 天 → 投票 7 天 → 时间锁 48 小时；质押与锁仓中的 NOVA 均可投票，投票权可委托。</p>
+      <h1 data-i18n="gov.k1">链上治理</h1>
+      <p class="sub" data-i18n="gov.k2">经济参数调整、基金支出、协议升级、仲裁参数，全部由社区投票决定。公示 3 天 → 投票 7 天 → 时间锁 48 小时；质押与锁仓中的 NOVA 均可投票，投票权可委托。</p>
     </section>
 
     <section class="mod-stats" id="stats"></section>
 
     <div class="card">
-      <h3 class="mb">创建提案（需 ≥1000 NOVA 或 100 人联署）</h3>
+      <h3 class="mb" data-i18n="gov.k3">创建提案（需 ≥1000 NOVA 或 100 人联署）</h3>
       <div class="form-row">
-        <select id="pType"><option value="param">参数调整（自动执行）</option><option value="fund">基金支出（多签确认）</option><option value="upgrade">协议升级（2/3 绝对多数）</option><option value="arb">仲裁参数</option></select>
-        <input id="pTitle" placeholder="提案标题">
+        <select id="pType"><option value="param" data-i18n="gov.k4">参数调整（自动执行）</option><option value="fund" data-i18n="gov.k5">基金支出（多签确认）</option><option value="upgrade" data-i18n="gov.k6">协议升级（2/3 绝对多数）</option><option value="arb" data-i18n="gov.k7">仲裁参数</option></select>
+        <input data-i18n-ph="governance.ph.1" id="pTitle" placeholder="提案标题">
       </div>
       <div class="form-row">
-        <select id="pTarget"><option value="economy">economy（经济参数）</option><option value="dex">dex（DEX）</option><option value="bridge">bridge（跨链桥）</option><option value="arb">arb（仲裁）</option></select>
-        <input id="pKey" placeholder="参数名（如 fee_rate / daily_limit_usd）">
-        <input id="pValue" type="number" step="0.00000001" placeholder="参数值">
+        <select id="pTarget"><option value="economy" data-i18n="gov.k8">economy（经济参数）</option><option value="dex">dex（DEX）</option><option value="bridge" data-i18n="gov.k9">bridge（跨链桥）</option><option value="arb" data-i18n="gov.k10">arb（仲裁）</option></select>
+        <input data-i18n-ph="governance.ph.2" id="pKey" placeholder="参数名（如 fee_rate / daily_limit_usd）">
+        <input data-i18n-ph="governance.ph.3" id="pValue" type="number" step="0.00000001" placeholder="参数值">
       </div>
       <div class="form-row">
-        <input id="pAmount" type="number" step="0.01" placeholder="基金支出金额（可选）">
-        <input id="pRecipient" placeholder="基金接收地址（可选）">
-        <button class="btn primary" onclick="doPropose()">发起提案</button>
+        <input data-i18n-ph="governance.ph.4" id="pAmount" type="number" step="0.01" placeholder="基金支出金额（可选）">
+        <input data-i18n-ph="governance.ph.5" id="pRecipient" placeholder="基金接收地址（可选）">
+        <button class="btn primary" onclick="doPropose()" data-i18n="gov.k11">发起提案</button>
       </div>
     </div>
 
     <div class="card" style="margin-top:14px;">
-      <h3 class="mb">委托投票权</h3>
+      <h3 class="mb" data-i18n="gov.k12">委托投票权</h3>
       <div class="form-row">
-        <input id="delegateTo" placeholder="被委托人地址">
-        <button class="btn" onclick="doDelegate()">委托</button>
+        <input data-i18n-ph="governance.ph.6" id="delegateTo" placeholder="被委托人地址">
+        <button class="btn" onclick="doDelegate()" data-i18n="gov.k13">委托</button>
       </div>
       <div id="powerBox" class="dim" style="font-size:.82rem;"></div>
     </div>
 
     <div class="card" style="margin-top:14px;">
-      <h3 class="mb">提案列表</h3>
+      <h3 class="mb" data-i18n="gov.k14">提案列表</h3>
       <div id="proposals"></div>
     </div>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./governance.i18n.js"></script>
   <script>
   var N = window.NovaApps;
   var DEMO_PROPS = [
-    { id: 'p1', title: '降低 DEX 交易手续费至 0.2%', ptype: 'param', status: 'voting',
+    { id: 'p1', title: 'gov.dyn.demo.t1', ptype: 'param', status: 'voting',
       support: 120000, against: 30000, quorum: 150000, target: 'dex', key: 'fee_rate', value: 0.2, proposer: '0x' + '33'.repeat(20) },
-    { id: 'p2', title: '生态基金支出：1000 NOVA 资助社区活动', ptype: 'fund', status: 'passed',
+    { id: 'p2', title: 'gov.dyn.demo.t2', ptype: 'fund', status: 'passed',
       support: 90000, against: 10000, quorum: 150000, recipient: '0x' + '44'.repeat(20), proposer: '0x' + '55'.repeat(20) }
   ];
-  var PSTATUS = { discussion: ['公示中', 'live'], voting: ['投票中', 'warn'], passed: ['已通过', 'good'],
-                  rejected: ['被否决', 'bad'], executed: ['已执行', 'good'], cancelled: ['已取消', 'bad'] };
+  var PSTATUS = { discussion: ['gov.dyn.st.discussion', 'live'], voting: ['gov.dyn.st.voting', 'warn'], passed: ['gov.dyn.st.passed', 'good'],
+                  rejected: ['gov.dyn.st.rejected', 'bad'], executed: ['gov.dyn.st.executed', 'good'], cancelled: ['gov.dyn.st.cancelled', 'bad'] };
 
   function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
   function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
   function moduleOp(op, fields, amount) {
     var st = N.getState();
-    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
-    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    if (!st.connected) { N.toast(N.t('dyn.needwallet')); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast(N.t('dyn.demoop', { op: op })); return Promise.resolve({ ok: true, demo: true }); }
     return N.getPubFromPriv(st.priv).then(function (pub) {
       var ts = Math.floor(Date.now() / 1000);
       var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
@@ -105,12 +106,12 @@
       return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
         return N.api('/api/gov/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
           timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
-          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
-          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          if (res && res.error) { N.toast(N.t('dyn.opfail', { msg: res.error })); return null; }
+          N.toast(N.t('dyn.onchain', { tx: String((res && res.txid) || '').slice(0, 16) }));
           return res;
         });
       });
-    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+    }).catch(function (e) { N.toast(N.t('dyn.opfail', { msg: (e && e.message || e) })); return null; });
   }
 
   async function load() {
@@ -119,17 +120,17 @@
     var demo = !d || d.demoMode || !('proposals' in (d || {}));
     d = d || {};
     document.getElementById('stats').innerHTML =
-      stat('提案总数', d.proposals || DEMO_PROPS.length) +
-      stat('进行中', d.active || 0) +
-      stat('已通过', d.passed || 0) +
-      stat('流通量', N.fmt(d.circulating || 0));
-    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点后显示实时链上数据</div>');
+      stat(N.t('gov.dyn.stat.total'), d.proposals || DEMO_PROPS.length) +
+      stat(N.t('gov.dyn.stat.active'), d.active || 0) +
+      stat(N.t('gov.dyn.stat.passed'), d.passed || 0) +
+      stat(N.t('gov.dyn.stat.circulating'), N.fmt(d.circulating || 0));
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">' + N.t('gov.dyn.demo.badge') + '</span> ' + N.t('gov.dyn.demo.note') + '</div>');
     var st = N.getState();
     if (st.connected) {
       try {
         var pw = await N.api('/api/gov/power/' + st.addr);
-        document.getElementById('powerBox').innerHTML = '我的投票权：<b>' + N.fmt((pw && pw.power) || 0) + '</b> 票' +
-          (pw && pw.delegate ? '（已委托给 ' + esc(pw.delegate) + '）' : '');
+        document.getElementById('powerBox').innerHTML = N.t('gov.dyn.power', { power: N.fmt((pw && pw.power) || 0) }) +
+          (pw && pw.delegate ? N.t('gov.dyn.delegate', { addr: esc(pw.delegate) }) : '');
       } catch (e) {}
     }
     renderProposals(demo);
@@ -142,26 +143,25 @@
     if (!list) list = DEMO_PROPS;
     var el = document.getElementById('proposals');
     el.innerHTML = list.map(function (p) {
-      var ps = PSTATUS[p.status] || ['未知', 'dim'];
+      var ps = PSTATUS[p.status] || ['gov.dyn.st.unknown', 'dim'];
       var total = (p.support || 0) + (p.against || 0);
       var yesPct = total ? Math.round(100 * (p.support || 0) / total) : 0;
       var q = p.quorum || 0;
       return '<div class="mod-item">' +
         '<div class="sf-bar" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-        '<h4>#' + esc(p.id) + ' ' + esc(p.title) + '</h4>' +
-        '<span><span class="badge ' + ps[1] + '">' + ps[0] + '</span> ' +
+        '<h4>#' + esc(p.id) + ' ' + esc(N.t(p.title)) + '</h4>' +
+        '<span><span class="badge ' + ps[1] + '">' + N.t(ps[0]) + '</span> ' +
         '<span class="badge dim">' + esc(p.ptype || '-') + '</span></span></div>' +
         '<div class="bar"><div class="yes" style="width:' + yesPct + '%"></div></div>' +
-        '<div class="mod-sub">赞成 ' + N.fmt(p.support || 0) + ' ｜ 反对 ' + N.fmt(p.against || 0) +
-        ' ｜ 投票率 ' + N.fmt(total) + ' / 法定 ' + N.fmt(q) +
-        (p.target ? ' ｜ ' + esc(p.target) + '.' + esc(p.key || '') + ' = ' + esc(p.value) : '') +
-        (p.recipient ? ' ｜ 接收方 ' + esc(p.recipient) : '') + '</div>' +
+        '<div class="mod-sub">' + N.t('gov.dyn.prop.stats', { yes: N.fmt(p.support || 0), no: N.fmt(p.against || 0), total: N.fmt(total), quorum: N.fmt(q) }) +
+        (p.target ? N.t('gov.dyn.prop.target', { target: esc(p.target), key: esc(p.key || ''), value: esc(p.value) }) : '') +
+        (p.recipient ? N.t('gov.dyn.prop.recipient', { addr: esc(p.recipient) }) : '') + '</div>' +
         '<div class="row" style="margin-top:8px;gap:8px;">' +
-        '<button class="btn" style="padding:6px 12px;font-size:.78rem;" onclick="doVote(\'' + esc(p.id) + '\',true)">赞成</button>' +
-        '<button class="btn" style="padding:6px 12px;font-size:.78rem;" onclick="doVote(\'' + esc(p.id) + '\',false)">反对</button>' +
-        (p.status === 'passed' ? '<button class="btn primary" style="padding:6px 12px;font-size:.78rem;" onclick="doExecute(\'' + esc(p.id) + '\')">执行</button>' : '') +
+        '<button class="btn" style="padding:6px 12px;font-size:.78rem;" onclick="doVote(\'' + esc(p.id) + '\',true)">' + N.t('gov.dyn.btn.yes') + '</button>' +
+        '<button class="btn" style="padding:6px 12px;font-size:.78rem;" onclick="doVote(\'' + esc(p.id) + '\',false)">' + N.t('gov.dyn.btn.no') + '</button>' +
+        (p.status === 'passed' ? '<button class="btn primary" style="padding:6px 12px;font-size:.78rem;" onclick="doExecute(\'' + esc(p.id) + '\')">' + N.t('gov.dyn.btn.exec') + '</button>' : '') +
         '</div></div>';
-    }).join('') || '<p class="dim">暂无提案</p>';
+    }).join('') || N.t('gov.dyn.empty');
   }
 
   function doPropose() {
@@ -174,7 +174,7 @@
     var val = document.getElementById('pValue').value;
     var amt = Number(document.getElementById('pAmount').value);
     var recipient = document.getElementById('pRecipient').value.trim();
-    if (!fields.title) { N.toast('请输入提案标题'); return; }
+    if (!fields.title) { N.toast(N.t('gov.dyn.toast.title')); return; }
     if (val !== '') fields.value = Number(val);
     if (amt > 0) fields.data = { amount: amt };
     if (recipient) fields.recipient = recipient;
@@ -184,7 +184,7 @@
   function doExecute(pid) { moduleOp('nova:gov:execute', { proposal_id: pid }).then(function () { load(); }); }
   function doDelegate() {
     var to = document.getElementById('delegateTo').value.trim();
-    if (!to) { N.toast('请输入被委托人地址'); return; }
+    if (!to) { N.toast(N.t('gov.dyn.toast.delegate')); return; }
     moduleOp('nova:gov:delegate', { to: to }).then(function () { load(); });
   }
 

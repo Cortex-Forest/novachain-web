@@ -38,7 +38,7 @@
           <button class="btn" id="rpcReset" data-i18n="settings.reset">恢复自动检测</button>
           <span class="dim" style="font-size:12px;" id="rpcHint">auto</span>
         </div>
-        <p class="dim" style="font-size:12px;line-height:1.6;margin-top:10px;" id="nodeStatus">检测中…</p>
+        <p class="dim" style="font-size:12px;line-height:1.6;margin-top:10px;" id="nodeStatus" data-i18n="stg.k1">检测中…</p>
       </div>
     </section>
 
@@ -46,9 +46,9 @@
       <div class="section-title" data-i18n="settings.lang">语言切换</div>
       <div class="card">
         <div class="set-row">
-          <button class="btn primary" id="langZh">中文</button>
+          <button class="btn primary" id="langZh" data-i18n="stg.k2">中文</button>
           <button class="btn" id="langEn">EN</button>
-          <span class="dim" style="font-size:12px;" id="langHint">当前语言：中文</span>
+          <span class="dim" style="font-size:12px;" id="langHint" data-i18n="stg.k3">当前语言：中文</span>
         </div>
       </div>
     </section>
@@ -69,7 +69,7 @@
         <div class="row">
           <div>
             <div class="panel-title" data-i18n="settings.security.wallet">钱包状态</div>
-            <div class="panel-desc" id="secStatus">未连接钱包</div>
+            <div class="panel-desc" id="secStatus" data-i18n="stg.k4">未连接钱包</div>
           </div>
           <div class="spacer"></div>
           <button class="btn" id="secClear" data-i18n="settings.security.clear">清除本地演示数据</button>
@@ -88,6 +88,7 @@
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./settings.i18n.js"></script>
   <script>
     var N = NovaApps;
     var DEMO_KEYS = ['nova_priv','nova_demo_balances','nova_demo_ledger','nova_nft_store','nova_nft_owned','nova_app_profiles','nova_app_feed','nova_app_seeded','nova_app_rooms','nova_app_scores','nova_socialfi','nova_storage','nova_compute','nova_checkin','nova_early_rewards'];
@@ -99,16 +100,16 @@
       var cur = N.getLang();
       document.getElementById('langZh').className = 'btn' + (cur === 'zh' ? ' primary' : '');
       document.getElementById('langEn').className = 'btn' + (cur === 'en' ? ' primary' : '');
-      document.getElementById('langHint').textContent = N.t('settings.lang.hint') + (cur === 'zh' ? '中文' : 'English');
+      document.getElementById('langHint').textContent = N.t('settings.lang.hint') + (cur === 'zh' ? N.t('settings.lang.zh') : 'English');
       var saved = N.lsGet('nova_rpc', '');
       if (saved) document.getElementById('rpcInput').value = saved;
       document.getElementById('rpcHint').textContent = s.rpc ? s.rpc : 'auto';
       var ns = document.getElementById('nodeStatus');
       if (s.mode === 'node' && s.rpc) {
-        ns.textContent = '✅ 节点模式：已连接 ' + s.rpc + '，展示链上实时数据';
+        ns.textContent = N.t('settings.node.connected', { rpc: s.rpc });
         ns.style.color = '#22c55e';
       } else {
-        ns.textContent = '⚠️ 演示模式：未检测到可用 Nova 节点。请在下方填写公网 RPC（需支持 CORS），或先启动本地节点 http://127.0.0.1:8080。';
+        ns.textContent = N.t('settings.node.demo');
         ns.style.color = '#f59e0b';
       }
     }

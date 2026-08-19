@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 社交圈：创作者动态流，点赞、评论、打赏与链上时间戳。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 社交圈 · 创作者社区</title>
+  <title data-i18n="social.title">Nova 社交圈 · 创作者社区</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,45 +19,45 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">Nova Social</span>
-      <h1>💬 社交圈</h1>
-      <p class="sub">创作者的星际广场：发布动态即写入链上时间戳，点赞、评论与打赏全都可追溯。</p>
+      <h1 data-i18n="soc.k1">💬 社交圈</h1>
+      <p class="sub" data-i18n="soc.k2">创作者的星际广场：发布动态即写入链上时间戳，点赞、评论与打赏全都可追溯。</p>
     </section>
 
     <div class="grid grid-2" style="grid-template-columns: 1fr 340px;">
       <div>
         <div class="card mb">
-          <div class="field"><label>发布动态</label><textarea id="postBody" rows="3" placeholder="分享你的创作、灵感或今日星象…"></textarea></div>
+          <div class="field"><label data-i18n="soc.k3">发布动态</label><textarea data-i18n-ph="social.ph.1" id="postBody" rows="3" placeholder="分享你的创作、灵感或今日星象…"></textarea></div>
           <div class="row">
-            <button class="btn primary" onclick="composePost()">🚀 发布</button>
-            <span class="dim">发布后自动写入链上时间戳</span>
+            <button class="btn primary" onclick="composePost()" data-i18n="soc.k4">🚀 发布</button>
+            <span class="dim" data-i18n="soc.k5">发布后自动写入链上时间戳</span>
           </div>
         </div>
         <div id="feedList"></div>
       </div>
       <div>
         <div class="card mb">
-          <h3 class="mb">👤 我的档案</h3>
+          <h3 class="mb" data-i18n="soc.k6">👤 我的档案</h3>
           <div class="row mb">
             <div class="avatar" id="myAvatar" style="width:56px;height:56px;font-size:26px;">🌌</div>
             <div style="flex:1;">
-              <div class="field"><label>昵称</label><input id="myName" placeholder="你的名字"></div>
+              <div class="field"><label data-i18n="soc.k7">昵称</label><input data-i18n-ph="social.ph.2" id="myName" placeholder="你的名字"></div>
             </div>
           </div>
-          <div class="field"><label>头像</label>
+          <div class="field"><label data-i18n="soc.k8">头像</label>
             <select id="myAvatarSel">
               <option>🌌</option><option>🚀</option><option>🎧</option><option>📖</option><option>🎮</option><option>🎬</option><option>🖼️</option><option>🌟</option><option>🐬</option><option>⚡</option>
             </select>
           </div>
-          <button class="btn success block" onclick="saveProfile()">保存档案</button>
-          <a class="btn block mt" href="./wallet.html">🔐 打开加密聊天</a>
+          <button class="btn success block" onclick="saveProfile()" data-i18n="soc.k9">保存档案</button>
+          <a class="btn block mt" href="./wallet.html" data-i18n="soc.k10">🔐 打开加密聊天</a>
         </div>
         <div class="card">
-          <h3 class="mb">📊 我的数据</h3>
+          <h3 class="mb" data-i18n="soc.k11">📊 我的数据</h3>
           <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
-            <div class="stat"><div class="num" id="myPosts">0</div><div class="label">我的动态</div></div>
-            <div class="stat"><div class="num" id="myLikes">0</div><div class="label">获赞</div></div>
-            <div class="stat"><div class="num" id="feedCount">0</div><div class="label">广场动态</div></div>
-            <div class="stat"><div class="num" id="myFollow">0</div><div class="label">关注中</div></div>
+            <div class="stat"><div class="num" id="myPosts">0</div><div class="label" data-i18n="soc.k12">我的动态</div></div>
+            <div class="stat"><div class="num" id="myLikes">0</div><div class="label" data-i18n="soc.k13">获赞</div></div>
+            <div class="stat"><div class="num" id="feedCount">0</div><div class="label" data-i18n="soc.k14">广场动态</div></div>
+            <div class="stat"><div class="num" id="myFollow">0</div><div class="label" data-i18n="soc.k15">关注中</div></div>
           </div>
         </div>
       </div>
@@ -65,6 +65,7 @@
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./social.i18n.js"></script>
   <script>
     var N = NovaApps;
 
@@ -73,7 +74,7 @@
       var r = N.addPost(body, 'social');
       if (!r.ok) { N.toast(r.error, 'err'); return; }
       document.getElementById('postBody').value = '';
-      N.toast('已发布并写入链上时间戳 ' + r.post.txid.slice(0, 12) + '…');
+      N.toast(N.t('soc.dyn.posted', { tx: r.post.txid.slice(0, 12) }));
       renderFeed();
     }
 
@@ -95,7 +96,7 @@
       if (!post) return;
       post.comments.push({ addr: s.addr, name: N.displayName(s.addr), text: text, ts: Date.now() });
       N.saveFeed(feed);
-      N.toast('评论已发布');
+      N.toast(N.t('soc.dyn.commented'));
       renderFeed();
     }
 
@@ -106,9 +107,9 @@
       if (!post) return;
       N.requireWallet().then(function (ok) {
         if (!ok) return;
-        N.novaPay({ to: post.addr, amount: 1, memo: '打赏动态「' + post.content.slice(0, 20) + '」', app: 'social' }).then(function (r) {
+        N.novaPay({ to: post.addr, amount: 1, memo: N.t('soc.dyn.tip.memo', { content: post.content.slice(0, 20) }), app: 'social' }).then(function (r) {
           if (!r.ok) { N.toast(r.error, 'err'); return; }
-          N.toast('已打赏 1 NOVA，交易 ' + r.txid.slice(0, 12) + '…');
+          N.toast(N.t('soc.dyn.tip.ok', { tx: r.txid.slice(0, 12) }));
         });
       });
     }
@@ -122,7 +123,7 @@
       document.getElementById('myPosts').textContent = myAddr ? feed.filter(function (p) { return p.addr === myAddr; }).length : 0;
       document.getElementById('myLikes').textContent = myAddr ? feed.reduce(function (n, p) { return n + (p.likes.indexOf(myAddr) >= 0 ? 1 : 0); }, 0) : 0;
       document.getElementById('myFollow').textContent = 2;
-      if (!feed.length) { el.innerHTML = '<div class="empty">广场还很安静，发布第一条动态吧。</div>'; return; }
+      if (!feed.length) { el.innerHTML = '<div class="empty">' + N.t('soc.dyn.feed.empty') + '</div>'; return; }
       el.innerHTML = feed.map(function (p) {
         var prof = N.profileOf(p.addr) || { avatar: '🌌' };
         var liked = myAddr && p.likes.indexOf(myAddr) >= 0;
@@ -136,12 +137,12 @@
           '</div>' +
           '<div class="content">' + N.esc(p.content) + '</div>' +
           (comments ? '<div style="margin-bottom:8px;">' + comments + '</div>' : '') +
-          '<div class="row mb"><input id="cmt-' + p.id + '" placeholder="写评论…" style="flex:1; background:rgba(4,5,13,0.7); border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text);">' +
-            '<button class="btn small" onclick="commentPost(\'' + p.id + '\')">评论</button></div>' +
+          '<div class="row mb"><input id="cmt-' + p.id + '" placeholder="' + N.t('soc.dyn.cmt.ph') + '" style="flex:1; background:rgba(4,5,13,0.7); border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text);">' +
+            '<button class="btn small" onclick="commentPost(\'' + p.id + '\')">' + N.t('soc.dyn.comment') + '</button></div>' +
           '<div class="post-actions">' +
             '<button class="' + (liked ? 'liked' : '') + '" onclick="likePost(\'' + p.id + '\')">♥ ' + p.likes.length + '</button>' +
             '<button onclick="commentPost(\'' + p.id + '\')">💬 ' + (p.comments || []).length + '</button>' +
-            '<button onclick="tipPost(\'' + p.id + '\')">🎁 打赏 1</button>' +
+            '<button onclick="tipPost(\'' + p.id + '\')">' + N.t('soc.dyn.tip') + '</button>' +
             '<span class="mono" style="margin-left:auto;">' + N.esc(p.txid.slice(0, 10)) + '…</span>' +
           '</div>' +
         '</div>';
@@ -155,7 +156,7 @@
       var avatar = document.getElementById('myAvatarSel').value;
       N.setProfile(s.addr, { name: name || undefined, avatar: avatar });
       document.getElementById('myAvatar').textContent = avatar;
-      N.toast('档案已保存');
+      N.toast(N.t('soc.dyn.profile.saved'));
       renderFeed();
     }
 
@@ -163,7 +164,7 @@
       var s = N.getState();
       if (!s.addr) return;
       var p = N.profileOf(s.addr);
-      if (!p) { N.ensureProfile(s.addr, '星主 ' + N.shortAddr(s.addr), '🌌'); return; }
+      if (!p) { N.ensureProfile(s.addr, N.t('soc.dyn.star.owner', { addr: N.shortAddr(s.addr) }), '🌌'); return; }
       document.getElementById('myName').value = p.name || '';
       document.getElementById('myAvatarSel').value = p.avatar || '🌌';
       document.getElementById('myAvatar').textContent = p.avatar || '🌌';

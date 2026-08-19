@@ -1,0 +1,47 @@
+/* 由 _i18n_scaffold.py 生成 —— 请补全 en 翻译 */
+NovaApps.addI18n({
+  zh: {
+    'fau.k1': '测试网水龙头',
+    'fau.k2': '开发者免费领取测试 NOVA，用于合约开发、盲盒抽奖、DEX 兑换与全生态功能体验。领取记录链上可查，仅测试网开放，主网自动关闭。',
+    'fau.k3': '领取测试 NOVA',
+    'fau.k4': '领取 100 测试币',
+    'fau.k5': '领取规则：同一地址每 24 小时限领 1 次 ｜ 同一 IP 每日最多 2 次 ｜ 每日全网发放上限 20,000 NOVA ｜ 测试币仅用于测试网，无任何经济价值。',
+    'fau.k6': '领取后测试币直接到账目标地址，可在钱包页查看余额。',
+    'fau.k7': '领取记录与状态',    'fct.dyn.stat.pool': '资金池余额',
+    'fct.dyn.stat.perclaim': '每次领取',
+    'fct.dyn.stat.today': '今日已发放',
+    'fct.dyn.stat.left': '今日剩余额度',
+    'fct.dyn.demo.badge': '演示数据',
+    'fct.dyn.demo.note': '连接本地测试节点（127.0.0.1:8080，需 --faucet 启动）后显示实时数据',
+    'fct.dyn.records.empty': '<p class="dim">暂无领取记录。全网已累计发放 {total} NOVA（{count} 个地址）。</p>',
+    'fct.dyn.toast.badaddr': '请输入合法的 Nova 地址（0x + 40 位 hex）',
+    'fct.dyn.toast.connectnode': '水龙头为节点服务，请先连接本地测试节点',
+    'fct.dyn.toast.fail': '领取失败：{msg}',
+    'fct.dyn.toast.success': '领取成功 ✓ +{amt} NOVA',
+    'faucet.ph.1': 'Nova 地址（0x + 40 位 hex），已连接钱包自动填入',
+    'faucet.title': 'Nova 测试网水龙头 · 免费测试币',
+
+  },
+  en: {
+    'fau.k1': 'Testnet Faucet',
+    'fau.k2': 'Free test NOVA for developers — for contract development, blind boxes, DEX swaps and full ecosystem features. Claims are recorded on-chain; testnet only, automatically off on mainnet.',
+    'fau.k3': 'Claim Test NOVA',
+    'fau.k4': 'Claim 100 test coins',
+    'fau.k5': 'Rules: 1 claim per address every 24h · max 2 per IP daily · 20,000 NOVA daily network cap · test coins are for the testnet only and have no economic value.',
+    'fau.k6': 'Claimed test coins arrive directly in your address — see your balance in the Wallet page.',
+    'fau.k7': 'Claim History & Status',    'fct.dyn.stat.pool': 'Pool Balance',
+    'fct.dyn.stat.perclaim': 'Per Claim',
+    'fct.dyn.stat.today': 'Issued Today',
+    'fct.dyn.stat.left': 'Remaining Today',
+    'fct.dyn.demo.badge': 'Demo data',
+    'fct.dyn.demo.note': 'Live data shown after connecting to the local test node (127.0.0.1:8080, started with --faucet)',
+    'fct.dyn.records.empty': '<p class="dim">No claims yet. A total of {total} NOVA has been distributed to {count} addresses network-wide.</p>',
+    'fct.dyn.toast.badaddr': 'Enter a valid Nova address (0x + 40 hex chars)',
+    'fct.dyn.toast.connectnode': 'The faucet is a node service — connect to the local test node first',
+    'fct.dyn.toast.fail': 'Claim failed: {msg}',
+    'fct.dyn.toast.success': 'Claimed ✓ +{amt} NOVA',
+    'faucet.ph.1': 'Nova address (0x + 40 hex), auto-filled if wallet connected',
+    'faucet.title': 'Nova Testnet Faucet · Free Test Tokens',
+
+  }
+});

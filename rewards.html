@@ -50,8 +50,8 @@
         <div class="row">
           <div>
             <div class="panel-title" data-i18n="rewards.checkin.streak">连续签到</div>
-            <div class="panel-value" id="checkinStreak" style="color:var(--text);">0 天</div>
-            <div class="panel-desc" id="checkinDesc">每日签到奖励 5 NOVA</div>
+            <div class="panel-value" id="checkinStreak" style="color:var(--text);" data-i18n="rwd.k1">0 天</div>
+            <div class="panel-desc" id="checkinDesc" data-i18n="rwd.k2">每日签到奖励 5 NOVA</div>
           </div>
           <div class="spacer"></div>
           <button class="btn primary" id="checkinBtn" data-i18n="rewards.checkin.cta">签到</button>
@@ -66,7 +66,7 @@
           <div>
             <div class="panel-title" data-i18n="rewards.early.total">激励总量</div>
             <div class="panel-value" style="color:var(--text);">250 NOVA</div>
-            <div class="panel-desc" id="earlyDesc">已领取 0 / 250 NOVA</div>
+            <div class="panel-desc" id="earlyDesc" data-i18n="rwd.k3">已领取 0 / 250 NOVA</div>
           </div>
           <div class="spacer"></div>
           <button class="btn primary" id="earlyBtn" data-i18n="rewards.early.cta">领取激励</button>
@@ -89,6 +89,7 @@
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./rewards.i18n.js"></script>
   <script>
     var N = NovaApps;
     var CK_KEY = 'nova_checkin';
@@ -126,7 +127,7 @@
       s.total += 1;
       s.last = dstr(0);
       N.lsSet(CK_KEY, s);
-      var r = N.novaCredit({ amount: 5, memo: '每日签到奖励' });
+      var r = N.novaCredit({ amount: 5, memo: N.t('rwd.dyn.checkin.memo') });
       N.toast(r && r.ok ? N.t('toast.checkin.ok') : N.t('toast.checkin.nowallet'));
       renderCheckin();
     }
@@ -144,7 +145,7 @@
       if (s.claimed >= s.total) return;
       if (!N.getState().connected) { N.requireWallet().then(function (ok) { if (ok) claimEarly(); }); return; }
       var amount = Math.min(50, s.total - s.claimed);
-      var r = N.novaCredit({ amount: amount, memo: '早期激励领取' });
+      var r = N.novaCredit({ amount: amount, memo: N.t('rwd.dyn.early.memo') });
       if (r && r.ok) {
         s.claimed += amount;
         N.lsSet(ER_KEY, s);

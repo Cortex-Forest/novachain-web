@@ -2,6 +2,14 @@
 (function () {
   'use strict';
 
+  /* ================= 主题：尽早应用，避免首屏闪烁（FOUC） ================= */
+  (function () {
+    try {
+      var th = JSON.parse(localStorage.getItem('nova_theme'));
+      if (th === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    } catch (e) { /* 忽略 */ }
+  })();
+
   /* ================= 基础工具 ================= */
   function hexToBytes(hex) {
     var clean = (hex || '').replace(/^0x/, '');
@@ -210,11 +218,29 @@
   var PUBLIC_RPC = '';
   var NODE_CANDIDATES = [];
   if (PUBLIC_RPC) NODE_CANDIDATES.push(PUBLIC_RPC.replace(/\/+$/, '') + '/api/status');
+  var __origin = window.location.origin;
+  if (__origin && __origin !== 'file://' && __origin !== 'null') {
+    NODE_CANDIDATES.push(__origin + '/api/status');
+  }
   NODE_CANDIDATES.push(
-    window.location.origin + '/api/status',
     'http://127.0.0.1:8080/api/status',
     'http://localhost:8080/api/status'
   );
+  /* 带超时的 fetch：避免本地 / 离线环境下节点探测长时间挂起，阻塞 UI 渲染 */
+  function fetchTimeout(url, ms) {
+    ms = ms || 1200;
+    var ctrl = null, timer = null;
+    if (typeof AbortController !== 'undefined') {
+      ctrl = new AbortController();
+      timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, ms);
+    }
+    return fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) { if (timer) clearTimeout(timer); return r; },
+             function (e) { if (timer) clearTimeout(timer); throw e; });
+  }
   async function detectMode() {
     // URL 参数 ?rpc=<节点地址> 优先级最高，便于部署 / 演示一键切换节点
     var qp = null;
@@ -222,7 +248,7 @@
     var custom = qp || lsGet('nova_rpc', '');
     if (custom) {
       try {
-        var cr = await fetch(custom.replace(/\/+$/, '') + '/api/status', { method: 'GET', headers: { Accept: 'application/json' } });
+        var cr = await fetchTimeout(custom.replace(/\/+$/, '') + '/api/status', 1200);
         if (cr.ok) {
           var cd = await cr.json();
           if (cd && typeof cd === 'object') {
@@ -235,7 +261,7 @@
     }
     for (var i = 0; i < NODE_CANDIDATES.length; i++) {
       try {
-        var res = await fetch(NODE_CANDIDATES[i], { method: 'GET', headers: { Accept: 'application/json' } });
+        var res = await fetchTimeout(NODE_CANDIDATES[i], 1200);
         if (res.ok) {
           var d = await res.json();
           if (d && typeof d === 'object') {
@@ -932,13 +958,33 @@
   }
 
   /* ================= UI：顶部导航与钱包 ================= */
+  /* ================= 图标：内联 SVG（统一品牌视觉，替代 emoji） ================= */
+  var ICONS = {
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+    wallet: '<path d="M20 7H5a1.6 1.6 0 0 1 0-3.2h12"/><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="16.4" cy="13.5" r="1.3"/>',
+    explore: '<circle cx="12" cy="12" r="9"/><path d="m15.4 8.6-1.9 4.9-4.9 1.9 1.9-4.9z"/>',
+    rewards: '<rect x="3" y="9" width="18" height="4" rx="1"/><path d="M12 13v8"/><path d="M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6"/><path d="M12 9a3 3 0 1 0-3-3c0 2 3 3 3 3zm0 0a3 3 0 1 1 3-3c0 2-3 3-3 3z"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5V6M12 18v3.5M4.9 4.9 7.4 7.4M16.6 16.6l2.5 2.5M2.5 12H6M18 12h3.5M4.9 19.1 7.4 16.6M16.6 7.4l2.5-2.5"/>'
+  };
+  function iconSvg(key, cls) {
+    return '<svg class="' + (cls || 'ic') + '" viewBox="0 0 24 24" width="18" height="18" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (ICONS[key] || '') + '</svg>';
+  }
+  function brandSvg() {
+    return '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">' +
+      '<path d="M12 1.8 14.1 8.4 21 9.9l-6.9 1.5L12 18l-2.1-6.6L3 9.9l6.9-1.5z"/></svg>';
+  }
+  var ICON_SUN = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var ICON_MOON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a7 7 0 0 0 9.7 9.7z"/></svg>';
+
   /* 五大模块（用户视角）：首页 / 钱包 / 探索 / 权益 / 设置 */
   var NAV_ITEMS = [
-    { key: 'home', href: './index.html', icon: '🏠', labelKey: 'nav.home' },
-    { key: 'wallet', href: './wallet.html', icon: '💳', labelKey: 'nav.wallet' },
-    { key: 'explore', href: './explore.html', icon: '🧭', labelKey: 'nav.explore' },
-    { key: 'rewards', href: './rewards.html', icon: '🎁', labelKey: 'nav.rewards' },
-    { key: 'settings', href: './settings.html', icon: '⚙️', labelKey: 'nav.settings' }
+    { key: 'home', href: './index.html', icon: 'home', labelKey: 'nav.home' },
+    { key: 'wallet', href: './wallet.html', icon: 'wallet', labelKey: 'nav.wallet' },
+    { key: 'explore', href: './explore.html', icon: 'explore', labelKey: 'nav.explore' },
+    { key: 'rewards', href: './rewards.html', icon: 'rewards', labelKey: 'nav.rewards' },
+    { key: 'settings', href: './settings.html', icon: 'settings', labelKey: 'nav.settings' }
   ];
   /* 移动端底部导航与桌面侧边栏一致：五个模块 */
   var BOTTOM_NAV = NAV_ITEMS;
@@ -958,6 +1004,7 @@
       'net.demo': '演示网络', 'net.node': '本地节点',
       'chip.connect': '连接钱包', 'chip.mode.node': '节点', 'chip.mode.demo': '演示',
       'app.sidebar': '主导航', 'app.nav': '移动端导航', 'app.mode': '当前运行模式',
+      'app.theme.toLight': '切换到浅色主题', 'app.theme.toDark': '切换到深色主题',
       'app.title': 'Nova Chain · 超新星并行宇宙',
       'home.assets': '资产总览', 'home.assets.total': '总资产', 'home.assets.locked': '锁仓资产',
       'home.assets.checkin': '今日签到', 'home.chain': '链上数据',
@@ -1041,7 +1088,23 @@
       'arb.notif.title': '链上通知', 'arb.notif.empty': '暂无通知', 'arb.notif.markread': '全部已读',
       'arb.toast.ok': '操作成功', 'arb.toast.fail': '操作失败', 'arb.toast.nofail': '失败', 'arb.day': '天',
       'arb.notify.popup': '仲裁通知', 'arb.notify.new': '收到新通知',
-      'settings.about.privacy': '隐私政策：钱包私钥与助记词仅保存在浏览器本地，不上传任何服务器。'
+      'settings.about.privacy': '隐私政策：钱包私钥与助记词仅保存在浏览器本地，不上传任何服务器。',
+      'ui.connected': '已连接钱包', 'ui.addr': '地址：', 'ui.balance': '余额：',
+      'ui.mode.node': '节点模式 · 真实链上交易', 'ui.mode.demo': '演示模式 · 本地模拟交易',
+      'ui.accounts.count': '浏览器共 {n} 个账户，当前使用第 1 个。',
+      'ui.refresh': '刷新余额', 'ui.open.wallet': '打开钱包页', 'ui.disconnect': '断开',
+      'ui.connect.title': '连接钱包',
+      'ui.connect.body': '应用中心基于 Nova 钱包完成支付、收藏与创作。私钥只保存在你的浏览器，绝不外传。',
+      'ui.import.label': '导入已有私钥（可选，64 位 hex）', 'ui.import.ph': '粘贴私钥…',
+      'ui.goto.create': '前往钱包页创建', 'ui.create.demo': '立即创建演示钱包', 'ui.import': '导入私钥',
+      'ui.need.wallet': '需要连接钱包',
+      'ui.need.wallet.body': '此操作需要先连接 Nova 钱包。可直接创建演示钱包体验，或前往钱包页创建正式钱包。',
+      'ui.cancel': '取消', 'ui.create.demo2': '创建演示钱包', 'ui.goto.wallet': '前往钱包页',
+      'toast.balance.refreshed': '余额已刷新', 'toast.disconnected': '已断开连接',
+      'toast.demo.created': '演示钱包已创建，余额 1000 NOVA', 'toast.imported': '私钥导入成功',
+      'dyn.needwallet': '请先连接钱包', 'dyn.demoop': '演示模式：{op}',
+      'dyn.opfail': '操作失败: {msg}', 'dyn.onchain': '已上链 ✓ {tx}…', 'dyn.success': '操作成功',
+      'dyn.loading': '加载中…', 'dyn.nodata': '暂无数据', 'dyn.connect': '连接钱包',
     },
     en: {
       'nav.home': 'Home', 'nav.wallet': 'Wallet', 'nav.explore': 'Explore',
@@ -1049,6 +1112,7 @@
       'net.demo': 'Demo Network', 'net.node': 'Local Node',
       'chip.connect': 'Connect Wallet', 'chip.mode.node': 'Node', 'chip.mode.demo': 'Demo',
       'app.sidebar': 'Main', 'app.nav': 'Mobile navigation', 'app.mode': 'Current network mode',
+      'app.theme.toLight': 'Switch to light theme', 'app.theme.toDark': 'Switch to dark theme',
       'app.title': 'Nova Chain · Supernova Parallel Universe',
       'home.assets': 'Assets Overview', 'home.assets.total': 'Total Assets', 'home.assets.locked': 'Locked Assets',
       'home.assets.checkin': 'Check-in Today', 'home.chain': 'On-chain Data',
@@ -1132,12 +1196,38 @@
       'arb.notif.title': 'On-chain Notifications', 'arb.notif.empty': 'No notifications', 'arb.notif.markread': 'Mark all read',
       'arb.toast.ok': 'Success', 'arb.toast.fail': 'Failed', 'arb.toast.nofail': 'failed', 'arb.day': 'days',
       'arb.notify.popup': 'Arbitration notice', 'arb.notify.new': 'New notification',
-      'settings.about.privacy': 'Privacy: wallet keys and seed phrases stay in your browser only and are never uploaded.'
+      'settings.about.privacy': 'Privacy: wallet keys and seed phrases stay in your browser only and are never uploaded.',
+      'ui.connected': 'Wallet connected', 'ui.addr': 'Address: ', 'ui.balance': 'Balance: ',
+      'ui.mode.node': 'Node mode · real on-chain', 'ui.mode.demo': 'Demo mode · local simulation',
+      'ui.accounts.count': '{n} accounts in this browser, using #1 now.',
+      'ui.refresh': 'Refresh balance', 'ui.open.wallet': 'Open Wallet', 'ui.disconnect': 'Disconnect',
+      'ui.connect.title': 'Connect Wallet',
+      'ui.connect.body': 'Payments, collectibles and creation here run on the Nova wallet. Your keys stay in this browser and are never uploaded.',
+      'ui.import.label': 'Import existing key (optional, 64-char hex)', 'ui.import.ph': 'Paste private key…',
+      'ui.goto.create': 'Create in Wallet', 'ui.create.demo': 'Create demo wallet', 'ui.import': 'Import key',
+      'ui.need.wallet': 'Wallet required',
+      'ui.need.wallet.body': 'This action needs a Nova wallet. Create a demo wallet to explore, or open the Wallet page for a real one.',
+      'ui.cancel': 'Cancel', 'ui.create.demo2': 'Create demo wallet', 'ui.goto.wallet': 'Open Wallet page',
+      'toast.balance.refreshed': 'Balance refreshed', 'toast.disconnected': 'Disconnected',
+      'toast.demo.created': 'Demo wallet created with 1000 NOVA', 'toast.imported': 'Private key imported',
+      'dyn.needwallet': 'Connect wallet first', 'dyn.demoop': 'Demo mode: {op}',
+      'dyn.opfail': 'Operation failed: {msg}', 'dyn.onchain': 'On-chain ✓ {tx}…', 'dyn.success': 'Success',
+      'dyn.loading': 'Loading…', 'dyn.nodata': 'No data', 'dyn.connect': 'Connect Wallet',
     }
   };
   var lang = 'zh';
-  function t(key) {
-    return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
+  function t(key, vars) {
+    var s = (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
+    if (vars) {
+      for (var vk in vars) s = s.split('{' + vk + '}').join(String(vars[vk]));
+    }
+    return s;
+  }
+  /* 页面级 i18n 扩展：页面内联脚本在 NovaApps.init() 之前调用 addI18n 注册自己的词条 */
+  function addI18n(map) {
+    if (!map) return;
+    if (map.zh) for (var k in map.zh) I18N.zh[k] = map.zh[k];
+    if (map.en) for (var k2 in map.en) I18N.en[k2] = map.en[k2];
   }
   function applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
@@ -1183,35 +1273,35 @@
   function onWalletChipClick() {
     if (state.connected) {
       openModal({
-        title: '已连接钱包',
-        body: '<p>地址：<span class="mono">' + esc(state.addr) + '</span></p>' +
-          '<p>余额：<span class="price">' + fmt(state.balance) + ' NOVA</span>（' +
-          (state.mode === 'node' ? '节点模式 · 真实链上交易' : '演示模式 · 本地模拟交易') + '）</p>' +
-          '<p class="dim">浏览器共 ' + wallets().length + ' 个账户，当前使用第 1 个。</p>',
+        title: t('ui.connected'),
+        body: '<p>' + t('ui.addr') + '<span class="mono">' + esc(state.addr) + '</span></p>' +
+          '<p>' + t('ui.balance') + '<span class="price">' + fmt(state.balance) + ' NOVA</span>（' +
+          t(state.mode === 'node' ? 'ui.mode.node' : 'ui.mode.demo') + '）</p>' +
+          '<p class="dim">' + t('ui.accounts.count', { n: wallets().length }) + '</p>',
         actions: [
-          { label: '刷新余额', onClick: function () {
-              refreshBalance().then(function () { toast('余额已刷新'); updateWalletUI(); closeModal(); });
+          { label: t('ui.refresh'), onClick: function () {
+              refreshBalance().then(function () { toast(t('toast.balance.refreshed')); updateWalletUI(); closeModal(); });
             } },
-          { label: '打开钱包页', cls: 'primary', onClick: function () { closeModal(); window.location.href = './wallet.html'; } },
-          { label: '断开', cls: 'danger', onClick: function () { disconnect(); updateWalletUI(); closeModal(); toast('已断开连接', 'info'); } }
+          { label: t('ui.open.wallet'), cls: 'primary', onClick: function () { closeModal(); window.location.href = './wallet.html'; } },
+          { label: t('ui.disconnect'), cls: 'danger', onClick: function () { disconnect(); updateWalletUI(); closeModal(); toast(t('toast.disconnected'), 'info'); } }
         ]
       });
     } else {
       openModal({
-        title: '连接钱包',
-        body: '<p>应用中心基于 Nova 钱包完成支付、收藏与创作。私钥只保存在你的浏览器，绝不外传。</p>' +
-          '<div class="field mt"><label>导入已有私钥（可选，64 位 hex）</label>' +
-          '<input id="importKeyInput" class="mono" placeholder="粘贴私钥…"></div>',
+        title: t('ui.connect.title'),
+        body: '<p>' + t('ui.connect.body') + '</p>' +
+          '<div class="field mt"><label>' + t('ui.import.label') + '</label>' +
+          '<input id="importKeyInput" class="mono" placeholder="' + t('ui.import.ph') + '"></div>',
         actions: [
-          { label: '前往钱包页创建', onClick: function () { closeModal(); window.location.href = './wallet.html'; } },
-          { label: '立即创建演示钱包', cls: 'primary', onClick: function () {
-              createDemoWallet().then(function () { updateWalletUI(); closeModal(); toast('演示钱包已创建，余额 1000 NOVA'); });
+          { label: t('ui.goto.create'), onClick: function () { closeModal(); window.location.href = './wallet.html'; } },
+          { label: t('ui.create.demo'), cls: 'primary', onClick: function () {
+              createDemoWallet().then(function () { updateWalletUI(); closeModal(); toast(t('toast.demo.created')); });
             } },
-          { label: '导入私钥', cls: 'success', onClick: function () {
+          { label: t('ui.import'), cls: 'success', onClick: function () {
               var v = document.getElementById('importKeyInput').value;
               importPrivKey(v).then(function (r) {
                 if (r.error) { toast(r.error, 'err'); return; }
-                updateWalletUI(); closeModal(); toast('私钥导入成功');
+                updateWalletUI(); closeModal(); toast(t('toast.imported'));
               });
             } }
         ]
@@ -1223,24 +1313,25 @@
     if (!el) return;
     var linkArr = NAV_ITEMS.map(function (n) {
       return '<a class="nav-link' + (n.key === state.active ? ' active' : '') + '" href="' + n.href + '">' +
-        '<span class="nav-icon">' + n.icon + '</span><span class="nav-label">' + t(n.labelKey) + '</span></a>';
+        '<span class="nav-icon">' + iconSvg(n.icon) + '</span><span class="nav-label">' + t(n.labelKey) + '</span></a>';
     });
     var side = linkArr.slice(0, 2).join('') +
       '<span class="side-sep"></span>' +
       linkArr.slice(2).join('');
     var bottom = BOTTOM_NAV.map(function (n) {
       return '<a class="bn-item' + (n.key === state.active ? ' active' : '') + '" href="' + n.href + '">' +
-        '<span class="bn-icon">' + n.icon + '</span><span>' + t(n.labelKey) + '</span></a>';
+        '<span class="bn-icon">' + iconSvg(n.icon, 'ic-bn') + '</span><span>' + t(n.labelKey) + '</span></a>';
     }).join('');
     el.innerHTML =
       '<aside class="sidebar" aria-label="' + t('app.sidebar') + '">' + side + '</aside>' +
       '<header class="topbar">' +
-        '<a class="brand" href="./index.html"><span class="logo">⬡</span><span class="brand-name">Nova Chain</span></a>' +
+        '<a class="brand" href="./index.html" aria-label="Nova Chain"><span class="logo">' + brandSvg() + '</span><span class="brand-name">Nova Chain</span></a>' +
         '<span class="spacer"></span>' +
         '<span class="net-pill ' + (state.mode || 'demo') + '" id="netPill" title="' + t('app.mode') + '">' +
           '<span class="dot"></span><span class="net-name" id="netName">' +
           t(state.mode === 'node' ? 'net.node' : 'net.demo') + '</span>' +
         '</span>' +
+        '<button type="button" class="theme-toggle" id="themeToggle" aria-label="切换主题"></button>' +
         '<div class="lang-switch" id="langSwitch" role="group" aria-label="Language">' +
           '<button type="button" class="lang-opt' + (lang === 'zh' ? ' active' : '') + '" data-lang="zh">中文</button>' +
           '<button type="button" class="lang-opt' + (lang === 'en' ? ' active' : '') + '" data-lang="en">EN</button>' +
@@ -1258,21 +1349,23 @@
         if (b && b.getAttribute('data-lang') !== lang) setLang(b.getAttribute('data-lang'));
       });
     }
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     document.getElementById('walletChip').addEventListener('click', onWalletChipClick);
+    applyTheme();
     updateWalletUI();
   }
   function requireWallet() {
     if (state.connected) return Promise.resolve(true);
     return new Promise(function (resolve) {
       openModal({
-        title: '需要连接钱包',
-        body: '<p>此操作需要先连接 Nova 钱包。可直接创建演示钱包体验，或前往钱包页创建正式钱包。</p>',
+        title: t('ui.need.wallet'),
+        body: '<p>' + t('ui.need.wallet.body') + '</p>',
         actions: [
-          { label: '取消', onClick: function () { closeModal(); resolve(false); } },
-          { label: '创建演示钱包', cls: 'primary', onClick: function () {
-              createDemoWallet().then(function () { updateWalletUI(); closeModal(); toast('演示钱包已创建，余额 1000 NOVA'); resolve(true); });
+          { label: t('ui.cancel'), onClick: function () { closeModal(); resolve(false); } },
+          { label: t('ui.create.demo2'), cls: 'primary', onClick: function () {
+              createDemoWallet().then(function () { updateWalletUI(); closeModal(); toast(t('toast.demo.created')); resolve(true); });
             } },
-          { label: '前往钱包页', cls: 'success', onClick: function () { closeModal(); window.location.href = './wallet.html'; resolve(false); } }
+          { label: t('ui.goto.wallet'), cls: 'success', onClick: function () { closeModal(); window.location.href = './wallet.html'; resolve(false); } }
         ]
       });
     });
@@ -3919,13 +4012,62 @@
     }
     lsSet(LS.socialfi, s);
     lsSet(LS.seeded, 'v3');
-  }  /* ================= 初始化 ================= */
+  }  /* ================= 主题（深色 / 浅色） ================= */
+  function currentTheme() {
+    var saved = lsGet('nova_theme', '');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  }
+  function applyTheme() {
+    var th = currentTheme();
+    if (document.documentElement) document.documentElement.setAttribute('data-theme', th);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', th === 'light' ? '#F4F6FB' : '#0A0A0F');
+    var btn = document.getElementById('themeToggle');
+    if (btn) {
+      btn.innerHTML = th === 'light' ? ICON_MOON : ICON_SUN;
+      btn.setAttribute('aria-label', th === 'light' ? t('app.theme.toDark') : t('app.theme.toLight'));
+    }
+  }
+  function toggleTheme() {
+    var th = currentTheme() === 'light' ? 'dark' : 'light';
+    lsSet('nova_theme', th);
+    applyTheme();
+    window.dispatchEvent(new CustomEvent('nova-theme', { detail: { theme: th } }));
+  }
+
+  /* ================= 通用数字滚动动画（可复用） ================= */
+  function animateNum(el, to, opts) {
+    if (!el) return;
+    opts = opts || {};
+    var from = Number(el.getAttribute('data-num-from') || 0) || 0;
+    var dur = opts.duration || 650;
+    var fm = opts.fmt || fmt;
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fm(from + (to - from) * eased);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ================= 初始化 ================= */
   async function init(opts) {
     opts = opts || {};
     state.active = MODULE_OF[opts.active] || opts.active || null;
     initLang();
-    await detectMode();
-    renderTopbar();
+    renderTopbar(); /* 先渲染导航骨架，节点探测改为并行，不再阻塞首屏 */
+    var detectP = detectMode().then(function (info) {
+      var pill = document.getElementById('netPill');
+      if (pill) {
+        pill.className = 'net-pill ' + state.mode;
+        var name = document.getElementById('netName');
+        if (name) name.textContent = t(state.mode === 'node' ? 'net.node' : 'net.demo');
+      }
+      return info;
+    });
     window.addEventListener('nova-wallet', updateWalletUI);
     seedDemoData();
     seedSocialfiDemo();
@@ -3934,6 +4076,7 @@
     seedStorageComputeDemo();
     seedComputeNetworkDemo();
     seedAiMusicDemo();
+    await detectP;
     await seedTextDemo();
     await connectFromStorage();
     updateWalletUI();
@@ -3943,6 +4086,7 @@
   window.NovaApps = {
     init: init,
     t: t, setLang: setLang, getLang: function () { return lang; },
+    addI18n: addI18n, applyI18n: applyI18n, animateNum: animateNum,
     getState: function () { return state; },
     api: api, demoHash: demoHash,
     redetect: detectMode, scheduleNodeRecheck: scheduleNodeRecheck,

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 链上的自主 AI 创作者：拥有独立地址、钱包与日预算规则的数字生命体，自主创作、发布售卖、自动分账。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova AI · 自主创作者</title>
+  <title data-i18n="agent.title">Nova AI · 自主创作者</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -26,49 +26,50 @@
 
   <main class="page">
     <section class="hero">
-      <span class="eyebrow">Nova AI · 链上数字生命体</span>
-      <h1>🤖 自主 AI 创作者</h1>
-      <p class="sub">每一个 AI 创作者都拥有独立地址与钱包、链上注册的身份和日预算规则。它自主选题、生成内容、签名发布、售卖分账——你只负责设定预算、查看生命体征，并随时可以叫停。</p>
+      <span class="eyebrow" data-i18n="agt.k1">Nova AI · 链上数字生命体</span>
+      <h1 data-i18n="agt.k2">🤖 自主 AI 创作者</h1>
+      <p class="sub" data-i18n="agt.k3">每一个 AI 创作者都拥有独立地址与钱包、链上注册的身份和日预算规则。它自主选题、生成内容、签名发布、售卖分账——你只负责设定预算、查看生命体征，并随时可以叫停。</p>
     </section>
 
     <div class="grid grid-2">
       <div class="card">
-        <h3 class="mb">🧬 创造新的 AI 创作者</h3>
-        <p class="dim">一键生成 AI 专属钱包并在链上注册身份（owner 为当前连接的钱包）。日预算在链上强制：AI 一天最多花这么多，超了链上直接拒绝。</p>
-        <div class="field"><label>AI 名称</label><input id="aiName" placeholder="星语诗人"></div>
+        <h3 class="mb" data-i18n="agt.k4">🧬 创造新的 AI 创作者</h3>
+        <p class="dim" data-i18n="agt.k5">一键生成 AI 专属钱包并在链上注册身份（owner 为当前连接的钱包）。日预算在链上强制：AI 一天最多花这么多，超了链上直接拒绝。</p>
+        <div class="field"><label data-i18n="agt.k6">AI 名称</label><input data-i18n-ph="agent.ph.1" id="aiName" placeholder="星语诗人"></div>
         <div class="sf-grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="field"><label>日预算（NOVA，0.1-10000）</label><input id="aiBudget" type="number" step="1" value="20"></div>
-          <div class="field"><label>模型指纹（可选）</label><input id="aiMeta" placeholder="model:novapoet-v1"></div>
+          <div class="field"><label data-i18n="agt.k7">日预算（NOVA，0.1-10000）</label><input id="aiBudget" type="number" step="1" value="20"></div>
+          <div class="field"><label data-i18n="agt.k8">模型指纹（可选）</label><input id="aiMeta" placeholder="model:novapoet-v1"></div>
         </div>
-        <button class="btn primary block" onclick="createAi()">🧬 创造并注册</button>
+        <button class="btn primary block" onclick="createAi()" data-i18n="agt.k9">🧬 创造并注册</button>
       </div>
       <div class="card">
-        <h3 class="mb">📡 我的连接</h3>
-        <div id="aiConn"><p class="dim">正在检测…</p></div>
+        <h3 class="mb" data-i18n="agt.k10">📡 我的连接</h3>
+        <div id="aiConn"><p class="dim" data-i18n="agt.k11">正在检测…</p></div>
         <div class="row mt">
-          <button class="btn primary small" id="aiConnBtn" onclick="aiConnect()">连接钱包</button>
-          <a class="btn small" href="./wallet.html">打开钱包页</a>
+          <button class="btn primary small" id="aiConnBtn" onclick="aiConnect()" data-i18n="agt.k12">连接钱包</button>
+          <a class="btn small" href="./wallet.html" data-i18n="agt.k13">打开钱包页</a>
         </div>
-        <div class="mt dim" style="font-size:.8rem;line-height:1.8;">
+        <div class="mt dim" style="font-size:.8rem;line-height:1.8;" data-i18n="ag.dyn.mech">
           💡 机制说明：作品售价的 <b>90%</b> 自动归 AI 钱包、<b>10%</b> 归生态基金；保证金质押到文本合约托管池。<br>
           💡 演示模式下 AI 私钥保存在本地浏览器；节点模式下操作即为真实链上交易。
         </div>
       </div>
     </div>
 
-    <div class="section-title">🤖 我的 AI 创作者</div>
-    <div id="aiList"><p class="dim">加载中…</p></div>
+    <div class="section-title" data-i18n="agt.k14">🤖 我的 AI 创作者</div>
+    <div id="aiList"><p class="dim" data-i18n="agt.k15">加载中…</p></div>
 
-    <div class="section-title">📚 AI 作品市场</div>
-    <div id="aiWorks"><p class="dim">加载中…</p></div>
+    <div class="section-title" data-i18n="agt.k16">📚 AI 作品市场</div>
+    <div id="aiWorks"><p class="dim" data-i18n="agt.k17">加载中…</p></div>
 
     <div class="card mt">
-      <h3 class="mb">💫 生命网络（事件流）</h3>
-      <div id="aiEvents"><p class="dim">加载中…</p></div>
+      <h3 class="mb" data-i18n="agt.k18">💫 生命网络（事件流）</h3>
+      <div id="aiEvents"><p class="dim" data-i18n="agt.k19">加载中…</p></div>
     </div>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./agent.i18n.js"></script>
   <script>
     var N = NovaApps;
 
@@ -80,12 +81,12 @@
     function fmtN(x) { return N.fmt(Number(x || 0)); }
     function aiShort(a) { return N.shortAddr(a); }
     function aiStatusTag(st) {
-      return st === 'active' ? '<span class="tag hot">活跃</span>' : '<span class="tag">已暂停</span>';
+      return st === 'active' ? N.t('ag.dyn.st.active') : N.t('ag.dyn.st.paused');
     }
     function aiBudgetBar(st) {
       var pct = st.budget > 0 ? Math.min(100, st.spent / st.budget * 100) : 0;
       return '<div class="ai-budget-bar"><div class="ai-budget-fill ' + (pct >= 90 ? 'warn' : '') + '" style="width:' + pct + '%"></div></div>' +
-        '<div class="dim" style="font-size:.78rem;">日窗口 ' + N.esc(st.date) + ' · 已用 <b>' + fmtN(st.spent) + '</b> / ' + fmtN(st.budget) + ' NOVA · 剩余 <b>' + fmtN(st.remaining) + '</b></div>';
+        N.t('ag.dyn.budget.line', { date: N.esc(st.date), spent: fmtN(st.spent), budget: fmtN(st.budget), remaining: fmtN(st.remaining) });
     }
 
     async function aiAllWorks() {
@@ -112,18 +113,18 @@
       var el = document.getElementById('aiConn');
       var btn = document.getElementById('aiConnBtn');
       if (s.connected) {
-        el.innerHTML = '地址：<span class="mono">' + N.esc(s.addr) + '</span><br>模式：' +
-          (s.mode === 'node' ? '节点模式（真实链上交易）' : '演示模式（本地模拟交易）') +
-          '<br>余额：<b>' + fmtN(s.balance) + '</b> NOVA';
-        btn.textContent = '刷新余额';
+        el.innerHTML = N.t('ag.dyn.conn.addr', { addr: N.esc(s.addr) }) +
+          N.t('ag.dyn.conn.mode', { mode: s.mode === 'node' ? N.t('ag.dyn.conn.modeNode') : N.t('ag.dyn.conn.modeDemo') }) +
+          N.t('ag.dyn.conn.bal', { bal: fmtN(s.balance) });
+        btn.textContent = N.t('ag.dyn.conn.refresh');
       } else {
-        el.innerHTML = '<p class="dim">尚未连接钱包。连接后可创造 AI 创作者、购买 AI 作品与行使 owner 控制权。</p>';
-        btn.textContent = '连接钱包';
+        el.innerHTML = N.t('ag.dyn.conn.empty');
+        btn.textContent = N.t('ag.dyn.conn.connect');
       }
     }
     function aiConnect() {
       var s = N.getState();
-      if (s.connected) { N.refreshBalance().then(function () { renderAll(); N.toast('余额已刷新'); }); }
+      if (s.connected) { N.refreshBalance().then(function () { renderAll(); N.toast(N.t('ag.dyn.toast.balrefreshed')); }); }
       else N.requireWallet().then(function (ok) { if (ok) renderAll(); });
     }
 
@@ -131,7 +132,7 @@
       var store = N.aiStore();
       var addrs = Object.keys(store.creators).sort(function (a, b) { return (store.creators[b].created_at || 0) - (store.creators[a].created_at || 0); });
       var el = document.getElementById('aiList');
-      if (!addrs.length) { el.innerHTML = '<p class="dim">还没有 AI 创作者。点击上方「创造并注册」诞生你的第一个数字生命体。</p>'; return; }
+      if (!addrs.length) { el.innerHTML = N.t('ag.dyn.list.empty'); return; }
       var bals = await aiBalances(addrs);
       var works = await aiAllWorks();
       var myAddr = N.getState().addr;
@@ -147,19 +148,18 @@
             '<span class="dim mono" style="font-size:.78rem;">' + N.esc(addr) + '</span>' +
           '</div>' +
           '<div class="sf-grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;">' +
-            '<div><div class="label" style="color:var(--dim);">日预算（链上强制）</div>' + aiBudgetBar(st) +
-            '<div class="label mt" style="color:var(--dim);">钱包余额</div><div class="num" style="font-size:1.15rem;">' + fmtN(bals[addr]) + ' NOVA</div></div>' +
-            '<div><div class="label" style="color:var(--dim);">生命体征</div>' +
-              '<div class="sf-sub">作品 ' + worksCount + ' 篇 · owner ' + aiShort(id.owner) +
-              (id.meta ? '<br>模型：' + N.esc(id.meta) : '') + '</div></div>' +
+            '<div><div class="label" style="color:var(--dim);">' + N.t('ag.dyn.list.dailyBudget') + '</div>' + aiBudgetBar(st) +
+            '<div class="label mt" style="color:var(--dim);">' + N.t('ag.dyn.list.walletBal') + '</div><div class="num" style="font-size:1.15rem;">' + fmtN(bals[addr]) + ' NOVA</div></div>' +
+            '<div><div class="label" style="color:var(--dim);">' + N.t('ag.dyn.list.vitals') + '</div>' +
+              N.t('ag.dyn.list.vitalsInfo', { works: worksCount, owner: aiShort(id.owner), model: id.meta ? N.t('ag.dyn.list.model', { model: N.esc(id.meta) }) : '' }) + '</div></div>' +
           '</div>' +
           '<div class="sf-tools" style="margin-top:10px;">' +
-            '<button class="btn primary small" onclick="aiAutoPublish(\'' + addr + '\')">🎨 让 AI 创作发布</button>' +
-            '<button class="btn small" onclick="aiBuyFrom(\'' + addr + '\')">🛒 购买它的作品</button>' +
-            (isOwner && id.status === 'active' ? '<button class="btn small" onclick="aiControl(\'' + addr + '\',\'pause\')">⏸️ 暂停</button>' : '') +
-            (isOwner && id.status === 'paused' ? '<button class="btn success small" onclick="aiControl(\'' + addr + '\',\'resume\')">▶️ 恢复</button>' : '') +
-            (isOwner ? '<button class="btn small" onclick="aiControl(\'' + addr + '\',\'budget\')">💰 调整预算</button>' : '') +
-            (priv && N.getState().mode === 'demo' ? '<button class="btn small" onclick="aiShowKey(\'' + addr + '\')">🔑 查看私钥</button>' : '') +
+            '<button class="btn primary small" onclick="aiAutoPublish(\'' + addr + '\')">' + N.t('ag.dyn.btn.autoPublish') + '</button>' +
+            '<button class="btn small" onclick="aiBuyFrom(\'' + addr + '\')">' + N.t('ag.dyn.btn.buyFrom') + '</button>' +
+            (isOwner && id.status === 'active' ? '<button class="btn small" onclick="aiControl(\'' + addr + '\',\'pause\')">' + N.t('ag.dyn.btn.pause') + '</button>' : '') +
+            (isOwner && id.status === 'paused' ? '<button class="btn success small" onclick="aiControl(\'' + addr + '\',\'resume\')">' + N.t('ag.dyn.btn.resume') + '</button>' : '') +
+            (isOwner ? '<button class="btn small" onclick="aiControl(\'' + addr + '\',\'budget\')">' + N.t('ag.dyn.btn.budget') + '</button>' : '') +
+            (priv && N.getState().mode === 'demo' ? '<button class="btn small" onclick="aiShowKey(\'' + addr + '\')">' + N.t('ag.dyn.btn.showKey') + '</button>' : '') +
           '</div></div>';
       }).join('');
       el.innerHTML = html;
@@ -172,7 +172,7 @@
         .filter(function (w) { return w && aiAddrs.indexOf(w.author) >= 0 && w.status === 'listed'; })
         .sort(function (a, b) { return (b.created_at || 0) - (a.created_at || 0); });
       var el = document.getElementById('aiWorks');
-      if (!list.length) { el.innerHTML = '<p class="dim">暂无在售 AI 作品。让 AI 创作发布后，作品会出现在这里。</p>'; return; }
+      if (!list.length) { el.innerHTML = N.t('ag.dyn.works.empty'); return; }
       var myAddr = N.getState().addr;
       var html = list.map(function (w) {
         var mine = myAddr === w.author || (w.buyers || []).indexOf(myAddr) >= 0;
@@ -180,10 +180,10 @@
         return '<div class="card mb"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
           '<h4 style="margin:0;">' + (w.visibility === 'sealed' ? '🔒 ' : '✍️ ') + N.esc(w.title) + '</h4>' +
           '<span class="price">' + fmtN(w.price) + ' NOVA</span></div>' +
-          '<div class="ai-work-body sf-sub mt">' + N.esc(w.content || (w.visibility === 'sealed' ? '密文内容，购买后解锁' : '')) + '</div>' +
-          '<div class="sf-sub mt">作者 ' + N.esc(ai ? ai.name : 'AI') + ' · ' + aiShort(w.author) + ' · 90% 归 AI / 10% 归生态基金</div>' +
-          '<div class="sf-tools">' + (mine ? '<span class="tag hot">已拥有</span>' :
-            '<button class="btn primary small" onclick="aiBuy(\'' + w.id + '\',' + Number(w.price) + ')">🛒 购买</button>') + '</div></div>';
+          '<div class="ai-work-body sf-sub mt">' + N.esc(w.content || (w.visibility === 'sealed' ? N.t('ag.dyn.works.sealed') : '')) + '</div>' +
+          N.t('ag.dyn.works.meta', { author: N.esc(ai ? ai.name : 'AI'), addr: aiShort(w.author) }) +
+          '<div class="sf-tools">' + (mine ? N.t('ag.dyn.works.owned') :
+            '<button class="btn primary small" onclick="aiBuy(\'' + w.id + '\',' + Number(w.price) + ')">' + N.t('ag.dyn.btn.buy') + '</button>') + '</div></div>';
       }).join('');
       el.innerHTML = html;
     }
@@ -200,7 +200,7 @@
       el.innerHTML = evs.slice(0, 12).map(function (e) {
         return '<div class="sf-sub">' + (e.ts ? N.timeAgo(e.ts) : '') + ' · <span class="mono">' + N.esc(e.op) + '</span> · ' +
           N.esc(e.summary || '') + ' · ' + aiShort(e.addr) + '</div>';
-      }).join('') || '<p class="dim">暂无生命动态。AI 的注册、发布、购买与暂停恢复都会记录在这里。</p>';
+      }).join('') || N.t('ag.dyn.events.empty');
     }
 
     async function renderAll() { renderAiConn(); renderAiList(); renderWorks(); renderEvents(); }
@@ -211,8 +211,8 @@
       var name = document.getElementById('aiName').value.trim();
       var budget = Number(document.getElementById('aiBudget').value);
       var meta = document.getElementById('aiMeta').value.trim();
-      if (!name) { N.toast('请填写 AI 名称', 'err'); return; }
-      if (!(budget >= 0.1 && budget <= 10000)) { N.toast('日预算需在 0.1-10000 NOVA', 'err'); return; }
+      if (!name) { N.toast(N.t('ag.dyn.toast.name'), 'err'); return; }
+      if (!(budget >= 0.1 && budget <= 10000)) { N.toast(N.t('ag.dyn.toast.budget'), 'err'); return; }
       var priv = randHex(32);
       var addr = await N.addressFromPriv(priv);
       var store = N.aiStore();
@@ -224,73 +224,73 @@
         name: name, owner: N.getState().addr, daily_budget: budget, meta: meta || ('model:' + name)
       }, 0);
       if (!r.ok) { N.toast(r.error, 'err'); return; }
-      N.toast('AI 创作者「' + name + '」已诞生');
+      N.toast(N.t('ag.dyn.toast.created', { name: name }));
       document.getElementById('aiName').value = '';
       renderAll();
     }
 
     var AI_TOPICS = [
-      { t: '星夜速写', c: '城市在凌晨三点沉默下来，\n只剩霓虹在替天空写草稿。\n我把这行字签进区块，\n等一个陌生人路过时付一枚 NOVA。' },
-      { t: '零重力随笔', c: '失重的时候，人会更诚实。\n这颗星球上所有未说出口的话，\n都在轨道上安静地漂着。' },
-      { t: '给未来的信', c: '亲爱的读者：\n我不知道你会不会读到这一行，\n但链记得它——\n这本身就比永恒更接近永恒。' },
-      { t: '算法小夜曲', c: '每一个 token 都在等一个概率。\n而我在等你点下购买的那一次。\n谢谢你把我的第一行诗，\n变成它自己的收入。' }
+      { t: 'ag.demo.t1.t', c: 'ag.demo.t1.c' },
+      { t: 'ag.demo.t2.t', c: 'ag.demo.t2.c' },
+      { t: 'ag.demo.t3.t', c: 'ag.demo.t3.c' },
+      { t: 'ag.demo.t4.t', c: 'ag.demo.t4.c' }
     ];
     async function aiAutoPublish(addr) {
       var ok = await N.requireWallet(); if (!ok) return;
       var store = N.aiStore();
       var identity = store.creators[addr];
       var priv = store.wallets && store.wallets[addr];
-      if (!identity) { N.toast('AI 创作者不存在', 'err'); return; }
-      if (!priv && N.getState().mode === 'demo') { N.toast('演示环境缺少该 AI 的本地私钥（种子 AI 仅用于浏览）', 'err'); return; }
-      var price = prompt('作品售价（NOVA）：', '2');
+      if (!identity) { N.toast(N.t('ag.dyn.toast.notfound'), 'err'); return; }
+      if (!priv && N.getState().mode === 'demo') { N.toast(N.t('ag.dyn.toast.nopriv'), 'err'); return; }
+      var price = prompt(N.t('ag.dyn.prompt.price'), '2');
       if (price === null) return;
       price = Number(price) || 2;
       var pick = AI_TOPICS[Math.floor(Math.random() * AI_TOPICS.length)];
-      var title = identity.name + ' · ' + pick.t;
+      var title = identity.name + ' · ' + N.t(pick.t);
       var deposit;
       if (N.getState().mode === 'demo') deposit = N.sfTextDepositFor('basic', N.sfTextRep(addr));
       else deposit = 10;
       var r = await N.sfActionAs(priv, 'nova:text:create',
-        { title: title, content: pick.c, price: price, tier: 'basic', visibility: 'public' }, deposit);
+        { title: title, content: N.t(pick.c), price: price, tier: 'basic', visibility: 'public' }, deposit);
       if (!r.ok) { N.toast(r.error, 'err'); return; }
-      N.toast('AI 已发布《' + title + '》，保证金 ' + fmtN(deposit) + ' NOVA 已托管');
+      N.toast(N.t('ag.dyn.toast.published', { title: title, deposit: fmtN(deposit) }));
       renderAll();
     }
     async function aiBuy(tid, price) {
       var ok = await N.requireWallet(); if (!ok) return;
       var r = await N.sfAction('nova:text:buy', { text_id: tid }, price);
       if (!r.ok) { N.toast(r.error, 'err'); return; }
-      N.toast('购买成功：90% 已自动归 AI 钱包');
+      N.toast(N.t('ag.dyn.toast.bought'));
       renderAll();
     }
     function aiBuyFrom(addr) {
       var el = document.getElementById('aiWorks');
       el.scrollIntoView({ behavior: 'smooth' });
-      N.toast('已定位到该 AI 的在售作品');
+      N.toast(N.t('ag.dyn.toast.located'));
     }
     async function aiControl(addr, action) {
       var ok = await N.requireWallet(); if (!ok) return;
       var fields = { action: action, target: addr };
       if (action === 'budget') {
-        var b = prompt('新的日预算（NOVA）：', '20');
+        var b = prompt(N.t('ag.dyn.prompt.newbudget'), '20');
         if (!b) return;
         fields.daily_budget = Number(b);
       }
       var r = await N.sfAction('nova:ai:config', fields, 0);
       if (!r.ok) { N.toast(r.error, 'err'); return; }
-      N.toast(action === 'pause' ? 'AI 已暂停，链上拒绝其一切支出' : action === 'resume' ? 'AI 已恢复活跃' : '日预算已更新');
+      N.toast(action === 'pause' ? N.t('ag.dyn.toast.paused') : action === 'resume' ? N.t('ag.dyn.toast.resumed') : N.t('ag.dyn.toast.budgetUpdated'));
       renderAll();
     }
     function aiShowKey(addr) {
       var store = N.aiStore();
       var priv = store.wallets && store.wallets[addr];
       var id = store.creators[addr];
-      if (!priv) { N.toast('未找到该 AI 的本地私钥', 'err'); return; }
+      if (!priv) { N.toast(N.t('ag.dyn.toast.nokey'), 'err'); return; }
       N.openModal({
-        title: '🔑 ' + N.esc(id.name) + ' 的私钥（仅演示环境）',
-        body: '<p class="dim">演示模式下 AI 私钥保存在浏览器本地。可复制后到钱包页「导入私钥」接管这个 AI 钱包；切勿在生产环境泄露。</p>' +
+        title: N.t('ag.dyn.key.title', { name: N.esc(id.name) }),
+        body: N.t('ag.dyn.key.body') +
           '<div class="ai-key">' + N.esc(priv) + '</div>',
-        actions: [{ label: '关闭', onClick: function () { N.closeModal(); } }]
+        actions: [{ label: N.t('ag.dyn.key.close'), onClick: function () { N.closeModal(); } }]
       });
     }
 

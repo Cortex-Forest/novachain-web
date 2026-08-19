@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 去中心化身份与声誉：哈希绑定、创作者认证徽章、四维声誉分（创作质量/社区贡献/资产稳定/身份完整）。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 身份 · DID 与声誉</title>
+  <title data-i18n="did.title">Nova 身份 · DID 与声誉</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -49,47 +49,47 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">DID · REPUTATION · SOULBOUND</span>
-      <h1>去中心化身份与声誉</h1>
-      <p class="sub">邮箱 / Telegram / X / IPFS 头像只存哈希，Nova 私钥签名确认；社区投票授予不可转让的"认证创作者"徽章；声誉分 100 分制，决定手续费折扣与权限。</p>
+      <h1 data-i18n="didx.k1">去中心化身份与声誉</h1>
+      <p class="sub" data-i18n="didx.k2">邮箱 / Telegram / X / IPFS 头像只存哈希，Nova 私钥签名确认；社区投票授予不可转让的"认证创作者"徽章；声誉分 100 分制，决定手续费折扣与权限。</p>
     </section>
 
     <section class="mod-stats" id="stats"></section>
 
     <div class="mod-tabs" id="tabs">
-      <button class="mod-tab active" onclick="switchTab('me')">我的身份</button>
-      <button class="mod-tab" onclick="switchTab('bind')">绑定 / 撤销</button>
-      <button class="mod-tab" onclick="switchTab('creator')">创作者认证</button>
+      <button class="mod-tab active" onclick="switchTab('me')" data-i18n="didx.k3">我的身份</button>
+      <button class="mod-tab" onclick="switchTab('bind')" data-i18n="didx.k4">绑定 / 撤销</button>
+      <button class="mod-tab" onclick="switchTab('creator')" data-i18n="didx.k5">创作者认证</button>
     </div>
 
     <section class="mod-panel active" id="panel-me">
       <div class="card">
-        <h3 class="mb">我的声誉分</h3>
-        <div id="repBox"><p class="dim">连接钱包后查看</p></div>
+        <h3 class="mb" data-i18n="didx.k6">我的声誉分</h3>
+        <div id="repBox"><p class="dim" data-i18n="didx.k7">连接钱包后查看</p></div>
       </div>
       <div class="card" style="margin-top:14px;">
-        <h3 class="mb">绑定信息（只存哈希，原始数据永不上链）</h3>
-        <div id="bindings"><p class="dim">连接钱包后查看</p></div>
+        <h3 class="mb" data-i18n="didx.k8">绑定信息（只存哈希，原始数据永不上链）</h3>
+        <div id="bindings"><p class="dim" data-i18n="didx.k9">连接钱包后查看</p></div>
       </div>
     </section>
 
     <section class="mod-panel" id="panel-bind">
-      <div class="card"><h3 class="mb">绑定身份</h3>
+      <div class="card"><h3 class="mb" data-i18n="didx.k10">绑定身份</h3>
         <div class="form-row">
-          <select id="bdKind"><option value="email">邮箱哈希</option><option value="telegram">Telegram 哈希</option><option value="x">X/Twitter 哈希</option><option value="avatar">IPFS 头像哈希</option></select>
-          <input id="bdHash" placeholder="sha3-256 哈希（64 hex）">
+          <select id="bdKind"><option value="email" data-i18n="didx.k11">邮箱哈希</option><option value="telegram" data-i18n="didx.k12">Telegram 哈希</option><option value="x" data-i18n="didx.k13">X/Twitter 哈希</option><option value="avatar" data-i18n="didx.k14">IPFS 头像哈希</option></select>
+          <input data-i18n-ph="did.ph.1" id="bdHash" placeholder="sha3-256 哈希（64 hex）">
           <label class="dim" style="font-size:.8rem;"><input type="checkbox" id="bdVisible" checked> 公开可见</label>
-          <button class="btn primary" onclick="doBind()">绑定</button>
-          <button class="btn" onclick="doUnbind()">撤销</button>
+          <button class="btn primary" onclick="doBind()" data-i18n="didx.k15">绑定</button>
+          <button class="btn" onclick="doUnbind()" data-i18n="didx.k16">撤销</button>
         </div>
       </div>
     </section>
 
     <section class="mod-panel" id="panel-creator">
-      <div class="card"><h3 class="mb">申请认证创作者（不可转让徽章）</h3>
-        <p class="dim" style="font-size:13px;line-height:1.7;">提交作品集（本人部署的合约地址列表，逗号分隔），社区投票超过 50% 赞成后获得 "认证创作者" 徽章。</p>
+      <div class="card"><h3 class="mb" data-i18n="didx.k17">申请认证创作者（不可转让徽章）</h3>
+        <p class="dim" style="font-size:13px;line-height:1.7;" data-i18n="didx.k18">提交作品集（本人部署的合约地址列表，逗号分隔），社区投票超过 50% 赞成后获得 "认证创作者" 徽章。</p>
         <div class="form-row">
-          <input id="crPortfolio" placeholder="合约地址列表（逗号分隔）">
-          <button class="btn primary" onclick="doApply()">提交申请</button>
+          <input data-i18n-ph="did.ph.2" id="crPortfolio" placeholder="合约地址列表（逗号分隔）">
+          <button class="btn primary" onclick="doApply()" data-i18n="didx.k19">提交申请</button>
         </div>
         <div id="applications"></div>
       </div>
@@ -97,9 +97,10 @@
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./did.i18n.js"></script>
   <script>
   var N = window.NovaApps;
-  var KINDS = { email: '邮箱', telegram: 'Telegram', x: 'X/Twitter', avatar: 'IPFS 头像' };
+  var KINDS = { email: 'did.dyn.kind.email', telegram: 'did.dyn.kind.telegram', x: 'did.dyn.kind.x', avatar: 'did.dyn.kind.avatar' };
 
   function stat(k, v) { return '<div class="mod-stat"><div class="v">' + v + '</div><div class="k">' + k + '</div></div>'; }
   function esc(s) { return N.esc ? N.esc(String(s == null ? '' : s)) : String(s); }
@@ -110,8 +111,8 @@
   }
   function moduleOp(op, fields, amount) {
     var st = N.getState();
-    if (!st.connected) { N.toast('请先连接钱包'); return Promise.resolve(null); }
-    if (st.mode === 'demo') { N.toast('演示模式：' + op); return Promise.resolve({ ok: true, demo: true }); }
+    if (!st.connected) { N.toast(N.t('dyn.needwallet')); return Promise.resolve(null); }
+    if (st.mode === 'demo') { N.toast(N.t('dyn.demoop', { op: op })); return Promise.resolve({ ok: true, demo: true }); }
     return N.getPubFromPriv(st.priv).then(function (pub) {
       var ts = Math.floor(Date.now() / 1000);
       var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
@@ -119,12 +120,12 @@
       return N.signMsg(st.priv, st.addr + st.addr + amtStr + ts + '[]' + data + pub).then(function (sig) {
         return N.api('/api/did/op', 'POST', { addr: st.addr, amount: amount || 0, data: data,
           timestamp: ts, sender_public_key: pub, signature: sig }).then(function (res) {
-          if (res && res.error) { N.toast('操作失败: ' + res.error); return null; }
-          N.toast('已上链 ✓ ' + String((res && res.txid) || '').slice(0, 16) + '…');
+          if (res && res.error) { N.toast(N.t('dyn.opfail', { msg: res.error })); return null; }
+          N.toast(N.t('dyn.onchain', { tx: String((res && res.txid) || '').slice(0, 16) }));
           return res;
         });
       });
-    }).catch(function (e) { N.toast('操作失败: ' + (e && e.message || e)); return null; });
+    }).catch(function (e) { N.toast(N.t('dyn.opfail', { msg: (e && e.message || e) })); return null; });
   }
 
   async function load() {
@@ -133,11 +134,11 @@
     var demo = !d || d.demoMode || !('profiles' in (d || {}));
     d = d || {};
     document.getElementById('stats').innerHTML =
-      stat('DID 档案', d.profiles || 0) +
-      stat('认证申请', d.applications || 0) +
-      stat('认证创作者', d.creator_badges || 0) +
-      stat('平均声誉分', N.fmt(d.avg_score || 0));
-    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">演示数据</span> 连接本地节点后显示实时链上数据</div>');
+      stat(N.t('did.dyn.stat.profiles'), d.profiles || 0) +
+      stat(N.t('did.dyn.stat.apps'), d.applications || 0) +
+      stat(N.t('did.dyn.stat.creators'), d.creator_badges || 0) +
+      stat(N.t('did.dyn.stat.avg'), N.fmt(d.avg_score || 0));
+    if (demo) document.getElementById('stats').insertAdjacentHTML('beforeend', '<div class="mod-stat" style="grid-column:1/-1;"><span class="badge warn">' + N.t('did.dyn.demo.badge') + '</span> ' + N.t('did.dyn.demo.note') + '</div>');
     renderMe();
   }
   async function renderMe() {
@@ -155,22 +156,22 @@
         repEl.innerHTML = '<div class="row" style="gap:18px;align-items:center;flex-wrap:wrap;">' +
           '<div><div class="big-rep">' + N.fmt(rep.score) + '</div>' +
           '<div class="dim" style="font-size:.8rem;">' + esc(rep.tier || '') + ' ｜ ' + esc(rep.grade || '') + '</div></div>' +
-          '<div class="rep-dim" style="flex:1;min-width:280px;">' + (dims || '<div class="d"><b>—</b><span>无明细</span></div>') + '</div></div>' +
+          '<div class="rep-dim" style="flex:1;min-width:280px;">' + (dims || N.t('did.dyn.rep.none')) + '</div></div>' +
           '<div class="mod-sub">' + (rep.perks && rep.perks.benefits ? rep.perks.benefits.map(function (b) { return '· ' + esc(b); }).join('<br>') : '') + '</div>';
       } else {
-        repEl.innerHTML = '<p class="dim">尚无声誉分（初始 50 分，随链上行为自动计算）</p>';
+        repEl.innerHTML = '<p class="dim">' + N.t('did.dyn.rep.empty', { init: 50 }) + '</p>';
       }
       var prof = await N.api('/api/did/' + st.addr);
       var binds = (prof && prof.bindings) || {};
       bindEl.innerHTML = Object.keys(binds).length ? Object.keys(binds).map(function (k) {
         var b = binds[k];
         return '<div class="mod-item"><div class="sf-bar" style="display:flex;justify-content:space-between;">' +
-          '<h4>' + esc(KINDS[k] || k) + '</h4>' +
-          (b.visible === false ? '<span class="badge dim">私密</span>' : '<span class="badge good">公开</span>') + '</div>' +
+          '<h4>' + esc(N.t(KINDS[k] || k)) + '</h4>' +
+          (b.visible === false ? N.t('did.dyn.bind.private') : N.t('did.dyn.bind.public')) + '</div>' +
           '<div class="mod-sub mono">' + esc(b.hash || b) + '</div></div>';
-      }).join('') : '<p class="dim">尚未绑定任何身份</p>';
+      }).join('') : N.t('did.dyn.bind.empty');
       if (prof && prof.creator_badge) {
-        bindEl.insertAdjacentHTML('beforeend', '<div class="mod-item"><h4>🏅 认证创作者</h4><div class="mod-sub">不可转让徽章（soulbound NFT）</div></div>');
+        bindEl.insertAdjacentHTML('beforeend', N.t('did.dyn.creator.badge'));
       }
     } catch (e) {}
   }
@@ -178,7 +179,7 @@
   function doBind() {
     var kind = document.getElementById('bdKind').value;
     var hash = document.getElementById('bdHash').value.trim();
-    if (!/^[0-9a-fA-F]{64}$/.test(hash)) { N.toast('请输入 64 位 hex 哈希（先对原始数据做 sha3-256）'); return; }
+    if (!/^[0-9a-fA-F]{64}$/.test(hash)) { N.toast(N.t('did.dyn.toast.hash64')); return; }
     moduleOp('nova:did:bind', { kind: kind, hash: hash, visible: document.getElementById('bdVisible').checked }).then(function () { load(); });
   }
   function doUnbind() {
@@ -188,7 +189,7 @@
   function doApply() {
     var raw = document.getElementById('crPortfolio').value.trim();
     var portfolio = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-    if (!portfolio.length) { N.toast('请输入作品集合约地址列表'); return; }
+    if (!portfolio.length) { N.toast(N.t('did.dyn.toast.portfolio')); return; }
     moduleOp('nova:did:apply', { portfolio: portfolio }).then(function () { load(); });
   }
 

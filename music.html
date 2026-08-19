@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 音乐馆：生成式播放器、链上发行单曲与限量收藏唱片。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 音乐馆 · 链上发行</title>
+  <title data-i18n="music.title">Nova 音乐馆 · 链上发行</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,53 +19,53 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">Nova Music</span>
-      <h1>🎧 音乐馆</h1>
-      <p class="sub">生成式量子合成器即时试听，单曲一键上链发行，限量唱片以 NFT 形式永久收藏。播放器完全在浏览器内合成，无需外部音频文件。</p>
+      <h1 data-i18n="mus.k1">🎧 音乐馆</h1>
+      <p class="sub" data-i18n="mus.k2">生成式量子合成器即时试听，单曲一键上链发行，限量唱片以 NFT 形式永久收藏。播放器完全在浏览器内合成，无需外部音频文件。</p>
       <div class="row" style="margin-top:10px;">
-        <button class="btn primary" onclick="playTrack(0)">▶ 播放精选</button>
-        <button class="btn" onclick="mintCurrent()">⛓️ 上链发行当前曲目</button>
+        <button class="btn primary" onclick="playTrack(0)" data-i18n="mus.k3">▶ 播放精选</button>
+        <button class="btn" onclick="mintCurrent()" data-i18n="mus.k4">⛓️ 上链发行当前曲目</button>
       </div>
     </section>
 
     <section class="player-bar" id="playerBar">
-      <button class="btn small" id="playPauseBtn" onclick="togglePlay()">⏸ 暂停</button>
-      <button class="btn small" onclick="nextTrack()">下一首</button>
+      <button class="btn small" id="playPauseBtn" onclick="togglePlay()" data-i18n="mus.k5">⏸ 暂停</button>
+      <button class="btn small" onclick="nextTrack()" data-i18n="mus.k6">下一首</button>
       <div class="eq" id="eqBar"><span></span><span></span><span></span><span></span></div>
       <div class="now-playing">
-        <div class="np-title" id="npTitle">未播放</div>
+        <div class="np-title" id="npTitle" data-i18n="mus.k7">未播放</div>
         <div class="np-artist" id="npArtist">—</div>
       </div>
       <span class="dim" id="npPos" style="font-family:var(--mono); font-size:0.8rem;"></span>
     </section>
 
     <div class="section-head">
-      <div class="section-title">💿 精选曲目</div>
+      <div class="section-title" data-i18n="mus.k8">💿 精选曲目</div>
       <div class="row">
-        <span class="tag live">生成式音频</span>
-        <span class="tag nft">可上链发行</span>
+        <span class="tag live" data-i18n="mus.k9">生成式音频</span>
+        <span class="tag nft" data-i18n="mus.k10">可上链发行</span>
       </div>
     </div>
     <div class="grid grid-3" id="trackGrid"></div>
 
-    <div class="section-title">🎙️ 入驻音乐人</div>
+    <div class="section-title" data-i18n="mus.k11">🎙️ 入驻音乐人</div>
     <div class="grid grid-3">
-      <div class="card"><div class="avatar" style="font-size:26px;">🎛️</div><h3 class="mt">Nova 音乐实验室</h3><p class="dim">链上音乐发行与演出，代表作品《星轨回声》。</p></div>
-      <div class="card"><div class="avatar" style="font-size:26px;">🌠</div><h3 class="mt">星野电台</h3><p class="dim">24 小时生成式环境音，适合创作与冥想。</p></div>
-      <div class="card"><div class="avatar" style="font-size:26px;">🪐</div><h3 class="mt">量子节拍器</h3><p class="dim">用随机种子生成永不重复的电子节拍。</p></div>
+      <div class="card"><div class="avatar" style="font-size:26px;">🎛️</div><h3 class="mt" data-i18n="mus.k12">Nova 音乐实验室</h3><p class="dim" data-i18n="mus.k13">链上音乐发行与演出，代表作品《星轨回声》。</p></div>
+      <div class="card"><div class="avatar" style="font-size:26px;">🌠</div><h3 class="mt" data-i18n="mus.k14">星野电台</h3><p class="dim" data-i18n="mus.k15">24 小时生成式环境音，适合创作与冥想。</p></div>
+      <div class="card"><div class="avatar" style="font-size:26px;">🪐</div><h3 class="mt" data-i18n="mus.k16">量子节拍器</h3><p class="dim" data-i18n="mus.k17">用随机种子生成永不重复的电子节拍。</p></div>
     </div>
 
-    <div class="section-title">🎵 分层加载播放器（30 秒试听 → 付费后 IPFS 全量）</div>
+    <div class="section-title" data-i18n="mus.k18">🎵 分层加载播放器（30 秒试听 → 付费后 IPFS 全量）</div>
     <div class="card">
-      <p class="dim">播放前先加载 30 秒试听片段（CDN，秒开）；试听结束后点击“解锁完整版”从 IPFS 加载完整文件，加载时显示进度条。</p>
-      <div class="field"><label>试听片段 URL（CDN，30 秒）</label><input id="lpPreview" value="https://cdn.example.com/nova/preview/demo.mp3"></div>
-      <div class="field"><label>完整文件 IPFS CID</label><input id="lpCid" value="bafybeidemo0000000000000000000000000000000000000000000"></div>
+      <p class="dim" data-i18n="mus.k19">播放前先加载 30 秒试听片段（CDN，秒开）；试听结束后点击“解锁完整版”从 IPFS 加载完整文件，加载时显示进度条。</p>
+      <div class="field"><label data-i18n="mus.k20">试听片段 URL（CDN，30 秒）</label><input id="lpPreview" value="https://cdn.example.com/nova/preview/demo.mp3"></div>
+      <div class="field"><label data-i18n="mus.k21">完整文件 IPFS CID</label><input id="lpCid" value="bafybeidemo0000000000000000000000000000000000000000000"></div>
       <div class="sf-tools">
-        <button class="btn primary" onclick="lpPlay()">▶ 播放试听（30 秒）</button>
-        <button class="btn success" onclick="lpUnlock()">🔓 解锁完整版（付费后）</button>
-        <button class="btn" onclick="lpPause()">⏸ 暂停</button>
+        <button class="btn primary" onclick="lpPlay()" data-i18n="mus.k22">▶ 播放试听（30 秒）</button>
+        <button class="btn success" onclick="lpUnlock()" data-i18n="mus.k23">🔓 解锁完整版（付费后）</button>
+        <button class="btn" onclick="lpPause()" data-i18n="mus.k24">⏸ 暂停</button>
       </div>
       <div class="sf-bar" style="margin-top:14px;">
-        <span class="dim" id="lpState">未开始</span>
+        <span class="dim" id="lpState" data-i18n="mus.k25">未开始</span>
         <span class="dim" id="lpPct" style="font-family:var(--mono);"></span>
       </div>
       <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px;">
@@ -73,29 +73,30 @@
       </div>
     </div>
 
-    <div class="section-title">💾 我发行的唱片</div>
+    <div class="section-title" data-i18n="mus.k26">💾 我发行的唱片</div>
     <div id="myReleases" class="grid grid-3"></div>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./music.i18n.js"></script>
   <script src="./player-lazy.js"></script>
   <script>
     var N = NovaApps;
     var ARTISTS = [
-      { name: 'Nova 音乐实验室', addr: '0x' + 'a1'.repeat(20) },
-      { name: '星野电台', addr: '0x' + 'aa'.repeat(20) },
-      { name: '量子节拍器', addr: '0x' + 'ab'.repeat(20) },
-      { name: '夜航乐队', addr: '0x' + 'ac'.repeat(20) },
-      { name: '极光女声', addr: '0x' + 'ad'.repeat(20) },
-      { name: '引力波合唱团', addr: '0x' + 'ae'.repeat(20) }
+      { name: 'mus.demo.art1', addr: '0x' + 'a1'.repeat(20) },
+      { name: 'mus.demo.art2', addr: '0x' + 'aa'.repeat(20) },
+      { name: 'mus.demo.art3', addr: '0x' + 'ab'.repeat(20) },
+      { name: 'mus.demo.art4', addr: '0x' + 'ac'.repeat(20) },
+      { name: 'mus.demo.art5', addr: '0x' + 'ad'.repeat(20) },
+      { name: 'mus.demo.art6', addr: '0x' + 'ae'.repeat(20) }
     ];
     var TRACKS = [
-      { id: 't1', title: '星轨回声', artist: 'Nova 音乐实验室', scale: [0, 2, 4, 7, 9, 12], base: 220, bpm: 92, art: '🌌' },
-      { id: 't2', title: '量子夜航', artist: '夜航乐队', scale: [0, 3, 5, 7, 10], base: 174, bpm: 104, art: '🚀' },
-      { id: 't3', title: '极光脉冲', artist: '量子节拍器', scale: [0, 2, 3, 7, 8], base: 261, bpm: 128, art: '⚡' },
-      { id: 't4', title: '星野摇篮曲', artist: '星野电台', scale: [0, 4, 7, 12], base: 196, bpm: 60, art: '🌠' },
-      { id: 't5', title: '极光之吻', artist: '极光女声', scale: [0, 2, 5, 9, 11], base: 233, bpm: 84, art: '✨' },
-      { id: 't6', title: '引力波共鸣', artist: '引力波合唱团', scale: [0, 3, 6, 9, 12], base: 147, bpm: 72, art: '🌊' }
+      { id: 't1', title: 'mus.demo.t1.title', artist: 'mus.demo.art1', scale: [0, 2, 4, 7, 9, 12], base: 220, bpm: 92, art: '🌌' },
+      { id: 't2', title: 'mus.demo.t2.title', artist: 'mus.demo.art4', scale: [0, 3, 5, 7, 10], base: 174, bpm: 104, art: '🚀' },
+      { id: 't3', title: 'mus.demo.t3.title', artist: 'mus.demo.art3', scale: [0, 2, 3, 7, 8], base: 261, bpm: 128, art: '⚡' },
+      { id: 't4', title: 'mus.demo.t4.title', artist: 'mus.demo.art2', scale: [0, 4, 7, 12], base: 196, bpm: 60, art: '🌠' },
+      { id: 't5', title: 'mus.demo.t5.title', artist: 'mus.demo.art5', scale: [0, 2, 5, 9, 11], base: 233, bpm: 84, art: '✨' },
+      { id: 't6', title: 'mus.demo.t6.title', artist: 'mus.demo.art6', scale: [0, 3, 6, 9, 12], base: 147, bpm: 72, art: '🌊' }
     ];
 
     var playing = { idx: 0, on: false };
@@ -158,7 +159,7 @@
       playing.on = true;
       playing.startedAt = Date.now();
       updatePlayerUI();
-      N.toast('正在播放《' + track.title + '》', 'info');
+      N.toast(N.t('mus.dyn.playing', { title: N.t(track.title) }), 'info');
     }
     function togglePlay() {
       if (!playing.on) { playTrack(playing.idx); return; }
@@ -170,9 +171,9 @@
 
     function updatePlayerUI() {
       var t = TRACKS[playing.idx];
-      document.getElementById('playPauseBtn').textContent = playing.on ? '⏸ 暂停' : '▶ 播放';
-      document.getElementById('npTitle').textContent = t.title;
-      document.getElementById('npArtist').textContent = t.artist + ' · ' + t.bpm + ' BPM';
+      document.getElementById('playPauseBtn').textContent = playing.on ? N.t('mus.k5') : N.t('mus.dyn.playbtn');
+      document.getElementById('npTitle').textContent = N.t(t.title);
+      document.getElementById('npArtist').textContent = N.t(t.artist) + ' · ' + t.bpm + ' BPM';
       var eq = document.getElementById('eqBar');
       eq.classList.toggle('paused', !playing.on);
     }
@@ -189,7 +190,7 @@
       store[id] = item;
       N.lsSet('nova_music_likes', store);
       renderTracks();
-      N.toast(idx >= 0 ? '已取消喜欢' : '已收藏到喜欢列表', 'info');
+      N.toast(idx >= 0 ? N.t('mus.dyn.unliked') : N.t('mus.dyn.liked'), 'info');
     }
 
     function renderTracks() {
@@ -201,14 +202,14 @@
             '<span>' + t.art + '</span>' +
             '<span class="play" onclick="playTrack(' + i + ')">▶</span>' +
           '</div>' +
-          '<h3>' + N.esc(t.title) + '</h3>' +
-          '<div class="by">' + N.esc(t.artist) + '</div>' +
+          '<h3>' + N.esc(N.t(t.title)) + '</h3>' +
+          '<div class="by">' + N.esc(N.t(t.artist)) + '</div>' +
           '<div class="row-info"><span>' + t.bpm + ' BPM</span><span class="tag">♥ ' + lk.count + '</span></div>' +
           '<div class="actions">' +
-            '<button class="btn small" onclick="playTrack(' + i + ')">播放</button>' +
-            '<button class="btn small" onclick="likeTrack(\'' + t.id + '\')">♥ 喜欢</button>' +
-            '<button class="btn small" onclick="tipTrack(' + i + ')">打赏 1</button>' +
-            '<button class="btn small primary" onclick="mintTrack(' + i + ')">⛓️ 发行</button>' +
+            '<button class="btn small" onclick="playTrack(' + i + ')">' + N.t('mus.dyn.play') + '</button>' +
+            '<button class="btn small" onclick="likeTrack(\'' + t.id + '\')">' + N.t('mus.dyn.like') + '</button>' +
+            '<button class="btn small" onclick="tipTrack(' + i + ')">' + N.t('mus.dyn.tip') + '</button>' +
+            '<button class="btn small primary" onclick="mintTrack(' + i + ')">' + N.t('mus.dyn.mint') + '</button>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -224,9 +225,9 @@
       var t = TRACKS[i];
       N.requireWallet().then(function (ok) {
         if (!ok) return;
-        N.novaPay({ to: artistAddr(t), amount: 1, memo: '打赏《' + t.title + '》', app: 'music' }).then(function (r) {
+        N.novaPay({ to: artistAddr(t), amount: 1, memo: N.t('mus.dyn.tip.memo', { title: N.t(t.title) }), app: 'music' }).then(function (r) {
           if (!r.ok) { N.toast(r.error, 'err'); return; }
-          N.toast('已打赏 1 NOVA 给 ' + t.artist + '，交易 ' + r.txid.slice(0, 12) + '…');
+          N.toast(N.t('mus.dyn.tip.ok', { artist: N.t(t.artist), tx: r.txid.slice(0, 12) }));
         });
       });
     }
@@ -236,14 +237,14 @@
       N.requireWallet().then(function (ok) {
         if (!ok) return;
         N.confirmDlg({
-          title: '上链发行单曲',
-          body: '<p>将《' + N.esc(t.title) + '》铸造为限量唱片 NFT（价格 5 NOVA，收益归音乐人）。</p>',
-          okLabel: '确认发行'
+          title: N.t('mus.dyn.mint.title'),
+          body: '<p>' + N.t('mus.dyn.mint.body', { title: N.esc(N.t(t.title)) }) + '</p>',
+          okLabel: N.t('mus.dyn.mint.ok')
         }).then(function (yes) {
           if (!yes) return;
-          N.nftMint({ name: t.title + ' · 限量唱片', desc: 'Nova 音乐馆链上发行单曲唱片，曲风 ' + t.bpm + ' BPM。', art: t.art, price: 5, app: 'music' }).then(function (r) {
+          N.nftMint({ name: N.t('mus.dyn.mint.name', { title: N.t(t.title) }), desc: N.t('mus.dyn.mint.desc', { bpm: t.bpm }), art: t.art, price: 5, app: 'music' }).then(function (r) {
             if (!r.ok) { N.toast(r.error, 'err'); return; }
-            N.toast('已发行唱片 ' + r.token.name + '，前往 NFT 收藏品查看');
+            N.toast(N.t('mus.dyn.released', { name: r.token.name }));
             renderReleases();
           });
         });
@@ -256,16 +257,16 @@
       var mine = N.myNfts().filter(function (x) { return x.app === 'music'; });
       var el = document.getElementById('myReleases');
       if (!mine.length) {
-        el.innerHTML = '<div class="empty" style="grid-column:1/-1;">还没有发行记录。点击曲目卡片上的「⛓️ 发行」即可上链。</div>';
+        el.innerHTML = '<div class="empty" style="grid-column:1/-1;">' + N.t('mus.dyn.no.releases') + '</div>';
         return;
       }
       el.innerHTML = mine.map(function (t) {
         return '<div class="card media-card">' +
           '<div class="cover"><span>' + N.esc(t.art) + '</span></div>' +
           '<h3>' + N.esc(t.name) + '</h3>' +
-          '<div class="by">编号 ' + N.esc(t.id.slice(-8)) + ' · 价格 ' + N.fmt(t.price) + ' NOVA</div>' +
-          '<div class="row-info"><span class="ok">已上链</span><span class="mono dim">' + N.esc(t.txid.slice(0, 12)) + '…</span></div>' +
-          '<div class="actions"><a class="btn small" href="./nft.html">前往收藏品</a></div>' +
+          '<div class="by">' + N.t('mus.dyn.id.price', { id: N.esc(t.id.slice(-8)), price: N.fmt(t.price) }) + '</div>' +
+          '<div class="row-info"><span class="ok">' + N.t('mus.dyn.onchain') + '</span><span class="mono dim">' + N.esc(t.txid.slice(0, 12)) + '…</span></div>' +
+          '<div class="actions"><a class="btn small" href="./nft.html">' + N.t('mus.dyn.goto.nft') + '</a></div>' +
         '</div>';
       }).join('');
     }
@@ -294,8 +295,8 @@
         ipfsCid: cid,
         gateways: ['https://ipfs.io/ipfs/', 'https://gateway.pinata.cloud/ipfs/'],
         onState: function (st) {
-          var map = { preview: '▶ 试听中（CDN 30 秒）', preview_ended: '⏸ 试听结束，解锁完整版',
-                      loading: '⏳ 正在从 IPFS 加载完整文件…', ready: '✅ 完整版已就绪', error: '❌ 加载失败' };
+          var map = { preview: N.t('mus.dyn.lp.preview'), preview_ended: N.t('mus.dyn.lp.ended'),
+                      loading: N.t('mus.dyn.lp.loading'), ready: N.t('mus.dyn.lp.ready'), error: N.t('mus.dyn.lp.error') };
           document.getElementById('lpState').textContent = map[st] || st;
         },
         onProgress: function (p) {

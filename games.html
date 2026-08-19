@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 游戏舱：量子骰子与星轨冲刺，链上积分与排行榜。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 游戏舱 · 量子骰子与星轨冲刺</title>
+  <title data-i18n="games.title">Nova 游戏舱 · 量子骰子与星轨冲刺</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,16 +19,16 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">Nova Games</span>
-      <h1>🎮 游戏舱</h1>
-      <p class="sub">用 NOVA 下注的量子骰子、考验反应力的星轨冲刺。得分写入链上排行榜，胜者收益即时入账。</p>
+      <h1 data-i18n="gme.k1">🎮 游戏舱</h1>
+      <p class="sub" data-i18n="gme.k2">用 NOVA 下注的量子骰子、考验反应力的星轨冲刺。得分写入链上排行榜，胜者收益即时入账。</p>
     </section>
 
-    <div class="section-title">🎲 量子骰子</div>
+    <div class="section-title" data-i18n="gme.k3">🎲 量子骰子</div>
     <div class="grid grid-2">
       <div class="card">
-        <h3 class="mb">规则</h3>
-        <p class="dim">三枚骰子，点数之和结算：<br>· 17–18（量子爆发）→ 3 倍返还<br>· 14–16（星轨齐鸣）→ 2 倍返还<br>· 其余 → 输掉下注额</p>
-        <div class="field mt"><label>下注金额（NOVA）</label>
+        <h3 class="mb" data-i18n="gme.k4">规则</h3>
+        <p class="dim" data-i18n="gme.dyn.rule">三枚骰子，点数之和结算：<br>· 17–18（量子爆发）→ 3 倍返还<br>· 14–16（星轨齐鸣）→ 2 倍返还<br>· 其余 → 输掉下注额</p>
+        <div class="field mt"><label data-i18n="gme.k5">下注金额（NOVA）</label>
           <select id="diceAmount">
             <option value="1">1 NOVA</option>
             <option value="5">5 NOVA</option>
@@ -36,30 +36,30 @@
             <option value="20">20 NOVA</option>
           </select>
         </div>
-        <button class="btn primary block" onclick="rollDice()" id="diceBtn">🎲 掷骰</button>
+        <button class="btn primary block" onclick="rollDice()" id="diceBtn" data-i18n="gme.k6">🎲 掷骰</button>
         <div class="row mt center" id="diceResult" style="justify-content:center; gap:18px; font-size:2.4rem; font-family:var(--mono); min-height:56px;">· · ·</div>
         <p class="center" id="diceMsg" style="min-height:22px;"></p>
       </div>
       <div class="card">
-        <h3 class="mb">本局记录</h3>
-        <div id="diceHistory"><div class="empty">还没有投掷记录。</div></div>
+        <h3 class="mb" data-i18n="gme.k7">本局记录</h3>
+        <div id="diceHistory"><div class="empty" data-i18n="gme.k8">还没有投掷记录。</div></div>
       </div>
     </div>
 
-    <div class="section-title">🚀 星轨冲刺</div>
+    <div class="section-title" data-i18n="gme.k9">🚀 星轨冲刺</div>
     <div class="grid grid-2">
       <div class="card">
-        <h3 class="mb">玩法</h3>
-        <p class="dim">用方向键 / WASD 或屏幕按钮操控飞船：<br>· 收集 <span class="ok">✦ 星能</span> +10 分<br>· 躲避 <span class="err">☄ 陨石</span>，碰到即坠毁<br>· 存活每 1 秒 +1 分，坠毁后得分上链</p>
+        <h3 class="mb" data-i18n="gme.k10">玩法</h3>
+        <p class="dim" data-i18n="gme.dyn.howto">用方向键 / WASD 或屏幕按钮操控飞船：<br>· 收集 <span class="ok">✦ 星能</span> +10 分<br>· 躲避 <span class="err">☄ 陨石</span>，碰到即坠毁<br>· 存活每 1 秒 +1 分，坠毁后得分上链</p>
         <div class="stage-wrap mt" style="min-height:300px;">
           <canvas id="orbitCanvas"></canvas>
           <div class="stage-overlay" style="min-height:300px; justify-content:space-between;">
             <div class="row">
-              <span class="pill on" id="orbitState">未开始</span>
-              <span class="pill">得分 <b id="orbitScore" style="color:var(--accent);">0</b></span>
+              <span class="pill on" id="orbitState" data-i18n="gme.k13">未开始</span>
+              <span class="pill"><span data-i18n="gme.dyn.score">得分</span> <b id="orbitScore" style="color:var(--accent);">0</b></span>
             </div>
             <div class="row">
-              <button class="btn primary small" onclick="startOrbit()" id="orbitStart">▶ 开始</button>
+              <button class="btn primary small" onclick="startOrbit()" id="orbitStart" data-i18n="gme.k14">▶ 开始</button>
               <button class="btn small" onclick="moveOrbit('left')">◀</button>
               <button class="btn small" onclick="moveOrbit('up')">▲</button>
               <button class="btn small" onclick="moveOrbit('down')">▼</button>
@@ -69,13 +69,14 @@
         </div>
       </div>
       <div class="card">
-        <h3 class="mb">🏆 链上排行榜</h3>
+        <h3 class="mb" data-i18n="gme.k15">🏆 链上排行榜</h3>
         <div id="orbitLeader"></div>
       </div>
     </div>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./games.i18n.js"></script>
   <script>
     var N = NovaApps;
 
@@ -89,7 +90,7 @@
       diceBusy = true;
       var btn = document.getElementById('diceBtn');
       btn.disabled = true;
-      N.novaPay({ amount: amount, memo: '量子骰子下注', app: 'games' }).then(function (r) {
+      N.novaPay({ amount: amount, memo: N.t('gme.dyn.bet.memo'), app: 'games' }).then(function (r) {
         if (!r.ok) { N.toast(r.error, 'err'); btn.disabled = false; diceBusy = false; return; }
         var frames = 0;
         var iv = setInterval(function () {
@@ -108,14 +109,14 @@
       var sum = d[0] + d[1] + d[2];
       document.getElementById('diceResult').textContent = d.join(' · ');
       var mult = 0, msg;
-      if (sum >= 17) { mult = 3; msg = '⚡ 量子爆发！' + amount + ' → ' + N.fmt(amount * 3) + ' NOVA'; }
-      else if (sum >= 14) { mult = 2; msg = '✨ 星轨齐鸣！' + amount + ' → ' + N.fmt(amount * 2) + ' NOVA'; }
-      else { mult = 0; msg = '🌌 星际尘埃，下次再战'; }
-      document.getElementById('diceMsg').textContent = '点数和 ' + sum + ' · ' + msg;
+      if (sum >= 17) { mult = 3; msg = N.t('gme.dyn.quantum', { a: amount, b: N.fmt(amount * 3) }); }
+      else if (sum >= 14) { mult = 2; msg = N.t('gme.dyn.orbit', { a: amount, b: N.fmt(amount * 2) }); }
+      else { mult = 0; msg = N.t('gme.dyn.dust'); }
+      document.getElementById('diceMsg').textContent = N.t('gme.dyn.sum', { s: sum, msg: msg });
       var payout = amount * mult;
       if (payout > 0) {
-        N.novaCredit({ amount: payout, memo: '量子骰子赢 ' + sum + ' 点', app: 'games' }).then(function (cr) {
-          if (cr.ok) N.toast('🎉 赢 ' + N.fmt(payout) + ' NOVA 已入账');
+        N.novaCredit({ amount: payout, memo: N.t('gme.dyn.win.memo', { s: sum }), app: 'games' }).then(function (cr) {
+          if (cr.ok) N.toast(N.t('gme.dyn.win', { p: N.fmt(payout) }));
         });
       }
       var hist = N.lsGet('nova_games_dice', []);
@@ -129,10 +130,10 @@
     function renderDiceHistory() {
       var hist = N.lsGet('nova_games_dice', []);
       var el = document.getElementById('diceHistory');
-      if (!hist.length) { el.innerHTML = '<div class="empty">还没有投掷记录。</div>'; return; }
+      if (!hist.length) { el.innerHTML = '<div class="empty">' + N.t('gme.k8') + '</div>'; return; }
       el.innerHTML = hist.map(function (h) {
         return '<div class="list-row"><div class="rank">' + h.sum + '</div><div class="grow"><div class="t">' + h.d.join(' ') + '</div>' +
-          '<div class="d">下注 ' + N.fmt(h.bet) + ' → ' + (h.payout > 0 ? '<span class="ok">+' + N.fmt(h.payout) + '</span>' : '<span class="err">-0</span>') + '</div></div></div>';
+          '<div class="d">' + N.t('gme.dyn.bet.line', { bet: N.fmt(h.bet), out: (h.payout > 0 ? '<span class="ok">+' + N.fmt(h.payout) + '</span>' : '<span class="err">-0</span>') }) + '</div></div></div>';
       }).join('');
     }
 
@@ -156,19 +157,19 @@
       orbit.startedAt = Date.now();
       orbit.ship = { x: 0.5, y: 0.85 };
       orbit.stars = []; orbit.comets = [];
-      document.getElementById('orbitState').textContent = '飞行中';
-      document.getElementById('orbitStart').textContent = '⏹ 结束';
+      document.getElementById('orbitState').textContent = N.t('gme.dyn.flying');
+      document.getElementById('orbitStart').textContent = N.t('gme.dyn.end');
       orbit.raf = requestAnimationFrame(orbitFrame);
     }
     function stopOrbit(won) {
       if (!orbit.running) return;
       orbit.running = false;
       cancelAnimationFrame(orbit.raf);
-      document.getElementById('orbitState').textContent = won ? '已坠毁' : '已结束';
-      document.getElementById('orbitStart').textContent = '▶ 再来一局';
+      document.getElementById('orbitState').textContent = won ? N.t('gme.dyn.crashed') : N.t('gme.dyn.ended');
+      document.getElementById('orbitStart').textContent = N.t('gme.dyn.replay');
       N.addScore('orbit', orbit.score);
       renderLeader();
-      N.toast('得分 ' + orbit.score + ' 已写入链上排行榜', 'info');
+      N.toast(N.t('gme.dyn.score.saved', { s: orbit.score }), 'info');
     }
     function moveOrbit(dir) {
       var step = 0.06;
@@ -246,11 +247,11 @@
     function renderLeader() {
       var rows = N.topScores('orbit');
       var el = document.getElementById('orbitLeader');
-      if (!rows.length) { el.innerHTML = '<div class="empty">连接钱包并玩一局，你的成绩就会出现在这里。</div>'; return; }
+      if (!rows.length) { el.innerHTML = '<div class="empty">' + N.t('gme.dyn.leader.empty') + '</div>'; return; }
       el.innerHTML = rows.slice(0, 10).map(function (r, i) {
         return '<div class="list-row"><div class="rank">#' + (i + 1) + '</div><div class="grow"><div class="t">' + N.esc(r.name) + '</div>' +
           '<div class="d">' + N.esc(N.shortAddr(r.addr)) + ' · ' + N.timeAgo(r.ts) + '</div></div>' +
-          '<div class="price">' + N.fmt(r.score) + ' 分</div></div>';
+          '<div class="price">' + N.t('gme.dyn.points', { s: N.fmt(r.score) }) + '</div></div>';
       }).join('');
     }
 

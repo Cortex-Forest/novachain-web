@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 算力网络：节点注册与信誉、五类算力任务、抢单/竞价市场、双节点验证与第三方仲裁、随机抽查防作弊、质押与经济模型。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 算力网络 · 节点 / 任务 / 验证</title>
+  <title data-i18n="compute.title">Nova 算力网络 · 节点 / 任务 / 验证</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -47,17 +47,17 @@
 
   <main class="page">
     <section class="hero">
-      <span class="eyebrow">Nova Compute Network · 去中心化算力</span>
-      <h1>⚡ 算力网络</h1>
-      <p class="sub">节点注册与信誉分、五类算力任务、抢单/竞价市场、双节点冗余验证与第三方仲裁、5% 随机抽查防作弊、质押与经济模型——全部状态上链公开可查。</p>
+      <span class="eyebrow" data-i18n="cmp.k1">Nova Compute Network · 去中心化算力</span>
+      <h1 data-i18n="cmp.k2">⚡ 算力网络</h1>
+      <p class="sub" data-i18n="cmp.k3">节点注册与信誉分、五类算力任务、抢单/竞价市场、双节点冗余验证与第三方仲裁、5% 随机抽查防作弊、质押与经济模型——全部状态上链公开可查。</p>
     </section>
 
     <div class="sf-tabs" id="cmTabs">
-      <button class="sf-tab active" data-tab="overview" onclick="switchTab('overview')">📊 总览</button>
-      <button class="sf-tab" data-tab="publish" onclick="switchTab('publish')">🚀 发布任务</button>
-      <button class="sf-tab" data-tab="nodes" onclick="switchTab('nodes')">🌐 节点网络</button>
-      <button class="sf-tab" data-tab="market" onclick="switchTab('market')">📋 任务市场</button>
-      <button class="sf-tab" data-tab="mine" onclick="switchTab('mine')">👤 我的任务</button>
+      <button class="sf-tab active" data-tab="overview" onclick="switchTab('overview')" data-i18n="cmp.k4">📊 总览</button>
+      <button class="sf-tab" data-tab="publish" onclick="switchTab('publish')" data-i18n="cmp.k5">🚀 发布任务</button>
+      <button class="sf-tab" data-tab="nodes" onclick="switchTab('nodes')" data-i18n="cmp.k6">🌐 节点网络</button>
+      <button class="sf-tab" data-tab="market" onclick="switchTab('market')" data-i18n="cmp.k7">📋 任务市场</button>
+      <button class="sf-tab" data-tab="mine" onclick="switchTab('mine')" data-i18n="cmp.k8">👤 我的任务</button>
     </div>
 
     <!-- 总览 -->
@@ -65,12 +65,12 @@
       <div class="stat-grid" id="cmStats"></div>
       <div class="sf-grid2">
         <div class="card">
-          <h3 class="mb">📐 任务类型与参考价</h3>
+          <h3 class="mb" data-i18n="cmp.k9">📐 任务类型与参考价</h3>
           <table class="mini" id="cmRefPrices"></table>
-          <p class="dim mt">参考价由合约指导，实际价格由市场竞价决定；每笔成交收 1% 手续费回流验证者激励池。</p>
+          <p class="dim mt" data-i18n="cmp.k10">参考价由合约指导，实际价格由市场竞价决定；每笔成交收 1% 手续费回流验证者激励池。</p>
         </div>
         <div class="card">
-          <h3 class="mb">🔄 生命周期</h3>
+          <h3 class="mb" data-i18n="cmp.k11">🔄 生命周期</h3>
           <div class="stages">
             <span class="tag live">open</span><span>→</span>
             <span class="tag">bidding / assigned</span><span>→</span>
@@ -79,12 +79,12 @@
             <span class="tag">settled</span><span>→</span>
             <span class="tag">completed</span>
           </div>
-          <p class="dim mt">每个阶段都有链上状态记录；异议冻结（24h 窗口）、社区 3 票仲裁、5% 随机抽查均自动处理。</p>
+          <p class="dim mt" data-i18n="cmp.k12">每个阶段都有链上状态记录；异议冻结（24h 窗口）、社区 3 票仲裁、5% 随机抽查均自动处理。</p>
         </div>
       </div>
       <div class="card mt">
-        <h3 class="mb">🕒 链上事件流</h3>
-        <div id="cmEvents"><p class="dim">加载中…</p></div>
+        <h3 class="mb" data-i18n="cmp.k13">🕒 链上事件流</h3>
+        <div id="cmEvents"><p class="dim" data-i18n="cmp.k14">加载中…</p></div>
       </div>
     </section>
 
@@ -92,36 +92,36 @@
     <section class="sf-panel" id="cm-panel-publish">
       <div class="grid grid-2">
         <div class="card">
-          <h3 class="mb">发布算力任务</h3>
-          <div class="field"><label>任务类型</label>
+          <h3 class="mb" data-i18n="cmp.k15">发布算力任务</h3>
+          <div class="field"><label data-i18n="cmp.k16">任务类型</label>
             <select id="cmType">
-              <option value="ai_music">🎵 AI音乐生成（高 GPU）· 参考价 0.5-2 NOVA/首</option>
-              <option value="ai_image">🖼️ AI图像生成（中 GPU）· 参考价 0.1-0.5 NOVA/张</option>
-              <option value="game_server">🎮 游戏服务器托管（低 GPU 高内存）· 0.1-1 NOVA</option>
-              <option value="video_transcode">🎬 视频转码（中 CPU 低 GPU）· 0.05-0.5 NOVA</option>
-              <option value="data_clean">🧹 数据清洗/标注（低 CPU 高内存）· 0.01-0.1 NOVA</option>
+              <option value="ai_music" data-i18n="cmp.k17">🎵 AI音乐生成（高 GPU）· 参考价 0.5-2 NOVA/首</option>
+              <option value="ai_image" data-i18n="cmp.k18">🖼️ AI图像生成（中 GPU）· 参考价 0.1-0.5 NOVA/张</option>
+              <option value="game_server" data-i18n="cmp.k19">🎮 游戏服务器托管（低 GPU 高内存）· 0.1-1 NOVA</option>
+              <option value="video_transcode" data-i18n="cmp.k20">🎬 视频转码（中 CPU 低 GPU）· 0.05-0.5 NOVA</option>
+              <option value="data_clean" data-i18n="cmp.k21">🧹 数据清洗/标注（低 CPU 高内存）· 0.01-0.1 NOVA</option>
             </select>
           </div>
-          <div class="field"><label>需求规格（spec）</label><textarea id="cmSpec" rows="3" placeholder="如：生成一首 3 分钟流行风格歌曲，BPM 120 以内"></textarea></div>
-          <div class="field"><label>验收标准</label><input id="cmAccept" placeholder="如：时长 3 分钟、采样率 44.1kHz"></div>
+          <div class="field"><label data-i18n="cmp.k22">需求规格（spec）</label><textarea data-i18n-ph="compute.ph.1" id="cmSpec" rows="3" placeholder="如：生成一首 3 分钟流行风格歌曲，BPM 120 以内"></textarea></div>
+          <div class="field"><label data-i18n="cmp.k23">验收标准</label><input data-i18n-ph="compute.ph.2" id="cmAccept" placeholder="如：时长 3 分钟、采样率 44.1kHz"></div>
           <div class="sf-grid2">
-            <div class="field"><label>预算（NOVA，全额质押托管）</label><input id="cmBounty" type="number" step="0.01" value="2"></div>
-            <div class="field"><label>有效期（小时）</label><input id="cmHours" type="number" value="24"></div>
+            <div class="field"><label data-i18n="cmp.k24">预算（NOVA，全额质押托管）</label><input id="cmBounty" type="number" step="0.01" value="2"></div>
+            <div class="field"><label data-i18n="cmp.k25">有效期（小时）</label><input id="cmHours" type="number" value="24"></div>
           </div>
           <div class="sf-grid2">
-            <div class="field"><label>接单模式</label>
+            <div class="field"><label data-i18n="cmp.k26">接单模式</label>
               <select id="cmMode">
-                <option value="grab">⚡ 抢单：先到先得，固定价格</option>
-                <option value="bid">🔨 竞价：节点报价，发起者挑选</option>
+                <option value="grab" data-i18n="cmp.k27">⚡ 抢单：先到先得，固定价格</option>
+                <option value="bid" data-i18n="cmp.k28">🔨 竞价：节点报价，发起者挑选</option>
               </select>
             </div>
-            <div class="field"><label>冗余执行节点数</label><input id="cmMinNodes" type="number" min="1" max="8" value="2"></div>
+            <div class="field"><label data-i18n="cmp.k29">冗余执行节点数</label><input id="cmMinNodes" type="number" min="1" max="8" value="2"></div>
           </div>
-          <button class="btn primary block" onclick="cmPublish()">🚀 发布（预算质押托管）</button>
-          <p class="dim mt">预算全额质押进合约；至少两个节点提交一致结果哈希即自动结算（1% 手续费回流激励池），不一致则引入第三方仲裁。</p>
+          <button class="btn primary block" onclick="cmPublish()" data-i18n="cmp.k30">🚀 发布（预算质押托管）</button>
+          <p class="dim mt" data-i18n="cmp.k31">预算全额质押进合约；至少两个节点提交一致结果哈希即自动结算（1% 手续费回流激励池），不一致则引入第三方仲裁。</p>
         </div>
         <div class="card">
-          <h3 class="mb">🔒 结算与验证规则</h3>
+          <h3 class="mb" data-i18n="cmp.k32">🔒 结算与验证规则</h3>
           <div class="sf-sub">
             · 双节点冗余执行：结果哈希一致 → 自动结算；<br>
             · 不一致 → 第三方节点仲裁，正确方获得报酬；<br>
@@ -129,8 +129,8 @@
             · 系统随机抽查 5% 已完成任务，发现错误 → 原节点罚没双倍质押；<br>
             · 高信誉节点获得 5-15% 额外奖励，作恶信誉分清零并降级。
           </div>
-          <h3 class="mb mt">💎 节点质押</h3>
-          <div class="sf-sub">接单前必须质押（100-10000 NOVA）；解质押 7 天冷静期；作恶罚没质押。</div>
+          <h3 class="mb mt" data-i18n="cmp.k33">💎 节点质押</h3>
+          <div class="sf-sub" data-i18n="cmp.k34">接单前必须质押（100-10000 NOVA）；解质押 7 天冷静期；作恶罚没质押。</div>
         </div>
       </div>
     </section>
@@ -139,61 +139,62 @@
     <section class="sf-panel" id="cm-panel-nodes">
       <div class="sf-grid2">
         <div class="card">
-          <h3 class="mb">🗄️ 注册算力节点（规格上链公开）</h3>
+          <h3 class="mb" data-i18n="cmp.k35">🗄️ 注册算力节点（规格上链公开）</h3>
           <div class="sf-grid2">
-            <div class="field"><label>CPU 核心数</label><input id="ndCpu" type="number" value="8"></div>
-            <div class="field"><label>GPU 型号</label><input id="ndGpu" value="RTX 4090"></div>
+            <div class="field"><label data-i18n="cmp.k36">CPU 核心数</label><input id="ndCpu" type="number" value="8"></div>
+            <div class="field"><label data-i18n="cmp.k37">GPU 型号</label><input id="ndGpu" value="RTX 4090"></div>
           </div>
           <div class="sf-grid2">
-            <div class="field"><label>显存（GB）</label><input id="ndVram" type="number" value="24"></div>
-            <div class="field"><label>内存（GB）</label><input id="ndRam" type="number" value="64"></div>
+            <div class="field"><label data-i18n="cmp.k38">显存（GB）</label><input id="ndVram" type="number" value="24"></div>
+            <div class="field"><label data-i18n="cmp.k39">内存（GB）</label><input id="ndRam" type="number" value="64"></div>
           </div>
           <div class="sf-grid2">
-            <div class="field"><label>可用存储（GB）</label><input id="ndStorage" type="number" value="512"></div>
-            <div class="field"><label>区域</label><input id="ndRegion" value="cn-east"></div>
+            <div class="field"><label data-i18n="cmp.k40">可用存储（GB）</label><input id="ndStorage" type="number" value="512"></div>
+            <div class="field"><label data-i18n="cmp.k41">区域</label><input id="ndRegion" value="cn-east"></div>
           </div>
-          <div class="field"><label>网络延迟（ms）</label><input id="ndLatency" type="number" value="30"></div>
-          <button class="btn primary block" onclick="ndRegister()">🗄️ 注册 / 更新规格</button>
-          <p class="dim mt">超级节点（验证者质押 / 矿工 / 存储节点）自动具备算力提供资格，无需额外注册。</p>
+          <div class="field"><label data-i18n="cmp.k42">网络延迟（ms）</label><input id="ndLatency" type="number" value="30"></div>
+          <button class="btn primary block" onclick="ndRegister()" data-i18n="cmp.k43">🗄️ 注册 / 更新规格</button>
+          <p class="dim mt" data-i18n="cmp.k44">超级节点（验证者质押 / 矿工 / 存储节点）自动具备算力提供资格，无需额外注册。</p>
         </div>
         <div class="card">
-          <h3 class="mb">💎 我的质押</h3>
-          <div id="ndMyStake" class="sf-sub">连接钱包查看质押状态。</div>
+          <h3 class="mb" data-i18n="cmp.k45">💎 我的质押</h3>
+          <div id="ndMyStake" class="sf-sub" data-i18n="cmp.k46">连接钱包查看质押状态。</div>
           <div class="sf-grid2 mt">
-            <div class="field"><label>质押 / 解押金额</label><input id="ndStakeAmt" type="number" value="200"></div>
+            <div class="field"><label data-i18n="cmp.k47">质押 / 解押金额</label><input id="ndStakeAmt" type="number" value="200"></div>
           </div>
           <div class="sf-tools">
-            <button class="btn primary small" onclick="ndStake()">🔒 质押（100-10000）</button>
-            <button class="btn small" onclick="ndUnstake()">🔓 解押（7 天冷静期）</button>
-            <button class="btn success small" onclick="ndClaim()">💸 领取解押</button>
+            <button class="btn primary small" onclick="ndStake()" data-i18n="cmp.k48">🔒 质押（100-10000）</button>
+            <button class="btn small" onclick="ndUnstake()" data-i18n="cmp.k49">🔓 解押（7 天冷静期）</button>
+            <button class="btn success small" onclick="ndClaim()" data-i18n="cmp.k50">💸 领取解押</button>
           </div>
-          <p class="dim mt">质押决定接单资格；信誉分决定接单优先级、质押系数与最大任务金额。</p>
+          <p class="dim mt" data-i18n="cmp.k51">质押决定接单资格；信誉分决定接单优先级、质押系数与最大任务金额。</p>
         </div>
       </div>
       <div class="card mt">
-        <h3 class="mb">🌐 在网节点（规格 / 信誉 / 质押 / 收益）</h3>
-        <div id="cmNodes"><p class="dim">加载中…</p></div>
+        <h3 class="mb" data-i18n="cmp.k52">🌐 在网节点（规格 / 信誉 / 质押 / 收益）</h3>
+        <div id="cmNodes"><p class="dim" data-i18n="cmp.k53">加载中…</p></div>
       </div>
     </section>
 
     <!-- 任务市场 -->
     <section class="sf-panel" id="cm-panel-market">
       <div class="card">
-        <h3 class="mb">全部任务</h3>
-        <div id="cmMarket"><p class="dim">加载中…</p></div>
+        <h3 class="mb" data-i18n="cmp.k54">全部任务</h3>
+        <div id="cmMarket"><p class="dim" data-i18n="cmp.k55">加载中…</p></div>
       </div>
     </section>
 
     <!-- 我的任务 -->
     <section class="sf-panel" id="cm-panel-mine">
       <div class="card">
-        <h3 class="mb">我发布的 / 我参与的</h3>
-        <div id="cmMine"><p class="dim">加载中…</p></div>
+        <h3 class="mb" data-i18n="cmp.k56">我发布的 / 我参与的</h3>
+        <div id="cmMine"><p class="dim" data-i18n="cmp.k57">加载中…</p></div>
       </div>
     </section>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./compute.i18n.js"></script>
   <script>
     var N = NovaApps;
     var TASK_NAMES = {
@@ -202,19 +203,19 @@
     };
     function fmtN(x) { return Number(x || 0).toLocaleString('zh-CN', { maximumFractionDigits: 6 }); }
     function addrLink(a) { return '<span class="mono">' + N.esc(String(a || '').slice(0, 12)) + '</span>'; }
-    function tName(t) { return TASK_NAMES[t.task_type] || (t.mode ? '算力任务' : 'legacy 任务'); }
+    function tName(t) { var k = 'cmp.dyn.task.' + (t.task_type || ''); return N.t(k) !== k ? N.t(k) : (t.mode ? N.t('cmp.dyn.task.generic') : N.t('cmp.dyn.task.legacy')); }
     function statusTag(st) {
-      var map = { open: ['招募中', 'live'], bidding: ['竞价中', 'live'], assigned: ['执行中', ''],
-        submitted: ['已提交', ''], arbitrating: ['仲裁中', 'warn'], settled: ['已结算', ''],
-        completed: ['已结算', ''], disputed: ['争议冻结', 'warn'], failed: ['失败退款', ''],
-        expired: ['已过期', ''] };
+      var map = { open: ['cmp.dyn.st.open', 'live'], bidding: ['cmp.dyn.st.bidding', 'live'], assigned: ['cmp.dyn.st.assigned', ''],
+        submitted: ['cmp.dyn.st.submitted', ''], arbitrating: ['cmp.dyn.st.arbitrating', 'warn'], settled: ['cmp.dyn.st.settled', ''],
+        completed: ['cmp.dyn.st.completed', ''], disputed: ['cmp.dyn.st.disputed', 'warn'], failed: ['cmp.dyn.st.failed', ''],
+        expired: ['cmp.dyn.st.expired', ''] };
       var m = map[st] || [st, ''];
-      return '<span class="tag' + (m[1] ? ' ' + m[1] : '') + '">' + m[0] + '</span>';
+      return '<span class="tag' + (m[1] ? ' ' + m[1] : '') + '">' + N.t(m[0]) + '</span>';
     }
     function repTier(r) {
       var s = Number((r && r.score) != null ? r.score : (r && r.reputation) || 0);
-      return s >= 80 ? ['恒星节点', 'rgba(255,215,0,.25)'] : s >= 60 ? ['星核节点', 'rgba(0,240,255,.25)']
-        : s >= 40 ? ['星云节点', 'rgba(180,77,255,.25)'] : ['轻量节点', 'rgba(255,255,255,.12)'];
+      return s >= 80 ? [N.t('cmp.dyn.tier.star'), 'rgba(255,215,0,.25)'] : s >= 60 ? [N.t('cmp.dyn.tier.core'), 'rgba(0,240,255,.25)']
+        : s >= 40 ? [N.t('cmp.dyn.tier.nebula'), 'rgba(180,77,255,.25)'] : [N.t('cmp.dyn.tier.light'), 'rgba(255,255,255,.12)'];
     }
 
     function switchTab(name) {
@@ -230,7 +231,7 @@
       if (!ok) return;
       var r = await N.sfAction(op, fields, amount);
       if (!r.ok) { N.toast(r.error, 'err'); return; }
-      N.toast((okMsg || '操作成功') + (r.id ? ' · ' + String(r.id).slice(0, 14) + '…' : ''));
+      N.toast((okMsg || N.t('dyn.success')) + (r.id ? ' · ' + String(r.id).slice(0, 14) + '…' : ''));
       renderAll();
     }
 
@@ -247,22 +248,24 @@
         var ov = await N.computeOverview();
         var evs = await N.computeEvents();
         statsEl.innerHTML = [
-          ['节点数', ov.nodes + (ov.auto_qualified ? ' (+' + ov.auto_qualified + ' 超级)' : ''), '🌐'],
-          ['任务总数', ov.tasks, '📋'], ['进行中', ov.open + ' 招募 / ' + ov.assigned + ' 执行', '⚡'],
-          ['已结算', ov.completed, '✅'], ['争议冻结', ov.disputed, '⚠️'],
-          ['全网质押', fmtN(ov.total_staked), '💎'], ['罚没合计', fmtN(ov.slashed), '🛡️'],
-          ['手续费入池', fmtN(ov.fees_to_pool), '🏦'],
-          ['待抽查', ov.audits_pending, '🔍'], ['抽查失败', ov.audits_failed, '🚨']
+          [N.t('cmp.dyn.ov.nodes'), ov.nodes + (ov.auto_qualified ? ' (+' + ov.auto_qualified + ' ' + N.t('cmp.dyn.ov.super') + ')' : ''), '🌐'],
+          [N.t('cmp.dyn.ov.tasks'), ov.tasks, '📋'], [N.t('cmp.dyn.ov.open'), N.t('cmp.dyn.ov.recruit', { open: ov.open, assigned: ov.assigned }), '⚡'],
+          [N.t('cmp.dyn.ov.completed'), ov.completed, '✅'], [N.t('cmp.dyn.ov.disputed'), ov.disputed, '⚠️'],
+          [N.t('cmp.dyn.ov.staked'), fmtN(ov.total_staked), '💎'], [N.t('cmp.dyn.ov.slashed'), fmtN(ov.slashed), '🛡️'],
+          [N.t('cmp.dyn.ov.fees'), fmtN(ov.fees_to_pool), '🏦'],
+          [N.t('cmp.dyn.ov.audits'), ov.audits_pending, '🔍'], [N.t('cmp.dyn.ov.audits.fail'), ov.audits_failed, '🚨']
         ].map(function (s) {
           return '<div class="stat"><span>' + s[2] + ' ' + s[0] + '</span><b>' + s[1] + '</b></div>';
         }).join('');
         var prices = ov.reference_prices || {};
-        refEl.innerHTML = '<tr><th>类型</th><th>参考价（NOVA）</th><th>需求规格</th></tr>' +
+        refEl.innerHTML = '<tr><th>' + N.t('cmp.dyn.ref.type') + '</th><th>' + N.t('cmp.dyn.ref.price') + '</th><th>' + N.t('cmp.dyn.ref.spec') + '</th></tr>' +
           Object.keys(prices).map(function (k) {
             var p = prices[k];
-            return '<tr><td>' + N.esc(p.name || k) + '</td><td>' + p.min + ' - ' + p.max + '</td><td>' + N.esc(specOf(k)) + '</td></tr>';
+            var tkey = 'cmp.dyn.task.' + k;
+            var tname = N.t(tkey) !== tkey ? N.t(tkey) : N.esc(p.name || k);
+            return '<tr><td>' + tname + '</td><td>' + p.min + ' - ' + p.max + '</td><td>' + N.esc(specOf(k)) + '</td></tr>';
           }).join('');
-        if (!evs.length) { evEl.innerHTML = '<p class="dim">暂无算力网络事件。</p>'; return; }
+        if (!evs.length) { evEl.innerHTML = '<p class="dim">' + N.t('cmp.dyn.events.empty') + '</p>'; return; }
         evEl.innerHTML = evs.slice(0, 20).map(function (e) {
           return '<div class="sf-item"><h4>' + (e.op || e.type || 'event') + '</h4>' +
             '<div class="sf-sub">' + N.esc(e.summary || e.message || '') + ' · ' + N.timeAgo(e.ts || e.at) + '</div></div>';
@@ -270,15 +273,16 @@
       } catch (e) { evEl.innerHTML = N.errHtml(String((e && e.message) || e)); }
     }
     function specOf(k) {
-      return { ai_music: '4 核 + 高 GPU + 16GB 内存', ai_image: '4 核 + 中 GPU + 8GB 内存',
-        game_server: '4 核 + 32GB 内存', video_transcode: '8 核 + 8GB 内存',
-        data_clean: '2 核 + 16GB 内存' }[k] || '';
+      var keys = { ai_music: 'cmp.dyn.spec.ai_music', ai_image: 'cmp.dyn.spec.ai_image',
+        game_server: 'cmp.dyn.spec.game_server', video_transcode: 'cmp.dyn.spec.video_transcode',
+        data_clean: 'cmp.dyn.spec.data_clean' };
+      return keys[k] ? N.t(keys[k]) : '';
     }
 
     /* ---------- 发布 ---------- */
     function cmPublish() {
       var spec = document.getElementById('cmSpec').value.trim();
-      if (!spec) { N.toast('请输入任务描述', 'err'); return; }
+      if (!spec) { N.toast(N.t('cmp.dyn.publish.need'), 'err'); return; }
       var hours = Number(document.getElementById('cmHours').value);
       var taskType = document.getElementById('cmType').value;
       var mode = document.getElementById('cmMode').value;
@@ -287,7 +291,7 @@
         task_type: taskType, mode: mode,
         min_nodes: Number(document.getElementById('cmMinNodes').value) || 2,
         acceptance: document.getElementById('cmAccept').value.trim()
-      }, Number(document.getElementById('cmBounty').value), '算力任务已发布');
+      }, Number(document.getElementById('cmBounty').value), N.t('cmp.dyn.published'));
     }
 
     /* ---------- 节点 ---------- */
@@ -300,11 +304,11 @@
         storage_gb: Number(document.getElementById('ndStorage').value),
         region: document.getElementById('ndRegion').value.trim(),
         latency_ms: Number(document.getElementById('ndLatency').value)
-      }, 0, '算力节点已注册');
+      }, 0, N.t('cmp.dyn.node.registered'));
     }
-    function ndStake() { run('nova:compute:stake', {}, Number(document.getElementById('ndStakeAmt').value), '质押成功'); }
-    function ndUnstake() { run('nova:compute:unstake', {}, Number(document.getElementById('ndStakeAmt').value), '已解押，7 天冷静期后领取'); }
-    function ndClaim() { run('nova:compute:claim', {}, 0, '已取回解押'); }
+    function ndStake() { run('nova:compute:stake', {}, Number(document.getElementById('ndStakeAmt').value), N.t('cmp.dyn.staked')); }
+    function ndUnstake() { run('nova:compute:unstake', {}, Number(document.getElementById('ndStakeAmt').value), N.t('cmp.dyn.unstaked')); }
+    function ndClaim() { run('nova:compute:claim', {}, 0, N.t('cmp.dyn.claimed')); }
 
     async function renderNodes() {
       var el = document.getElementById('cmNodes');
@@ -316,31 +320,44 @@
         if (me && nodes[me]) {
           var nd = nodes[me];
           var tier = repTier(nd);
-          stakeEl.innerHTML = '已注册 · 信誉 <b class="price">' + nd.reputation + '</b> 分（' + tier[0] + '）· 质押 <b class="price">' + fmtN(nd.stake) + '</b> NOVA' +
-            (nd.unbonding ? ' · 解押中 ' + fmtN(nd.unbonding.amount) + '（' + N.timeAgo(nd.unbonding.release_at) + ' 后领取）' : '');
+          stakeEl.innerHTML = N.t('cmp.dyn.my.stake', {
+            rep: nd.reputation, tier: tier[0], stake: fmtN(nd.stake),
+            unbonding: nd.unbonding ? N.t('cmp.dyn.my.unbonding', { amt: fmtN(nd.unbonding.amount), time: N.timeAgo(nd.unbonding.release_at) }) : ''
+          });
         } else if (me) {
-          stakeEl.innerHTML = '尚未注册节点，也未质押。注册或质押 100+ NOVA 后即可接单（超级节点自动具备资格）。';
+          stakeEl.innerHTML = N.t('cmp.dyn.my.none');
         } else {
-          stakeEl.innerHTML = '连接钱包查看我的质押状态。';
+          stakeEl.innerHTML = N.t('cmp.dyn.my.connect');
         }
         var ids = Object.keys(nodes);
-        if (!ids.length) { el.innerHTML = '<p class="dim">还没有算力节点。</p>'; return; }
+        if (!ids.length) { el.innerHTML = '<p class="dim">' + N.t('cmp.dyn.nodes.empty') + '</p>'; return; }
         el.innerHTML = ids.map(function (a) {
           var n = nodes[a];
           var tier = repTier(n);
           var rep = n.reputation != null ? n.reputation : ((n.reputation && n.reputation.score) || 0);
           var repObj = typeof n.reputation === 'object' ? n.reputation : { score: rep };
           var income = n.income || {};
-          return '<div class="sf-item"><h4>🌐 ' + addrLink(a) + (n.auto_qualified ? ' <span class="tag">超级节点（自动资格）</span>' : '') + '</h4>' +
-            '<div class="sf-sub">' + (n.cpu_cores || n.spec && n.spec.cpu_cores || '-') + ' 核 · GPU ' + N.esc(n.gpu_model || (n.spec && n.spec.gpu_model) || 'auto') +
-            ' · 内存 ' + (n.ram_gb || (n.spec && n.spec.ram_gb) || '-') + 'GB · 存储 ' + (n.storage_gb || (n.spec && n.spec.storage_gb) || '-') + 'GB · ' + N.esc(n.region || (n.spec && n.spec.region) || 'auto') + ' · ' + (n.latency_ms || (n.spec && n.spec.latency_ms) || '-') + 'ms<br>' +
-            '信誉 <b class="price">' + rep + '</b> 分（' + tier[0] + '，加成 ' + Math.round((repObj.bonus || 0) * 100) + '%） · 质押 ' + fmtN(n.stake) + ' · 任务收益 ' + fmtN(income.total) + ' NOVA</div>' +
+          return '<div class="sf-item"><h4>🌐 ' + addrLink(a) + (n.auto_qualified ? ' <span class="tag">' + N.t('cmp.dyn.super.tag') + '</span>' : '') + '</h4>' +
+            '<div class="sf-sub">' + N.t('cmp.dyn.node.spec', {
+              cpu: (n.cpu_cores || n.spec && n.spec.cpu_cores || '-'),
+              gpu: N.esc(n.gpu_model || (n.spec && n.spec.gpu_model) || 'auto'),
+              ram: (n.ram_gb || (n.spec && n.spec.ram_gb) || '-'),
+              storage: (n.storage_gb || (n.spec && n.spec.storage_gb) || '-'),
+              region: N.esc(n.region || (n.spec && n.spec.region) || 'auto'),
+              lat: (n.latency_ms || (n.spec && n.spec.latency_ms) || '-')
+            }) + '<br>' +
+            N.t('cmp.dyn.node.rep', {
+              rep: rep, tier: tier[0], bonus: Math.round((repObj.bonus || 0) * 100),
+              stake: fmtN(n.stake), income: fmtN(income.total)
+            }) + '</div>' +
             '<div class="rep-bar"><i style="width:' + Math.min(100, rep) + '%;background:' + tier[1] + '"></i></div>' +
-            '<div class="sf-sub" style="margin-top:6px;">完成 ' + (repObj.stats && repObj.stats.completed || n.completed || 0) +
-            ' · 正确 ' + (repObj.stats && repObj.stats.correct || n.correct || 0) +
-            ' · 错误 ' + (repObj.stats && repObj.stats.wrong || n.wrong || 0) +
-            ' · 投诉 ' + (repObj.stats && repObj.stats.complaints || n.complaints || 0) +
-            ' · 作恶 ' + (repObj.stats && repObj.stats.cheated || n.cheated || 0) + '</div></div>';
+            '<div class="sf-sub" style="margin-top:6px;">' + N.t('cmp.dyn.node.stats', {
+              c: (repObj.stats && repObj.stats.completed || n.completed || 0),
+              ok: (repObj.stats && repObj.stats.correct || n.correct || 0),
+              w: (repObj.stats && repObj.stats.wrong || n.wrong || 0),
+              cp: (repObj.stats && repObj.stats.complaints || n.complaints || 0),
+              ch: (repObj.stats && repObj.stats.cheated || n.cheated || 0)
+            }) + '</div></div>';
         }).join('');
       } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
     }
@@ -351,7 +368,7 @@
       try {
         var tasks = await N.computeSnapshot();
         var ids = Object.keys(tasks);
-        if (!ids.length) { el.innerHTML = '<p class="dim">还没有算力任务。</p>'; return; }
+        if (!ids.length) { el.innerHTML = '<p class="dim">' + N.t('cmp.dyn.market.empty') + '</p>'; return; }
         var s = N.getState();
         var me = s.connected ? s.addr : null;
         el.innerHTML = ids.map(function (tid) {
@@ -369,49 +386,49 @@
       var btns = [];
       if (me) {
         if (open && !isCreator && t.mode === 'bid' && !t.bids[me]) {
-          btns.push('<button class="btn primary small" onclick="cmBid(\' + tid + \')">🔨 报价</button>');
+          btns.push('<button class="btn primary small" onclick="cmBid(\' + tid + \')">' + N.t('cmp.dyn.btn.bid') + '</button>');
         }
         if (open && !isCreator && t.mode !== 'bid' && !accepted && !submitted) {
-          btns.push('<button class="btn primary small" onclick="cmAccept(\' + tid + \')">⚡ 接单</button>');
+          btns.push('<button class="btn primary small" onclick="cmAccept(\' + tid + \')">' + N.t('cmp.dyn.btn.accept') + '</button>');
         }
         if (isCreator && t.mode === 'bid' && t.status === 'bidding' && Object.keys(t.bids || {}).length) {
           Object.keys(t.bids).forEach(function (b) {
-            btns.push('<button class="btn success small" onclick="cmAward(\' + tid + \',\' + b + \')">选标 ' + fmtN(t.bids[b].quote) + ' NOVA</button>');
+            btns.push('<button class="btn success small" onclick="cmAward(\' + tid + \',\' + b + \')">' + N.t('cmp.dyn.btn.award', { q: fmtN(t.bids[b].quote) }) + '</button>');
           });
         }
         if (accepted && !isCreator && !submitted && (t.status === 'assigned' || t.status === 'open' || t.status === 'bidding' || t.status === 'submitted' || t.status === 'arbitrating')) {
-          btns.push('<button class="btn success small" onclick="cmSubmit(\' + tid + \')">📤 提交结果</button>');
+          btns.push('<button class="btn success small" onclick="cmSubmit(\' + tid + \')">' + N.t('cmp.dyn.btn.submit') + '</button>');
         }
         if (t.status === 'arbitrating' && me !== t.creator && (t.accepted || []).indexOf(me) < 0 && t.arbiter !== me) {
-          btns.push('<button class="btn small" onclick="cmArbitrate(\' + tid + \')">⚖️ 第三方仲裁</button>');
+          btns.push('<button class="btn small" onclick="cmArbitrate(\' + tid + \')">' + N.t('cmp.dyn.btn.arbitrate') + '</button>');
         }
         if (isCreator && t.status === 'completed' && Date.now() <= (t.completed_at || 0) + 24 * 3600000) {
-          btns.push('<button class="btn warn small" onclick="cmDispute(\' + tid + \')">⚠️ 24h 内异议</button>');
+          btns.push('<button class="btn warn small" onclick="cmDispute(\' + tid + \')">' + N.t('cmp.dyn.btn.dispute') + '</button>');
         }
         if (t.status === 'disputed' && me !== t.creator) {
-          btns.push('<button class="btn small" onclick="cmVote(\' + tid + \',\'uphold\')">🗳️ 支持异议</button>');
-          btns.push('<button class="btn small" onclick="cmVote(\' + tid + \',\'dismiss\')">🗳️ 驳回异议</button>');
+          btns.push('<button class="btn small" onclick="cmVote(\' + tid + \',\'uphold\')">' + N.t('cmp.dyn.btn.uphold') + '</button>');
+          btns.push('<button class="btn small" onclick="cmVote(\' + tid + \',\'dismiss\')">' + N.t('cmp.dyn.btn.dismiss') + '</button>');
         }
         if (t.audit_pending && t.audit && t.audit.auditor === me) {
-          btns.push('<button class="btn small" onclick="cmAudit(\' + tid + \')">🔍 提交抽查结果</button>');
+          btns.push('<button class="btn small" onclick="cmAudit(\' + tid + \')">' + N.t('cmp.dyn.btn.audit') + '</button>');
         }
       }
       var hist = (t.history || []).slice(-3).map(function (h) {
         return h.state + (h.note ? '(' + h.note + ')' : '');
       }).join(' → ');
       var bidsHtml = t.mode === 'bid' && Object.keys(t.bids || {}).length
-        ? '<br>出价：' + Object.keys(t.bids).map(function (b) { return addrLink(b) + ' ' + fmtN(t.bids[b].quote) + ' NOVA'; }).join('，')
+        ? '<br>' + N.t('cmp.dyn.bids') + Object.keys(t.bids).map(function (b) { return addrLink(b) + ' ' + fmtN(t.bids[b].quote) + ' NOVA'; }).join('，')
         : '';
-      var auditHtml = t.audit_pending ? '<br><span class="tag warn">🔍 待抽查</span> 审计节点 ' + addrLink(t.audit && t.audit.auditor) : '';
+      var auditHtml = t.audit_pending ? '<br><span class="tag warn">' + N.t('cmp.dyn.audit.tag') + '</span> ' + N.t('cmp.dyn.auditor', { a: addrLink(t.audit && t.audit.auditor) }) : '';
       return '<div class="sf-item"><h4>' + (t.mode === 'bid' ? '🔨 ' : '⚡ ') + tName(t) + ' ' + statusTag(t.status) + '</h4>' +
-        '<div class="sf-sub">' + N.esc(t.spec) + (t.acceptance ? '<br>验收：' + N.esc(t.acceptance) : '') +
-        '<br>发布者 ' + addrLink(t.creator) + ' · 预算 <span class="price">' + fmtN(t.bounty) + '</span> NOVA（托管）' +
-        ' · 参与 ' + (t.accepted || []).length + '/' + (t.min_nodes || 8) +
-        (t.winner ? ' · 中标 ' + addrLink(t.winner) : '') +
+        '<div class="sf-sub">' + N.esc(t.spec) + (t.acceptance ? '<br>' + N.t('cmp.dyn.acceptance') + N.esc(t.acceptance) : '') +
+        '<br>' + N.t('cmp.dyn.creator', { a: addrLink(t.creator) }) + ' · ' + N.t('cmp.dyn.budget', { b: fmtN(t.bounty) }) +
+        ' · ' + N.t('cmp.dyn.participants', { n: (t.accepted || []).length, m: (t.min_nodes || 8) }) +
+        (t.winner ? ' · ' + N.t('cmp.dyn.winner', { a: addrLink(t.winner) }) : '') +
         bidsHtml + auditHtml +
-        '<br>截止 ' + new Date(t.expires_at).toLocaleString('zh-CN') +
-        (t.status === 'completed' ? ' · 结果 ' + Object.keys(t.results || {}).length + ' 份' : '') +
-        (hist ? '<br>状态轨迹：' + N.esc(hist) : '') + '</div>' +
+        '<br>' + N.t('cmp.dyn.deadline', { d: new Date(t.expires_at).toLocaleString('zh-CN') }) +
+        (t.status === 'completed' ? ' · ' + N.t('cmp.dyn.result.count', { n: Object.keys(t.results || {}).length }) : '') +
+        (hist ? '<br>' + N.t('cmp.dyn.trace') + N.esc(hist) : '') + '</div>' +
         (btns.length ? '<div class="sf-tools">' + btns.join('') + '</div>' : '') + '</div>';
     }
 
@@ -420,43 +437,43 @@
       try {
         var tasks = await N.computeSnapshot();
         var s = N.getState();
-        if (!s.connected) { el.innerHTML = '<p class="dim">连接钱包后展示你发布或参与的任务。</p>'; return; }
+        if (!s.connected) { el.innerHTML = '<p class="dim">' + N.t('cmp.dyn.mine.connect') + '</p>'; return; }
         var ids = Object.keys(tasks).filter(function (tid) {
           var t = tasks[tid];
           return t.creator === s.addr || (t.accepted || []).indexOf(s.addr) >= 0;
         });
-        if (!ids.length) { el.innerHTML = '<p class="dim">还没有你发布或参与的任务。</p>'; return; }
+        if (!ids.length) { el.innerHTML = '<p class="dim">' + N.t('cmp.dyn.mine.empty') + '</p>'; return; }
         el.innerHTML = ids.map(function (tid) { return taskCard(tasks[tid], s.addr); }).join('');
       } catch (e) { el.innerHTML = N.errHtml(String((e && e.message) || e)); }
     }
 
-    function cmAccept(tid) { run('nova:compute:accept', { task_id: tid }, 0, '已接单'); }
+    function cmAccept(tid) { run('nova:compute:accept', { task_id: tid }, 0, N.t('cmp.dyn.op.accepted')); }
     function cmBid(tid) {
-      var q = prompt('报价（NOVA）：');
+      var q = prompt(N.t('cmp.dyn.op.bid.need'));
       if (q == null) return;
-      run('nova:compute:bid', { task_id: tid, quote: Number(q) }, 0, '已报价');
+      run('nova:compute:bid', { task_id: tid, quote: Number(q) }, 0, N.t('cmp.dyn.op.bidded'));
     }
-    function cmAward(tid, winner) { run('nova:compute:award', { task_id: tid, winner: winner }, 0, '已选标'); }
+    function cmAward(tid, winner) { run('nova:compute:award', { task_id: tid, winner: winner }, 0, N.t('cmp.dyn.op.awarded')); }
     async function cmSubmit(tid) {
-      var rh = prompt('提交结果哈希（64 位 hex）：', '');
+      var rh = prompt(N.t('cmp.dyn.op.submit.need'), '');
       if (!rh) return;
-      run('nova:compute:submit', { task_id: tid, result_hash: rh.trim() }, 0, '已提交结果');
+      run('nova:compute:submit', { task_id: tid, result_hash: rh.trim() }, 0, N.t('cmp.dyn.op.submitted'));
     }
     async function cmArbitrate(tid) {
-      var rh = prompt('仲裁判定结果哈希（64 位 hex）：', '');
+      var rh = prompt(N.t('cmp.dyn.op.arbitrate.need'), '');
       if (!rh) return;
-      run('nova:compute:arbitrate', { task_id: tid, result_hash: rh.trim() }, 0, '仲裁完成');
+      run('nova:compute:arbitrate', { task_id: tid, result_hash: rh.trim() }, 0, N.t('cmp.dyn.op.arbitrated'));
     }
     function cmDispute(tid) {
-      var reason = prompt('异议原因：', '结果质量不符合验收标准');
+      var reason = prompt(N.t('cmp.dyn.op.dispute.need'), N.t('cmp.dyn.op.dispute.def'));
       if (reason == null) return;
-      run('nova:compute:dispute', { task_id: tid, reason: reason }, 0, '已提出异议，预算冻结');
+      run('nova:compute:dispute', { task_id: tid, reason: reason }, 0, N.t('cmp.dyn.op.disputed'));
     }
-    function cmVote(tid, support) { run('nova:compute:vote', { task_id: tid, support: support }, 0, '投票成功'); }
+    function cmVote(tid, support) { run('nova:compute:vote', { task_id: tid, support: support }, 0, N.t('cmp.dyn.op.voted')); }
     function cmAudit(tid) {
-      var rh = prompt('提交抽查结果哈希（64 位 hex）：', '');
+      var rh = prompt(N.t('cmp.dyn.op.audit.need'), '');
       if (!rh) return;
-      run('nova:compute:audit', { task_id: tid, result_hash: rh.trim() }, 0, '抽查结果已提交');
+      run('nova:compute:audit', { task_id: tid, result_hash: rh.trim() }, 0, N.t('cmp.dyn.op.audit.submitted'));
     }
 
     window.addEventListener('nova-wallet', renderAll);

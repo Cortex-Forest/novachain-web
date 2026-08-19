@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0A0A0F">
   <meta name="description" content="Nova 虚拟演出：沉浸式舞台、灯光粒子场与 NFT 电子门票。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https: ws://127.0.0.1:* ws://localhost:* wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>Nova 虚拟演出 · 星舰回响</title>
+  <title data-i18n="stage.title">Nova 虚拟演出 · 星舰回响</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,44 +19,45 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">Nova Stage</span>
-      <h1>🎪 虚拟演出</h1>
-      <p class="sub">跨星系的沉浸式舞台：实时粒子灯光、生成式配乐与链上 NFT 门票。购票即获得永久留档的入场凭证。</p>
+      <h1 data-i18n="stgx.k1">🎪 虚拟演出</h1>
+      <p class="sub" data-i18n="stgx.k2">跨星系的沉浸式舞台：实时粒子灯光、生成式配乐与链上 NFT 门票。购票即获得永久留档的入场凭证。</p>
       <div class="row" style="margin-top:10px;">
-        <button class="btn primary" onclick="enterStage('s1')">🎪 进入演出</button>
+        <button class="btn primary" onclick="enterStage('s1')" data-i18n="stgx.k3">🎪 进入演出</button>
       </div>
     </section>
 
     <div id="stageView" style="display:none;"></div>
 
     <div class="section-head">
-      <div class="section-title">🗓️ 近期演出</div>
-      <div class="row"><span class="tag live">即将开演</span><span class="tag nft">NFT 门票</span></div>
+      <div class="section-title" data-i18n="stgx.k4">🗓️ 近期演出</div>
+      <div class="row"><span class="tag live" data-i18n="stgx.k5">即将开演</span><span class="tag nft" data-i18n="stgx.k6">NFT 门票</span></div>
     </div>
     <div class="grid grid-3" id="showGrid"></div>
 
-    <div class="section-title">🎟️ 我的门票</div>
+    <div class="section-title" data-i18n="stgx.k7">🎟️ 我的门票</div>
     <div id="myTickets"></div>
   </main>
 
   <script src="./apps-common.js"></script>
+  <script src="./stage.i18n.js"></script>
   <script>
     var N = NovaApps;
-    var ORG = { name: '银河演出公司', addr: '0x' + '77'.repeat(20) };
+    var ORG = { name: 'stg.demo.org', addr: '0x' + '77'.repeat(20) };
     var SHOWS = [
       {
-        id: 's1', title: '星舰回响 · 量子演唱会', artist: 'Nova 音乐实验室 & 夜航乐队',
-        date: '2026-08-22 20:00', venue: '星舰「曙光号」主舞台', price: 8, art: '🚀', hue: 200,
-        desc: '双主唱 + 生成式灯光矩阵，全场同屏应援，演出结束后解锁后台见面彩蛋。'
+        id: 's1', title: 'stg.dyn.show.s1.title', artist: 'stg.dyn.show.s1.artist',
+        date: '2026-08-22 20:00', venue: 'stg.dyn.show.s1.venue', price: 8, art: '🚀', hue: 200,
+        desc: 'stg.dyn.show.s1.desc'
       },
       {
-        id: 's2', title: '霓虹之城 · 电子音乐节', artist: '量子节拍器 & 极光女声',
-        date: '2026-09-05 19:30', venue: '轨道霓虹穹顶', price: 6, art: '🌆', hue: 285,
-        desc: '全息城市天际线舞台，蹦迪心率同步灯光节拍。'
+        id: 's2', title: 'stg.dyn.show.s2.title', artist: 'stg.dyn.show.s2.artist',
+        date: '2026-09-05 19:30', venue: 'stg.dyn.show.s2.venue', price: 6, art: '🌆', hue: 285,
+        desc: 'stg.dyn.show.s2.desc'
       },
       {
-        id: 's3', title: '引力波 · 古典星夜', artist: '引力波合唱团',
-        date: '2026-09-18 21:00', venue: '深空交响大厅', price: 12, art: '🌊', hue: 175,
-        desc: '没有观众的殿堂级现场——每位听众都是恒星。'
+        id: 's3', title: 'stg.dyn.show.s3.title', artist: 'stg.dyn.show.s3.artist',
+        date: '2026-09-18 21:00', venue: 'stg.dyn.show.s3.venue', price: 12, art: '🌊', hue: 175,
+        desc: 'stg.dyn.show.s3.desc'
       }
     ];
 
@@ -67,11 +68,11 @@
           '<div class="cover" style="background:linear-gradient(140deg, hsla(' + sh.hue + ',85%,40%,0.25), hsla(' + (sh.hue + 70) + ',80%,45%,0.3));">' +
             '<span>' + sh.art + '</span><span class="play" onclick="enterStage(\'' + sh.id + '\')">🎪</span>' +
           '</div>' +
-          '<h3>' + N.esc(sh.title) + '</h3>' +
-          '<div class="by">' + N.esc(sh.artist) + '</div>' +
-          '<div class="by dim">📅 ' + sh.date + ' · ' + N.esc(sh.venue) + '</div>' +
+          '<h3>' + N.esc(N.t(sh.title)) + '</h3>' +
+          '<div class="by">' + N.esc(N.t(sh.artist)) + '</div>' +
+          '<div class="by dim">📅 ' + sh.date + ' · ' + N.esc(N.t(sh.venue)) + '</div>' +
           '<div class="row-info"><span class="price">' + N.fmt(sh.price) + ' NOVA</span>' +
-            '<button class="btn small primary" onclick="buyTicket(\'' + sh.id + '\')">🎟️ 购票</button></div>' +
+            '<button class="btn small primary" onclick="buyTicket(\'' + sh.id + '\')">' + N.t('stg.dyn.btn.buy') + '</button></div>' +
         '</div>';
       }).join('');
       renderTickets();
@@ -83,17 +84,17 @@
       N.requireWallet().then(function (ok) {
         if (!ok) return;
         N.confirmDlg({
-          title: '购买演出门票',
-          body: '<p>《' + N.esc(sh.title) + '》<br>票价 ' + N.fmt(sh.price) + ' NOVA，收益归主办方。</p><p class="dim">购票后生成链上 NFT 电子门票，永久留档。</p>',
-          okLabel: '确认购票'
+          title: N.t('stg.dyn.dlg.title'),
+          body: N.t('stg.dyn.dlg.body', { title: N.esc(N.t(sh.title)), price: N.fmt(sh.price) }),
+          okLabel: N.t('stg.dyn.dlg.ok')
         }).then(function (yes) {
           if (!yes) return;
           N.nftMint({
-            name: sh.title + ' · 门票', desc: sh.desc,
+            name: N.t('stg.dyn.ticket.name', { title: N.t(sh.title) }), desc: N.t(sh.desc),
             art: sh.art, price: sh.price, app: 'stage'
           }).then(function (r) {
             if (!r.ok) { N.toast(r.error, 'err'); return; }
-            N.toast('🎟️ 购票成功！' + r.token.id.slice(-8));
+            N.toast(N.t('stg.dyn.toast.bought', { id: r.token.id.slice(-8) }));
             renderShows();
           });
         });
@@ -103,13 +104,13 @@
     function renderTickets() {
       var mine = N.myNfts().filter(function (t) { return t.app === 'stage'; });
       var el = document.getElementById('myTickets');
-      if (!mine.length) { el.innerHTML = '<div class="empty">还没有演出门票。购票后这里会展示你的链上电子票据。</div>'; return; }
+      if (!mine.length) { el.innerHTML = N.t('stg.dyn.ticket.empty'); return; }
       el.innerHTML = '<div class="grid grid-3">' + mine.map(function (t) {
         return '<div class="ticket">' +
-          '<div class="row-info mb"><span class="tag nft">NFT 门票</span><span class="mono dim">' + N.esc(t.id.slice(-8)) + '</span></div>' +
+          '<div class="row-info mb">' + N.t('stg.dyn.ticket.tag') + '<span class="mono dim">' + N.esc(t.id.slice(-8)) + '</span></div>' +
           '<div style="font-size:1.05rem; font-weight:700;">' + N.esc(t.name) + '</div>' +
           '<div class="dim" style="font-size:0.8rem; margin:6px 0 12px;">' + N.esc(t.desc || '') + '</div>' +
-          '<div class="row-info"><span class="ok">✓ 已上链</span><span class="mono dim">' + N.esc(t.txid.slice(0, 12)) + '…</span></div>' +
+          '<div class="row-info">' + N.t('stg.dyn.ticket.onchain') + '<span class="mono dim">' + N.esc(t.txid.slice(0, 12)) + '…</span></div>' +
         '</div>';
       }).join('') + '</div>';
     }
@@ -123,18 +124,18 @@
       var view = document.getElementById('stageView');
       view.style.display = '';
       view.innerHTML =
-        '<div class="section-title">🎪 ' + N.esc(sh.title) + '</div>' +
+        '<div class="section-title">🎪 ' + N.esc(N.t(sh.title)) + '</div>' +
         '<div class="stage-wrap" style="min-height:480px;">' +
           '<canvas id="stageCanvas"></canvas>' +
           '<div class="stage-overlay" style="min-height:480px; justify-content:space-between;">' +
-            '<div class="row"><span class="pill on">演出中</span><span class="pill">👁 ' + N.fmt(3800 + Math.floor(Math.random() * 1200)) + '</span></div>' +
+            '<div class="row">' + N.t('stg.dyn.stage.live') + '<span class="pill">👁 ' + N.fmt(3800 + Math.floor(Math.random() * 1200)) + '</span></div>' +
             '<div class="stage-info">' +
-              '<div class="np-title" style="font-size:1.1rem;">' + N.esc(sh.title) + '</div>' +
-              '<div class="np-artist dim">' + N.esc(sh.artist) + ' · ' + N.esc(sh.venue) + '</div>' +
+              '<div class="np-title" style="font-size:1.1rem;">' + N.esc(N.t(sh.title)) + '</div>' +
+              '<div class="np-artist dim">' + N.esc(N.t(sh.artist)) + ' · ' + N.esc(N.t(sh.venue)) + '</div>' +
               '<div class="row mt">' +
-                '<button class="btn small primary" onclick="toggleStageAudio()">🔊 现场声</button>' +
-                '<button class="btn small" onclick="cheerStage()">🎉 应援 1 NOVA</button>' +
-                '<button class="btn small" onclick="exitStage()">退出</button>' +
+                '<button class="btn small primary" onclick="toggleStageAudio()">' + N.t('stg.dyn.btn.liveAudio') + '</button>' +
+                '<button class="btn small" onclick="cheerStage()">' + N.t('stg.dyn.btn.cheer') + '</button>' +
+                '<button class="btn small" onclick="exitStage()">' + N.t('stg.dyn.btn.exit') + '</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -155,9 +156,9 @@
     function cheerStage() {
       var s = N.getState();
       if (!s.connected) { N.requireWallet().then(function (ok) { if (ok) cheerStage(); }); return; }
-      N.novaPay({ to: ORG.addr, amount: 1, memo: '应援 · ' + stage.show.title, app: 'stage' }).then(function (r) {
+      N.novaPay({ to: ORG.addr, amount: 1, memo: N.t('stg.dyn.memo.cheer', { title: stage.show.title }), app: 'stage' }).then(function (r) {
         if (!r.ok) { N.toast(r.error, 'err'); return; }
-        N.toast('🎉 应援成功！交易 ' + r.txid.slice(0, 12) + '…');
+        N.toast(N.t('stg.dyn.toast.cheered', { tx: r.txid.slice(0, 12) }));
       });
     }
 
@@ -191,14 +192,14 @@
         o.start(); o.stop(now + 0.9);
         stageAudio.oscs.push(o);
       }, 700);
-      N.toast('现场声已开启（生成式配乐）', 'info');
+      N.toast(N.t('stg.dyn.toast.audioOn'), 'info');
     }
     function stopStageAudio() {
       if (!stageAudio) return;
       stageAudio.oscs.forEach(function (o) { try { o.stop(); } catch (e) {} });
       if (stageAudio.timer) clearInterval(stageAudio.timer);
       stageAudio = null;
-      N.toast('现场声已关闭', 'info');
+      N.toast(N.t('stg.dyn.toast.audioOff'), 'info');
     }
 
     N.init({ active: 'stage', onReady: renderShows });

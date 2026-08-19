@@ -16,3 +16,7 @@ _arb_check.js
 _fix_tmp.py
 scripts/_fix_test.py
 scripts/_repl_out.txt
+
+# i18n scan artifacts & temp wordlist json
+scan_*.txt
+scripts/_*.json

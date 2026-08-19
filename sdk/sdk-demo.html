@@ -29,69 +29,69 @@
   <main class="page">
     <section class="hero">
       <span class="eyebrow">@nova/sdk · DEVELOPER KIT</span>
-      <h1>Nova 开发者 SDK</h1>
-      <p class="sub">钱包 / 合约 / 内容 / 质押 / 订阅 / 预言机 / 跨链桥 / DEX / 治理 / DID / 链上事件 / 测试网水龙头——零依赖 UMD，浏览器与 Node 通用。下方为在线体验：连接本地测试节点即可真实上链。</p>
+      <h1 data-i18n="sdkd.k1">Nova 开发者 SDK</h1>
+      <p class="sub" data-i18n="sdkd.k2">钱包 / 合约 / 内容 / 质押 / 订阅 / 预言机 / 跨链桥 / DEX / 治理 / DID / 链上事件 / 测试网水龙头——零依赖 UMD，浏览器与 Node 通用。下方为在线体验：连接本地测试节点即可真实上链。</p>
       <div class="row" style="margin-top:10px;">
         <input id="nodeUrl" value="http://127.0.0.1:8080" style="width:260px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 12px;color:#fff;">
-        <button class="btn primary" onclick="sdkConnect()">连接节点</button>
-        <a class="btn" href="../docs/api/README.md">📖 API 文档</a>
+        <button class="btn primary" onclick="sdkConnect()" data-i18n="sdkd.k3">连接节点</button>
+        <a class="btn" href="../docs/api/README.md" data-i18n="sdkd.k4">📖 API 文档</a>
       </div>
     </section>
 
     <div class="sdk-grid">
       <div class="card">
-        <h3 class="mb">💳 钱包</h3>
-        <p class="dim" style="font-size:13px;">创建（BIP39 助记词）/ 导入 / 签名交易 / 查询余额</p>
+        <h3 class="mb" data-i18n="sdkd.k5">💳 钱包</h3>
+        <p class="dim" style="font-size:13px;" data-i18n="sdkd.k6">创建（BIP39 助记词）/ 导入 / 签名交易 / 查询余额</p>
         <div class="form-row">
-          <button class="btn primary" onclick="walletCreate()">创建钱包</button>
-          <button class="btn" onclick="walletBalance()">查余额</button>
-          <button class="btn" onclick="walletSend()">转 1 NOVA</button>
+          <button class="btn primary" onclick="walletCreate()" data-i18n="sdkd.k7">创建钱包</button>
+          <button class="btn" onclick="walletBalance()" data-i18n="sdkd.k8">查余额</button>
+          <button class="btn" onclick="walletSend()" data-i18n="sdkd.k9">转 1 NOVA</button>
         </div>
         <div class="mono" id="walletBox" style="margin-top:8px;">—</div>
       </div>
       <div class="card">
-        <h3 class="mb">⚙️ 质押与签到</h3>
-        <p class="dim" style="font-size:13px;">质押 100 NOVA / 解押 / 签到（空投资格）</p>
+        <h3 class="mb" data-i18n="sdkd.k10">⚙️ 质押与签到</h3>
+        <p class="dim" style="font-size:13px;" data-i18n="sdkd.k11">质押 100 NOVA / 解押 / 签到（空投资格）</p>
         <div class="form-row">
-          <button class="btn primary" onclick="stake()">质押 100</button>
-          <button class="btn" onclick="checkin()">签到</button>
-          <button class="btn" onclick="stakes()">我的质押</button>
+          <button class="btn primary" onclick="stake()" data-i18n="sdkd.k12">质押 100</button>
+          <button class="btn" onclick="checkin()" data-i18n="sdkd.k13">签到</button>
+          <button class="btn" onclick="stakes()" data-i18n="sdkd.k14">我的质押</button>
         </div>
         <div class="mono" id="stakeBox" style="margin-top:8px;">—</div>
       </div>
       <div class="card">
-        <h3 class="mb">🔮 预言机</h3>
-        <p class="dim" style="font-size:13px;">VRF 可验证随机数请求 / AI 生成结果验证</p>
+        <h3 class="mb" data-i18n="sdkd.k15">🔮 预言机</h3>
+        <p class="dim" style="font-size:13px;" data-i18n="sdkd.k16">VRF 可验证随机数请求 / AI 生成结果验证</p>
         <div class="form-row">
-          <button class="btn primary" onclick="vrf()">VRF 请求</button>
-          <button class="btn" onclick="aiVerify()">AI 验证</button>
+          <button class="btn primary" onclick="vrf()" data-i18n="sdkd.k17">VRF 请求</button>
+          <button class="btn" onclick="aiVerify()" data-i18n="sdkd.k18">AI 验证</button>
         </div>
         <div class="mono" id="oracleBox" style="margin-top:8px;">—</div>
       </div>
       <div class="card">
-        <h3 class="mb">🌠 内容发布</h3>
-        <p class="dim" style="font-size:13px;">发布公开内容（链上确权，缴纳基础档保证金 10 NOVA）</p>
+        <h3 class="mb" data-i18n="sdkd.k19">🌠 内容发布</h3>
+        <p class="dim" style="font-size:13px;" data-i18n="sdkd.k20">发布公开内容（链上确权，缴纳基础档保证金 10 NOVA）</p>
         <div class="form-row">
           <input id="contentTitle" value="SDK 体验作品" style="min-width:140px;">
-          <button class="btn primary" onclick="publish()">发布</button>
+          <button class="btn primary" onclick="publish()" data-i18n="sdkd.k21">发布</button>
         </div>
         <div class="mono" id="contentBox" style="margin-top:8px;">—</div>
       </div>
       <div class="card">
-        <h3 class="mb">🚰 测试网水龙头</h3>
-        <p class="dim" style="font-size:13px;">免费领取测试 NOVA（地址 24h 限领一次，节点需 --faucet 启动）</p>
+        <h3 class="mb" data-i18n="sdkd.k22">🚰 测试网水龙头</h3>
+        <p class="dim" style="font-size:13px;" data-i18n="sdkd.k23">免费领取测试 NOVA（地址 24h 限领一次，节点需 --faucet 启动）</p>
         <div class="form-row">
-          <button class="btn primary" onclick="faucetClaim()">领取 100</button>
-          <button class="btn" onclick="faucetStatus()">状态</button>
+          <button class="btn primary" onclick="faucetClaim()" data-i18n="sdkd.k24">领取 100</button>
+          <button class="btn" onclick="faucetStatus()" data-i18n="sdkd.k25">状态</button>
         </div>
         <div class="mono" id="faucetBox" style="margin-top:8px;">—</div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <h3 class="mb">📡 链上事件监听 <span class="pill">每 3 秒轮询</span></h3>
-      <p class="dim" style="font-size:13px;">NovaEvents 监听新区块、新交易、合约部署与全网统计，回调实时推送到下方日志。</p>
-      <div class="log" id="logBox">等待操作…</div>
+      <h3 class="mb">📡 链上事件监听 <span class="pill" data-i18n="sdkd.k26">每 3 秒轮询</span></h3>
+      <p class="dim" style="font-size:13px;" data-i18n="sdkd.k27">NovaEvents 监听新区块、新交易、合约部署与全网统计，回调实时推送到下方日志。</p>
+      <div class="log" id="logBox" data-i18n="sdkd.k28">等待操作…</div>
     </div>
   </main>
 
