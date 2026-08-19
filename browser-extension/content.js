@@ -24,6 +24,9 @@
 
   window.addEventListener('message', function (ev) {
     var msg = ev && ev.data;
+    // 安全（M-09）：仅接受顶层页面自身（同源、同窗口）发来的 DApp 请求，
+    // 阻止跨域 iframe 伪装 source 驱动钱包签名/转账请求。
+    if (ev.source !== window || ev.origin !== window.location.origin) return;
     if (!msg || typeof msg !== 'object' || msg.source !== DAPP) return;
     // 握手：SDK 在主世界无 chrome.runtime，需 ready 事件确认扩展已注入
     if (msg.event === 'hello') {

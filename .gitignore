@@ -12,3 +12,7 @@ Thumbs.db
 # 开发临时脚本
 scripts/_check_js.py
 scripts/_patch_faucet.py
+_arb_check.js
+_fix_tmp.py
+scripts/_fix_test.py
+scripts/_repl_out.txt

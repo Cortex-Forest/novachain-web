@@ -33,7 +33,14 @@
   }
 
   function isExtMessage(ev) {
-    return ev && ev.data && typeof ev.data === 'object' && ev.data.source === MSG_EXT;
+    if (!ev || !ev.data || typeof ev.data !== 'object' || ev.data.source !== MSG_EXT) return false;
+    // 安全（M-09）：仅信任同窗口、同源发来的扩展应答/事件（content script 与页面共享 window），
+    // 阻止跨域 iframe 伪造 nova-wallet-ext 消息（ready / accountsChanged / 请求应答）。
+    if (typeof global !== 'undefined' && global.location && global.location.origin) {
+      if (ev.source !== global) return false;
+      if (ev.origin && ev.origin !== global.location.origin) return false;
+    }
+    return true;
   }
 
   /* ---------- postMessage 桥 Provider（页面 main world 使用） ---------- */
