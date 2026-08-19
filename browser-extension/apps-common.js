@@ -216,7 +216,10 @@
     'http://localhost:8080/api/status'
   );
   async function detectMode() {
-    var custom = lsGet('nova_rpc', '');
+    // URL 参数 ?rpc=<节点地址> 优先级最高，便于部署 / 演示一键切换节点
+    var qp = null;
+    try { qp = new URLSearchParams(window.location.search).get('rpc'); } catch (e) { /* 忽略 */ }
+    var custom = qp || lsGet('nova_rpc', '');
     if (custom) {
       try {
         var cr = await fetch(custom.replace(/\/+$/, '') + '/api/status', { method: 'GET', headers: { Accept: 'application/json' } });
@@ -409,6 +412,36 @@
 
   /* ================= 钱包 ================= */
   function wallets() { return lsGet(LS.wallets, []); }
+  var LS_VAULT_KEY = 'nova_demo_vault_key';
+  /* 演示钱包私钥加密落盘（AES-256-GCM，设备密钥派生）：避免私钥明文直接出现在 localStorage。
+   * 说明：设备密钥与密文同在 localStorage，主要防御离线 / localStorage 快照直接读取；
+   * 页面 XSS 仍可解密，演示钱包私钥请勿用于真实资产（正式请用 wallet.html 的密码保险库）。 */
+  function vaultKey() {
+    var k = lsGet(LS_VAULT_KEY, '');
+    if (typeof k === 'string' && k.length === 64 && /^[0-9a-f]{64}$/.test(k)) return k;
+    k = bytesToHex(randomBytes(32));
+    lsSet(LS_VAULT_KEY, k);
+    return k;
+  }
+  function isEncEntry(e) { return e && typeof e === 'object' && e.v === 1 && typeof e.ct === 'string' && typeof e.iv === 'string'; }
+  async function aesGcmEncryptPriv(plainHex) {
+    if (!(window.crypto && window.crypto.subtle)) return plainHex; // 无 WebCrypto 时降级明文
+    try {
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      var key = await crypto.subtle.importKey('raw', hexToBytes(vaultKey()), { name: 'AES-GCM' }, false, ['encrypt']);
+      var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, hexToBytes(plainHex)));
+      return { v: 1, iv: bytesToHex(iv), ct: bytesToHex(ct) };
+    } catch (e) { return plainHex; }
+  }
+  async function aesGcmDecryptPriv(entry) {
+    if (!isEncEntry(entry)) return entry; // 兼容旧版明文条目
+    if (!(window.crypto && window.crypto.subtle)) return null;
+    try {
+      var key = await crypto.subtle.importKey('raw', hexToBytes(vaultKey()), { name: 'AES-GCM' }, false, ['decrypt']);
+      var pt = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hexToBytes(entry.iv) }, key, hexToBytes(entry.ct)));
+      return bytesToHex(pt);
+    } catch (e) { return null; }
+  }
   function dispatchWallet() {
     try {
       window.dispatchEvent(new CustomEvent('nova-wallet', {
@@ -445,12 +478,17 @@
   async function connectFromStorage() {
     var ws = wallets();
     if (!ws.length) return false;
-    try { await connectWith(ws[0]); return true; } catch (e) { return false; }
+    try {
+      var priv = await aesGcmDecryptPriv(ws[0]);
+      if (!priv) return false;
+      await connectWith(priv);
+      return true;
+    } catch (e) { return false; }
   }
   async function createDemoWallet() {
     var priv = bytesToHex(randomBytes(32));
     var ws = wallets();
-    ws.push(priv);
+    ws.push(await aesGcmEncryptPriv(priv));
     lsSet(LS.wallets, ws);
     await connectWith(priv);
     return priv;
@@ -459,10 +497,15 @@
     var clean = (hex || '').trim().replace(/^0x/, '').toLowerCase();
     if (!/^[0-9a-f]{64}$/.test(clean)) return { error: '私钥需为 64 位十六进制字符串' };
     var ws = wallets();
-    if (ws.indexOf(clean) === -1) ws.push(clean);
+    var dup = false;
+    for (var i = 0; i < ws.length; i++) {
+      var raw = await aesGcmDecryptPriv(ws[i]);
+      if (raw === clean) { dup = true; break; }
+    }
+    if (!dup) ws.push(await aesGcmEncryptPriv(clean));
     lsSet(LS.wallets, ws);
     await connectWith(clean);
-    return { ok: true };
+    return { ok: true, warning: '演示钱包私钥保存在浏览器本地，请勿用于真实资产；正式使用请前往钱包页创建账户' };
   }
   function demoBalanceOf(addr) {
     var balances = lsGet(LS.balances, {});

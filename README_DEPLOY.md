@@ -75,3 +75,20 @@ location /api/ {
 - 「设置」页的节点状态是否显示「演示模式 / 节点模式」；
 - HTTPS 页面访问 `http://127.0.0.1:8080` 受 mixed-content 限制，请使用 `http://localhost` 或升级为 HTTPS 节点。
 - **注意**：后端返回的 `4xx` 业务错误（如 `400 {"error":"交易校验失败"}`）**不会**再被误判为节点不可达，页面会原样展示节点拒绝原因（如余额不足、签名错误、时间戳超窗），请勿把它当成「演示模式」。
+
+### 5. 快捷切换节点（URL 参数）
+除「设置」外，可直接用 URL 参数指定节点并**无需改动代码**：
+```
+https://你的站点/?rpc=https://rpc.nova.chain
+https://你的站点/nova.html?rpc=http://127.0.0.1:8080
+```
+`?rpc=` 优先级高于本地保存的 `nova_rpc`，便于演示、测试与多节点切换。
+
+---
+
+## 前端工程说明 / Frontend Notes
+
+- **零第三方运行时依赖**：SHA3（`lib/sha3.js`）已自托管，页面 CSP 不含任何外部脚本域（`script-src 'self' 'unsafe-inline'`）；仅 Google Fonts 仍为外链（`style-src` / `font-src` 已限定）。
+- **演示钱包私钥加密落盘**：`apps-common.js` 的演示钱包私钥以 AES-256-GCM 加密后存入 localStorage（设备密钥派生），不再明文落盘；兼容旧版明文条目自动迁移。演示钱包私钥**请勿用于真实资产**，正式使用请用 `wallet.html` 的密码保险库。
+- **GitHub Pages 部署产物已精简**：`deploy.yml` 仅上传站点文件，排除 `docs/`、`scripts/`、`browser-extension/`、`.github/` 与所有 Markdown。
+- **安全响应头仅 Vercel 生效**：`vercel.json` 已配置 `X-Content-Type-Options` / `X-Frame-Options` 等；GitHub Pages 不支持自定义响应头（此项仅在 Vercel 部署时生效）。
