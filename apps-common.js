@@ -436,6 +436,31 @@
     return demoApi(path, method || 'GET', body);
   }
 
+  /* ================= v0.9 无感机制：反 FOMO / 动态手续费 / 质押保护 / 负载查询 ================= */
+  var FOMO_BUY_OPS = ['nova:fan:buy', 'nova:rev:invest', 'nova:market:bet', 'nova:blind:open',
+                      'nova:curate:buy', 'nova:bond:buy', 'nova:frac:buy', 'nova:text:buy', 'nova:ai:work:buy'];
+  var FOMO_HEAVY_OPS = ['nova:frac:split', 'nova:fan:issue'];
+  async function fomoStatus(addr) {
+    if (!addr || state.mode !== 'node') return null;
+    var d = await api('/api/fomo/status?addr=' + encodeURIComponent(addr));
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function feeInfo(addr) {
+    if (!addr || state.mode !== 'node') return null;
+    var d = await api('/api/fees?addr=' + encodeURIComponent(addr));
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function stakeProtectInfo() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/stake/protect');
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function loadInfo() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/load');
+    return d && typeof d === 'object' ? d : null;
+  }
+
   /* ================= 钱包 ================= */
   function wallets() { return lsGet(LS.wallets, []); }
   var LS_VAULT_KEY = 'nova_demo_vault_key';
@@ -566,15 +591,24 @@
       var pub = await getPubFromPriv(state.priv);
       var ts = Math.floor(Date.now() / 1000);
       var amtStr = amount.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+      // v0.9 无感动态手续费：大额转账（单笔 >10 万 NOVA）手续费 ×100，提交前明确展示
+      var feeMsg = '';
+      if (amount > 100000) {
+        var feeD = await feeInfo(state.addr);
+        if (feeD) {
+          feeMsg = ' 本次大额转账手续费 ×' + feeD.large_transfer_mult +
+                   '（约 ' + (feeD.base_gas * feeD.large_transfer_mult).toFixed(8) + ' NOVA，会明确扣收）';
+        }
+      }
       var sig = await signMsg(state.priv, state.addr + to + amtStr + ts + '[]' + memo + pub);
       var res = await api('/api/send', 'POST', {
         sender: state.addr, receiver: to, amount: amount,
         timestamp: ts, parents: [], data: memo,
         sender_public_key: pub, signature: sig
       });
-      if (res && res.error) return { ok: false, error: res.error };
+      if (res && res.error) return { ok: false, error: res.error + feeMsg };
       await refreshBalance();
-      return { ok: true, txid: res.txid || res.hash || '', demo: false, balance: state.balance };
+      return { ok: true, txid: res.txid || res.hash || '', demo: false, balance: state.balance, feeMsg: feeMsg };
     } catch (e) {
       return { ok: false, error: String((e && e.message) || e) };
     }
@@ -1405,6 +1439,13 @@
     if (!state.connected) return { ok: false, error: '未连接钱包' };
     if (state.mode === 'demo') return sfDemoAction(op, fields || {}, amount);
     try {
+      // v0.9 无感反 FOMO：买入类操作仅在冷却期温和提示（日常零打扰，不影响出售/转账/娱乐）
+      if (FOMO_BUY_OPS.indexOf(op) >= 0) {
+        var fs = await fomoStatus(state.addr);
+        if (fs && fs.cooldown) {
+          return { ok: false, code: 'fomo_cooldown', error: fs.message };
+        }
+      }
       var pub = await getPubFromPriv(state.priv);
       var ts = Math.floor(Date.now() / 1000);
       var data = JSON.stringify(Object.assign({ op: op }, fields || {}));
@@ -1415,6 +1456,10 @@
         sender_public_key: pub, signature: sig
       });
       if (res && res.error) return { ok: false, error: res.error };
+      // v0.9 无感负载自适应：重操作（NFT 铸造）在高负载下自动排队，显示预计到账时间
+      if (res && res.queued) {
+        return { ok: true, queued: true, eta: res.eta, txid: '', message: res.message };
+      }
       await refreshBalance();
       return { ok: true, txid: res.txid, id: res.id, summary: res.summary };
     } catch (e) {
