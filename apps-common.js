@@ -481,6 +481,77 @@
     var d = await api('/api/reserve/sail');
     return d && typeof d === 'object' ? d : null;
   }
+  /* ================= v0.11 EVM 兼容层 / MetaMask / 跨引擎桥接 ================= */
+  /* 用 MetaMask 参与娱乐内容交易（共享同一 NOVA 余额，双钥混合账户） */
+  var EVM_PREF_KEY = 'nova_evm_preference';
+  function evmPref() { return lsGet(EVM_PREF_KEY, 'native'); }      // 'native' | 'metamask'
+  function setEvmPref(v) { lsSet(EVM_PREF_KEY, v === 'metamask' ? 'metamask' : 'native'); }
+  function useMetaMask() { return evmPref() === 'metamask'; }
+  async function evmNetwork() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/evm/network');
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function evmBindInfo(addr) {
+    if (!addr || state.mode !== 'node') return null;
+    var d = await api('/api/evm/bind/' + encodeURIComponent(addr));
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function evmBridgeSummary() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/evm/bridge/summary');
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function evmWrapped(addr) {
+    if (!addr || state.mode !== 'node') return null;
+    var d = await api('/api/evm/wrapped/' + encodeURIComponent(addr));
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function evmReceipt(txhash) {
+    if (!txhash || state.mode !== 'node') return null;
+    var d = await api('/api/evm/receipt/' + encodeURIComponent(txhash));
+    return d && typeof d === 'object' ? d : null;
+  }
+  /* 标准 JSON-RPC 调用（eth_*，供"用 MetaMask 参与"时查询/展示） */
+  async function evmRpc(method, params) {
+    if (state.mode !== 'node') return null;
+    try {
+      var r = await fetch(state.rpc + '/rpc', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params || [] }) });
+      var j = await r.json();
+      return j && j.hasOwnProperty('result') ? j.result : null;
+    } catch (e) { return null; }
+  }
+  /* 一键转换：原生 NFT/FT -> EVM 包装（需已绑定 EVM 地址） */
+  async function evmConvert(wallet, asset, amount) {
+    var payload = { op: 'nova:bridge:evm:convert', asset: asset };
+    if (amount) payload.amount = amount;
+    return novaSignAndSend(wallet, payload, 'evm:convert');
+  }
+  /* 一键转回：EVM 包装 -> 原生 */
+  async function evmRevert(wallet, tokenId) {
+    return novaSignAndSend(wallet, { op: 'nova:bridge:evm:revert', token_id: String(tokenId) }, 'evm:revert');
+  }
+  /* 绑定 ECDSA 公钥（生成/录入 EVM 从钥） */
+  async function evmBind(wallet, ecdsaPub) {
+    return novaSignAndSend(wallet, { op: 'nova:evm:bind', pubkey: ecdsaPub }, 'evm:bind');
+  }
+  /* 量子迁移：native 余额 -> 绑定的 EVM 地址（ECDSA 签名，不可逆） */
+  async function evmMigrate(wallet, evmAddr, sig, sigTs) {
+    var p = { op: 'nova:evm:migrate', evm_addr: evmAddr };
+    if (sig) { p.r = sig.r; p.s = sig.s; }
+    if (sigTs) p.ts = sigTs;
+    return novaSignAndSend(wallet, p, 'evm:migrate');
+  }
+  function novaSignAndSend(wallet, payload, hint) {
+    /* 复用现有 op 交易发送通道（/api/op，节点按 op 路由到 EVM 混合账户/桥接处理） */
+    if (state.mode !== 'node') {
+      return { ok: true, demo: true, id: 'evm-' + Date.now(), message: '演示模式：EVM 操作需连接节点后生效' };
+    }
+    var fields = {};
+    for (var k in payload) { if (k !== 'op') fields[k] = payload[k]; }
+    return sfAction(payload.op, fields, Number(payload.amount || 0));
+  }
 
   /* ================= 钱包 ================= */
   function wallets() { return lsGet(LS.wallets, []); }

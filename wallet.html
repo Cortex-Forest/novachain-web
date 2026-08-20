@@ -784,6 +784,54 @@
                 <div id="mcCustomList" class="footnote"></div>
             </div>
         </section>
+        <!-- ========== v0.11 EVM 兼容层 / MetaMask / 跨引擎桥接面板 ========== -->
+        <section class="panel" id="panel-evm">
+            <h2>🪐 Nova EVM 兼容层（v0.11）</h2>
+            <div class="warning">Nova 原生钱包用于抗量子交易；亦可绑定 EVM 地址，用 <b>MetaMask</b> 参与娱乐内容交易——两种钱包共享同一 NOVA 余额。</div>
+
+            <div class="kv">
+                <div class="label">🌐 MetaMask 网络配置（Chain ID 666666）</div>
+                <div class="footnote" id="evmNetInfo">加载中…</div>
+                <div class="row" style="flex-wrap:wrap; gap:.4rem;">
+                    <button class="btn-ghost btn-sm" onclick="evmCopyNetInfo()">📋 复制配置</button>
+                    <button class="btn-ghost btn-sm" onclick="evmLoadNetwork()">🔄 刷新</button>
+                </div>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:1.1rem 0;">
+            <div class="kv">
+                <div class="label">👛 钱包方式（共享 NOVA 余额）</div>
+                <div class="row" style="flex-wrap:wrap; gap:.4rem;">
+                    <button class="btn-ghost btn-sm" id="evmPrefNative" onclick="evmSetPref('native')">🔐 原生抗量子钱包</button>
+                    <button class="btn-ghost btn-sm" id="evmPrefMeta" onclick="evmSetPref('metamask')">🦊 用 MetaMask 参与</button>
+                </div>
+                <div class="footnote" id="evmPrefHint"></div>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:1.1rem 0;">
+            <div class="kv">
+                <div class="label">🔑 EVM 混合账户（双钥）</div>
+                <div id="evmBindInfo" class="tx-list"><div class="contact-empty">加载中…</div></div>
+                <div class="row" style="flex-wrap:wrap; gap:.4rem;">
+                    <button class="btn-ghost btn-sm" onclick="evmDoBind()">🔗 绑定 EVM 地址</button>
+                    <button class="btn-ghost btn-sm" onclick="evmDoMigrate()">🚀 迁移到 EVM（不可逆）</button>
+                </div>
+                <div class="footnote" id="evmBindErr" style="color:var(--danger); min-height:1.1rem;"></div>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--border); margin:1.1rem 0;">
+            <div class="kv">
+                <div class="label">🔁 跨引擎桥接（原生 ⇄ EVM 包装，0.1% 手续费回流验证者池）</div>
+                <div id="evmWrappedList" class="tx-list"><div class="contact-empty">加载中…</div></div>
+                <div class="row" style="flex-wrap:wrap; gap:.4rem;">
+                    <input type="text" id="evmBridgeAsset" placeholder="资产 ID（如 fan:xxx / frac:xxx / ach:xxx）">
+                    <input type="number" id="evmBridgeAmount" placeholder="数量（FT）">
+                    <button class="btn-ghost btn-sm" onclick="evmDoConvert()">➡️ 转换为 EVM 格式</button>
+                </div>
+                <div class="footnote" id="evmBridgeErr" style="color:var(--danger); min-height:1.1rem;"></div>
+                <div class="footnote" id="evmBridgeSummary"></div>
+            </div>
+        </section>
         <!-- ========== 资产与收益面板 ========== -->
         <section class="panel" id="panel-assets">
             <h2 data-i18n="assetsTitle">📦 资产与收益</h2>
@@ -3507,6 +3555,155 @@
     // 39 · 隐私政策入口
     function openPrivacy() { openModal('modal-privacy'); }
     document.addEventListener('DOMContentLoaded', init);
+
+    /* ================= v0.11 EVM 兼容层 / MetaMask / 跨引擎桥接 ================= */
+    var EVM_PRIV_KEY = 'nova_evm_secp_priv';
+    function evmNetInfo() {
+        var el = document.getElementById('evmNetInfo');
+        if (!el) return;
+        evmNetwork().then(function (d) {
+            if (!d) { el.textContent = '未连接节点，无法获取网络配置。'; return; }
+            el.innerHTML = 'Chain ID: <code>' + d.chainId + '</code>（' + d.chainIdHex + '）<br>' +
+                'RPC: <code>' + d.rpcUrl + '</code><br>' +
+                '符号: <code>' + d.symbol + '</code>（' + d.decimals + ' 位 wei）<br>' +
+                '浏览器: <code>' + d.explorer + '</code>';
+        });
+    }
+    function evmCopyNetInfo() {
+        evmNetwork().then(function (d) {
+            if (!d) return;
+            var txt = 'Network Name: Nova\nRPC URL: ' + d.rpcUrl + '\nChain ID: ' + d.chainId +
+                '\nCurrency Symbol: ' + d.symbol + '\nBlock Explorer URL: ' + d.explorer;
+            copyText(txt);
+            toast('MetaMask 网络配置已复制');
+        });
+    }
+    function evmLoadNetwork() { evmNetInfo(); evmPrefRender(); evmBindRender(); evmWrappedRender(); evmBridgeRender(); }
+    function evmSetPref(pref) { setEvmPref(pref); evmPrefRender(); toast(pref === 'metamask' ? '已切换：用 MetaMask 参与娱乐内容交易（共享 NOVA 余额）' : '已切换：原生抗量子钱包'); }
+    function evmPrefRender() {
+        var pref = evmPref();
+        var n = document.getElementById('evmPrefNative'), m = document.getElementById('evmPrefMeta');
+        if (!n || !m) return;
+        n.classList.toggle('btn-ghost', pref === 'metamask'); n.classList.toggle('active', pref === 'native');
+        m.classList.toggle('btn-ghost', pref === 'native'); m.classList.toggle('active', pref === 'metamask');
+        document.getElementById('evmPrefHint').textContent =
+            pref === 'metamask' ? '🦊 娱乐内容交易将由 MetaMask 签名（ECDSA），Nova 原生钱包继续用于抗量子交易；两者共享同一 NOVA 余额。'
+                                : '🔐 娱乐内容交易默认由 Nova 原生抗量子钱包签名。';
+    }
+    function evmBindRender() {
+        var el = document.getElementById('evmBindInfo');
+        if (!el) return;
+        var addr = state.addr;
+        if (!addr) { el.innerHTML = '<div class="contact-empty">请先连接钱包。</div>'; return; }
+        evmBindInfo(addr).then(function (d) {
+            if (!d) { el.innerHTML = '<div class="contact-empty">未连接节点。</div>'; return; }
+            if (!d.bound) {
+                el.innerHTML = '<div class="contact-empty">尚未绑定 EVM 地址。点击「绑定 EVM 地址」生成 ECDSA 从钥（MetaMask 可导入）。</div>';
+            } else {
+                var mig = d.migrated ? '✅ 已迁移（不可逆）' : '⏳ 未迁移';
+                el.innerHTML = 'EVM 地址: <code>' + d.evm_checksum + '</code><br>状态: ' + mig +
+                    '<br>EVM 余额: <b>' + d.evm_balance + ' NOVA</b>';
+            }
+        });
+    }
+    function evmPriv() {
+        var h = lsGet(EVM_PRIV_KEY, '');
+        if (typeof h === 'string' && /^[0-9a-f]{64}$/.test(h)) return h;
+        var priv = bytesToHex(randomBytes(32));
+        lsSet(EVM_PRIV_KEY, priv);
+        return priv;
+    }
+    function evmPub() {
+        var priv = evmPriv();
+        var pub = NovaEVM.secpPubkey(NovaEVM.hexToBytes(priv));
+        return bytesToHex(pub);
+    }
+    async function evmDoBind() {
+        var err = document.getElementById('evmBindErr');
+        if (!err) return;
+        if (!state.addr || !state.connected) { err.textContent = '请先连接 Nova 钱包。'; return; }
+        try {
+            var pub = evmPub();
+            var res = await evmBind(null, pub);
+            if (res && res.ok) { err.textContent = '✅ 绑定成功（ECDSA 公钥已登记，EVM 地址已派生）。'; evmBindRender(); }
+            else { err.textContent = (res && res.error) || '绑定失败'; }
+        } catch (e) { err.textContent = String((e && e.message) || e); }
+    }
+    async function evmDoMigrate() {
+        var err = document.getElementById('evmBindErr');
+        if (!err) return;
+        if (!state.addr || !state.connected) { err.textContent = '请先连接 Nova 钱包。'; return; }
+        try {
+            var binfo = await evmBindInfo(state.addr);
+            if (!binfo || !binfo.bound) { err.textContent = '请先绑定 EVM 地址。'; return; }
+            var evmAddr = binfo.evm_addr;
+            var ts = Math.floor(Date.now() / 1000);
+            var msg = 'nova:evm:migrate:' + state.addr + ':' + evmAddr + ':' + ts;
+            var priv = evmPriv();
+            var msgHash = NovaEVM.keccak256(new TextEncoder().encode(msg));
+            var sig = await NovaEVM.ecdsaSign(NovaEVM.hexToBytes(priv), msgHash);
+            var res = await evmMigrate(null, evmAddr, { r: sig.r, s: sig.s }, ts);
+            if (res && res.ok) { err.textContent = '✅ 已迁移（NOVA 余额现由 EVM 地址控制，不可逆）。'; evmBindRender(); evmPrefRender(); }
+            else { err.textContent = (res && res.error) || '迁移失败（需 ECDSA 签名匹配绑定公钥）'; }
+        } catch (e) { err.textContent = String((e && e.message) || e); }
+    }
+    async function evmDoConvert() {
+        var err = document.getElementById('evmBridgeErr');
+        if (!err) return;
+        var asset = (document.getElementById('evmBridgeAsset') || {}).value || '';
+        var amount = Number((document.getElementById('evmBridgeAmount') || {}).value || 0);
+        if (!asset || asset.indexOf(':') < 0) { err.textContent = '请输入资产 ID（fan:xxx / frac:xxx / ach:xxx）。'; return; }
+        if (!state.addr || !state.connected) { err.textContent = '请先连接 Nova 钱包。'; return; }
+        var binfo = await evmBindInfo(state.addr);
+        if (!binfo || !binfo.bound) { err.textContent = '请先绑定 EVM 地址（跨引擎转换需要）。'; return; }
+        var res = await evmConvert(null, asset, amount);
+        if (res && res.ok) { err.textContent = '✅ 已转换为 EVM 包装资产（OpenSea 可展示）。'; evmWrappedRender(); }
+        else { err.textContent = (res && res.error) || '转换失败'; }
+    }
+    function evmWrappedRender() {
+        var el = document.getElementById('evmWrappedList');
+        if (!el) return;
+        var addr = state.addr;
+        if (!addr) { el.innerHTML = '<div class="contact-empty">请先连接钱包。</div>'; return; }
+        evmWrapped(addr).then(function (d) {
+            if (!d) { el.innerHTML = '<div class="contact-empty">未连接节点。</div>'; return; }
+            if (!d.count) { el.innerHTML = '<div class="contact-empty">暂无 EVM 包装资产。</div>'; return; }
+            var html = d.wrapped.map(function (w) {
+                return '<div class="kv" style="padding:.3rem 0;"><div class="label">' + w.native_asset +
+                    '（' + w.kind + ' ×' + w.amount + '）</div>' +
+                    '<div class="footnote">tokenId: <code>' + w.token_id_hex + '</code> · URI: ' + w.uri + '</div>' +
+                    '<button class="btn-ghost btn-sm" onclick="evmRevertBtn(\'' + w.token_id + '\')">⬅️ 转回原生</button></div>';
+            }).join('');
+            el.innerHTML = html;
+        });
+    }
+    async function evmRevertBtn(tokenId) {
+        if (!state.addr || !state.connected) return;
+        var res = await evmRevert(null, tokenId);
+        var err = document.getElementById('evmBridgeErr');
+        if (res && res.ok) { if (err) err.textContent = '✅ 已转回原生格式。'; evmWrappedRender(); }
+        else { if (err) err.textContent = (res && res.error) || '转回失败'; }
+    }
+    function evmBridgeRender() {
+        var el = document.getElementById('evmBridgeSummary');
+        if (!el) return;
+        evmBridgeSummary().then(function (d) {
+            if (!d) { el.textContent = ''; return; }
+            el.textContent = '桥接概况：包装资产 ' + d.wrapped_total + ' 项 · 手续费率 ' +
+                (d.fee_rate * 100).toFixed(1) + '%（NFT 每枚 ' + d.nft_fee + ' NOVA）· 100% 回流验证者池 · EVM 桥 ' + d.evm_bridge;
+        });
+    }
+    function copyText(s) {
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(s).catch(function () {}); return; }
+        var ta = document.createElement('textarea'); ta.value = s; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+    }
+    // 在 init 中联动刷新（若 init 已执行则立即加载）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', evmLoadNetwork);
+    } else {
+        evmLoadNetwork();
+    }
 </script>
 </body>
 </html>
