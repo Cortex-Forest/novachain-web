@@ -460,6 +460,27 @@
     var d = await api('/api/load');
     return d && typeof d === 'object' ? d : null;
   }
+  /* ================= v0.10 储备金与经济安全网查询 ================= */
+  async function nodeGuardInfo() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/node/guard');
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function reserveStatus() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/reserve/status');
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function loyaltyInfo(addr) {
+    if (!addr || state.mode !== 'node') return null;
+    var d = await api('/api/loyalty/' + encodeURIComponent(addr));
+    return d && typeof d === 'object' ? d : null;
+  }
+  async function sailInfo() {
+    if (state.mode !== 'node') return null;
+    var d = await api('/api/reserve/sail');
+    return d && typeof d === 'object' ? d : null;
+  }
 
   /* ================= 钱包 ================= */
   function wallets() { return lsGet(LS.wallets, []); }
